@@ -1,0 +1,8 @@
+targets:
+  $default:
+    builders:
+      drift_dev:
+        options:
+          # ISO-8601 text keeps millisecond precision and is readable when
+          # debugging sync. Changing this later would be a breaking change.
+          store_date_time_values_as_text: true

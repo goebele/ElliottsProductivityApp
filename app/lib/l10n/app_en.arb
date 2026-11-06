@@ -1,0 +1,38 @@
+{
+  "@@locale": "en",
+  "appTitle": "Elliott's Productivity App",
+  "@appTitle": {
+    "description": "The application title"
+  },
+  "homeReady": "Your device is set up. Tasks and goals arrive in the next milestone.",
+  "@homeReady": {
+    "description": "Placeholder home screen text shown once the identity is ready"
+  },
+  "homeUserId": "User ID: {id}",
+  "@homeUserId": {
+    "description": "Shows the opaque user ID on the placeholder home screen",
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "homeDeviceId": "Device ID: {id}",
+  "@homeDeviceId": {
+    "description": "Shows this device's opaque ID on the placeholder home screen",
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "startupError": "Something went wrong while starting up: {error}",
+  "@startupError": {
+    "description": "Shown if the database or identity key could not be loaded",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  }
+}
