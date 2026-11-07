@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.9
+          cache: true
+
+      - run: flutter pub get
+
+      # Fails if generated Drift / l10n code was not regenerated and committed.
+      - run: dart run build_runner build
+      - run: flutter gen-l10n
+      - run: git diff --exit-code -- lib
+
+      - run: flutter analyze
+      - run: flutter test
