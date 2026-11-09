@@ -42,6 +42,13 @@ void main() {
       IdentityService.userKeySecret,
       IdentityService.deviceKeySecret,
     });
+
+    // Synced rows go through the change log; the local devices row does not.
+    final ops = await db.select(db.changeLog).get();
+    expect(ops.map((o) => o.rowTable).toSet(),
+        {'spaces', 'users', 'space_members'});
+    expect(ops.map((o) => o.rowId).toSet(),
+        {space.id, user.id, member.id});
   });
 
   test('later runs load the same identity instead of making a new one',

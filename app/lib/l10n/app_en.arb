@@ -4,34 +4,549 @@
   "@appTitle": {
     "description": "The application title"
   },
-  "homeReady": "Your device is set up. Tasks and goals arrive in the next milestone.",
-  "@homeReady": {
-    "description": "Placeholder home screen text shown once the identity is ready"
-  },
-  "homeUserId": "User ID: {id}",
-  "@homeUserId": {
-    "description": "Shows the opaque user ID on the placeholder home screen",
-    "placeholders": {
-      "id": {
-        "type": "String"
-      }
-    }
-  },
-  "homeDeviceId": "Device ID: {id}",
-  "@homeDeviceId": {
-    "description": "Shows this device's opaque ID on the placeholder home screen",
-    "placeholders": {
-      "id": {
-        "type": "String"
-      }
-    }
-  },
   "startupError": "Something went wrong while starting up: {error}",
   "@startupError": {
     "description": "Shown if the database or identity key could not be loaded",
     "placeholders": {
       "error": {
         "type": "String"
+      }
+    }
+  },
+  "newItem": "New item",
+  "@newItem": {
+    "description": "Button that creates a new top-level node"
+  },
+  "untitled": "Untitled",
+  "@untitled": {
+    "description": "Shown in place of an empty node title"
+  },
+  "treeEmpty": "Nothing here yet. Create your first goal, project or task.",
+  "@treeEmpty": {
+    "description": "Tree pane text when there are no nodes"
+  },
+  "noSelection": "Select an item to see its details.",
+  "@noSelection": {
+    "description": "Detail pane text when no node is selected"
+  },
+  "itemNotFound": "This item no longer exists.",
+  "@itemNotFound": {
+    "description": "Detail pane text when the node was removed"
+  },
+  "titleHint": "Title",
+  "@titleHint": {
+    "description": "Hint in the node title field"
+  },
+  "fieldType": "Type",
+  "@fieldType": {
+    "description": "Label of the node type picker"
+  },
+  "fieldStatus": "Status",
+  "@fieldStatus": {
+    "description": "Label of the node status picker"
+  },
+  "closeDescription": "Close description",
+  "editDescription": "Edit description",
+  "descriptionHint": "Description (Markdown)",
+  "@descriptionHint": {
+    "description": "Hint in an item's description field"
+  },
+  "childrenHeading": "Items",
+  "@childrenHeading": {
+    "description": "Heading above a node's children in the detail pane"
+  },
+  "addChildHint": "Add an item and press Enter",
+  "@addChildHint": {
+    "description": "Hint in the quick-add field for child nodes"
+  },
+  "expand": "Expand",
+  "@expand": {
+    "description": "Tooltip on the tree row arrow when collapsed"
+  },
+  "collapse": "Collapse",
+  "@collapse": {
+    "description": "Tooltip on the tree row arrow when expanded"
+  },
+  "typeGoal": "Goal",
+  "typeProject": "Project",
+  "typeTask": "Task",
+  "typeIdea": "Idea",
+  "typeNote": "Note",
+  "statusOpen": "Open",
+  "statusActive": "Active",
+  "statusWaiting": "Waiting",
+  "statusDone": "Done",
+  "statusDropped": "Dropped",
+  "actionDone": "Done",
+  "actionDoneToday": "Done for today",
+  "actionDoneFor": "Done for {date}",
+  "@actionDoneFor": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "completed": "Completed",
+  "completedOn": "Completed {date}",
+  "@completedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "completedToday": "Completed for today",
+  "completedFor": "Completed for {date}",
+  "@completedFor": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "markedDone": "Done: {title}",
+  "@markedDone": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "reopen": "Reopen",
+  "movedItem": "Moved {title}",
+  "@movedItem": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "reorderHandle": "Drag to reorder",
+  "repeatNotStarted": "Starts {date}",
+  "@repeatNotStarted": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "addDescription": "Description",
+  "@addDescription": {
+    "description": "Chip that adds a description field to an item"
+  },
+  "addDeadline": "Deadline",
+  "@addDeadline": {
+    "description": "Chip that adds a deadline to an item"
+  },
+  "addDateTime": "Date & time",
+  "@addDateTime": {
+    "description": "Chip that gives an item a time slot, making it an event"
+  },
+  "addRepeat": "Repeat",
+  "@addRepeat": {
+    "description": "Chip that makes an item repeat (a routine); also the repeat dialog title"
+  },
+  "showAsList": "Show as list",
+  "@showAsList": {
+    "description": "Toggle that shows an item's children as a checklist"
+  },
+  "dueOn": "Due {date}",
+  "@dueOn": {
+    "description": "Deadline chip text",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleSummary": "{date} · {start}–{end}",
+  "@scheduleSummary": {
+    "description": "Time slot chip text",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
+  "pickStartTime": "Start time",
+  "@pickStartTime": {
+    "description": "Heading of the start time picker"
+  },
+  "pickEndTime": "End time",
+  "@pickEndTime": {
+    "description": "Heading of the end time picker"
+  },
+  "repeatWeekdays": "Every weekday",
+  "@repeatWeekdays": {
+    "description": "Repeat summary and option: Monday to Friday"
+  },
+  "repeatWeeklyOption": "Weekly pattern",
+  "@repeatWeeklyOption": {
+    "description": "Repeat option: on chosen days of the week, every N weeks"
+  },
+  "repeatMonthlyOption": "Monthly",
+  "@repeatMonthlyOption": {
+    "description": "Repeat option: on a day of the month"
+  },
+  "repeatMonthDay": "Day of the month",
+  "@repeatMonthDay": {
+    "description": "Label of the day-of-month picker in the repeat dialog"
+  },
+  "repeatCustom": "Custom repeat ({rule})",
+  "@repeatCustom": {
+    "description": "Repeat summary for a rule this version can't show",
+    "placeholders": {
+      "rule": {
+        "type": "String"
+      }
+    }
+  },
+  "remove": "Remove",
+  "@remove": {
+    "description": "Tooltip on the x of an item's deadline, time slot or repeat chip"
+  },
+  "sectionTimeSlot": "Time slot",
+  "@sectionTimeSlot": {
+    "description": "Date & time dialog section that gives an item a start and end time (an event)"
+  },
+  "notesHeading": "Notes",
+  "@notesHeading": {
+    "description": "Heading of the notes column / section of an item"
+  },
+  "notesToggle": "Notes ({count})",
+  "@notesToggle": {
+    "description": "Button that shows or hides an item's notes column",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "newNote": "New note",
+  "@newNote": {
+    "description": "Button that adds a note to an item"
+  },
+  "notesEmpty": "No notes yet.",
+  "@notesEmpty": {
+    "description": "Notes column text when an item has no notes"
+  },
+  "noteBodyHint": "Write your note (Markdown)",
+  "@noteBodyHint": {
+    "description": "Hint in a note's text field"
+  },
+  "repeatDailyOption": "Daily",
+  "@repeatDailyOption": {
+    "description": "Repeat option: every N days"
+  },
+  "repeatEveryDays": "{n, plural, =1{Every day} other{Every {n} days}}",
+  "@repeatEveryDays": {
+    "description": "Repeat summary",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "repeatEveryWeeks": "{n, plural, =1{Every week on {days}} other{Every {n} weeks on {days}}}",
+  "@repeatEveryWeeks": {
+    "description": "Repeat summary; days is a list like 'Mon, Thu'",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "repeatEveryMonths": "{n, plural, =1{Every month on day {day}} other{Every {n} months on day {day}}}",
+  "@repeatEveryMonths": {
+    "description": "Repeat summary",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "day": {
+        "type": "int"
+      }
+    }
+  },
+  "repeatEvery": "Every",
+  "@repeatEvery": {
+    "description": "Before the interval number in the repeat section: 'Every [2] weeks'"
+  },
+  "repeatUnitDays": "{n, plural, =1{day} other{days}}",
+  "@repeatUnitDays": {
+    "description": "After the interval number",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "repeatUnitWeeks": "{n, plural, =1{week} other{weeks}}",
+  "@repeatUnitWeeks": {
+    "description": "After the interval number",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "repeatUnitMonths": "{n, plural, =1{month} other{months}}",
+  "@repeatUnitMonths": {
+    "description": "After the interval number",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "fewer": "Fewer",
+  "@fewer": {
+    "description": "Tooltip on the button that lowers the repeat interval"
+  },
+  "more": "More",
+  "@more": {
+    "description": "Tooltip on the button that raises the repeat interval"
+  },
+  "repeatStarting": "Starting {date}",
+  "@repeatStarting": {
+    "description": "Button showing (and changing) the first day of a repeat",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "exclusiveSwitch": "One sub-item at a time",
+  "@exclusiveSwitch": {
+    "description": "Switch: the item's sub-items take turns, one per occurrence"
+  },
+  "exclusiveSwitchHelp": "Suggests only the most overdue sub-item, never two at once",
+  "@exclusiveSwitchHelp": {
+    "description": "Explains the one-at-a-time switch"
+  },
+  "exclusiveChip": "{summary} · one at a time",
+  "@exclusiveChip": {
+    "description": "Repeat chip text when sub-items take turns",
+    "placeholders": {
+      "summary": {
+        "type": "String"
+      }
+    }
+  },
+  "exclusiveNext": "Next up: {title}",
+  "@exclusiveNext": {
+    "description": "Which sub-item is suggested now",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "exclusiveDone": "Done: {title}",
+  "@exclusiveDone": {
+    "description": "The sub-item already done for this occurrence",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "exclusiveNothing": "Nothing due right now",
+  "@exclusiveNothing": {
+    "description": "No sub-item of a one-at-a-time set is due"
+  },
+  "markDone": "Mark done",
+  "@markDone": {
+    "description": "Button that completes the suggested sub-item"
+  },
+  "undo": "Undo",
+  "@undo": {
+    "description": "Button that undoes a completion"
+  },
+  "cadenceParent": "Parent's schedule",
+  "@cadenceParent": {
+    "description": "Sub-item with no repeat of its own, in a one-at-a-time set"
+  },
+  "lastDoneOn": "last done {date}",
+  "@lastDoneOn": {
+    "description": "When a sub-item was last done",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "neverDone": "not done yet",
+  "@neverDone": {
+    "description": "A sub-item that has never been done"
+  },
+  "overdueDays": "{n, plural, =0{due today} =1{1 day overdue} other{{n} days overdue}}",
+  "@overdueDays": {
+    "description": "How late the suggested sub-item is",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "actionArchive": "Archive",
+  "actionMoveToTrash": "Move to Trash",
+  "actionDeleteForever": "Delete forever",
+  "actionEmptyTrash": "Empty Trash",
+  "actionRestore": "Restore",
+  "moreActions": "More actions",
+  "archiveConfirmTitle": "Archive {title}?",
+  "@archiveConfirmTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "archiveConfirmBody": "{count, plural, =0{It will be hidden but kept. You can restore it from the Archive.} =1{It and 1 item inside it will be hidden but kept. You can restore them from the Archive.} other{It and {count} items inside it will be hidden but kept. You can restore them from the Archive.}}",
+  "@archiveConfirmBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "trashConfirmTitle": "Move {title} to Trash?",
+  "@trashConfirmTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "trashConfirmBody": "{count, plural, =0{Items in Trash are deleted after 30 days.} =1{It and 1 item inside it go to Trash. Items in Trash are deleted after 30 days.} other{It and {count} items inside it go to Trash. Items in Trash are deleted after 30 days.}}",
+  "@trashConfirmBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteForeverTitle": "Delete {title} forever?",
+  "@deleteForeverTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteForeverBody": "{count, plural, =0{This can't be undone.} =1{It and 1 item inside it will be deleted. This can't be undone.} other{It and {count} items inside it will be deleted. This can't be undone.}}",
+  "@deleteForeverBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "emptyTrashTitle": "Empty Trash?",
+  "emptyTrashBody": "Everything in Trash will be deleted forever. This can't be undone.",
+  "archivedItem": "Archived {title}",
+  "@archivedItem": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "trashedItem": "Moved {title} to Trash",
+  "@trashedItem": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "restoredItem": "Restored {title}",
+  "@restoredItem": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "restoredToTop": "Restored {title} to the top level (its old place is gone)",
+  "@restoredToTop": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "inArchive": "In the Archive",
+  "inTrash": "In Trash",
+  "inArchiveWith": "Archived with {title}",
+  "@inArchiveWith": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "inTrashWith": "In Trash with {title}",
+  "@inTrashWith": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "archiveView": "Archive",
+  "trashView": "Trash",
+  "archiveEmpty": "Nothing archived.",
+  "trashEmpty": "Trash is empty.",
+  "trashHint": "Items in Trash are deleted after 30 days.",
+  "groupOthers": "{count, plural, =1{and 1 item} other{and {count} items}}",
+  "@groupOthers": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "wasIn": "was in {title}",
+  "@wasIn": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "archivedOn": "Archived {date}",
+  "@archivedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "trashedOn": "Deleted {date}",
+  "@trashedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "daysLeft": "{count, plural, =0{deleted today} =1{1 day left} other{{count} days left}}",
+  "@daysLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
       }
     }
   }

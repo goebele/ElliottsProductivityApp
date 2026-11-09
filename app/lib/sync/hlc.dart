@@ -4,7 +4,7 @@
 /// string comparison gives the total order used for last-writer-wins.
 class Hlc implements Comparable<Hlc> {
   const Hlc(this.millis, this.counter, this.nodeId)
-      : assert(counter >= 0 && counter <= maxCounter);
+    : assert(counter >= 0 && counter <= maxCounter);
 
   static const maxCounter = 0xFFFF;
 
@@ -46,8 +46,8 @@ class Hlc implements Comparable<Hlc> {
 /// Issues HLC stamps for one device.
 class HlcClock {
   HlcClock(this.nodeId, {int Function()? wallClock, Hlc? last})
-      : _wallClock = wallClock ?? (() => DateTime.now().millisecondsSinceEpoch),
-        _last = last ?? Hlc(0, 0, nodeId);
+    : _wallClock = wallClock ?? (() => DateTime.now().millisecondsSinceEpoch),
+      _last = last ?? Hlc(0, 0, nodeId);
 
   final String nodeId;
   final int Function() _wallClock;

@@ -1,0 +1,481 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../domain/node_repository.dart';
+import '../l10n/app_localizations.dart';
+import '../providers.dart';
+import '../data/database.dart';
+import 'done_button.dart';
+import 'removal.dart';
+import 'labels.dart';
+import 'tree_providers.dart';
+
+typedef OpenNode = void Function(String id);
+
+/// The whole tree, expandable to any depth (DESIGN.md §6.1). Rows can be
+/// dragged above, below or into other rows.
+class TreePane extends ConsumerWidget {
+  const TreePane({
+    super.key,
+    required this.onOpen,
+    required this.onOpenRemoved,
+    this.selectedId,
+  });
+
+  final OpenNode onOpen;
+
+  /// Opens the Archive or Trash list.
+  final void Function(Lifecycle which) onOpenRemoved;
+
+  /// Highlighted row (wide layout only).
+  final String? selectedId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final topLevel = ref.watch(childrenProvider(null));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+          child: FilledButton.tonalIcon(
+            icon: const Icon(Icons.add),
+            label: Text(l10n.newItem),
+            onPressed: () async {
+              final repo = await ref.read(nodeRepositoryProvider.future);
+              onOpen(await repo.create(title: ''));
+            },
+          ),
+        ),
+        Expanded(
+          child: switch (topLevel) {
+            AsyncData(value: final nodes) when nodes.isEmpty => Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(l10n.treeEmpty, textAlign: TextAlign.center),
+              ),
+            ),
+            AsyncData(value: final nodes) => SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (final n in nodes)
+                    _TreeBranch(
+                      entry: n,
+                      depth: 0,
+                      onOpen: onOpen,
+                      selectedId: selectedId,
+                      place: TreePlace(
+                        parentId: null,
+                        path: const [],
+                        siblings: [for (final s in nodes) s.node.id],
+                      ),
+                    ),
+                  // Drop below everything: last at the top level.
+                  _EndDropTarget(siblings: [for (final s in nodes) s.node.id]),
+                ],
+              ),
+            ),
+            AsyncError(:final error) => Center(child: Text('$error')),
+            _ => const Center(child: CircularProgressIndicator()),
+          },
+        ),
+        RemovedEntries(onOpen: onOpenRemoved),
+      ],
+    );
+  }
+}
+
+/// A row's position in the tree, which drag and drop needs.
+class TreePlace {
+  const TreePlace({
+    required this.parentId,
+    required this.path,
+    required this.siblings,
+  });
+
+  final String? parentId;
+
+  /// Ancestors of the row, top-level first.
+  final List<String> path;
+
+  /// The row and its siblings, in order.
+  final List<String> siblings;
+}
+
+/// What is being dragged: a node and where it came from (for Undo).
+class TreeDrag {
+  const TreeDrag({required this.id, required this.title, required this.place});
+  final String id;
+  final String title;
+  final TreePlace place;
+}
+
+/// Where a drop on a row lands: just above it, inside it (as its last
+/// item), or just below it.
+enum DropZone { before, inside, after }
+
+/// Whether [drag] may be dropped on the row [id] at [place]: never on itself
+/// or anywhere inside its own subtree.
+bool canDrop(TreeDrag drag, String id, TreePlace place) =>
+    drag.id != id && !place.path.contains(drag.id);
+
+/// Moves [drag] relative to the row [targetId] at [targetPlace] (null id =
+/// the end of that list), then offers Undo.
+Future<void> moveDropped(
+  BuildContext context,
+  WidgetRef ref,
+  TreeDrag drag, {
+  required String? targetId,
+  required TreePlace targetPlace,
+  required DropZone zone,
+}) async {
+  final l10n = AppLocalizations.of(context);
+  final messenger = ScaffoldMessenger.maybeOf(context);
+  final expanded = ref.read(expandedNodesProvider.notifier);
+  final repo = await ref.read(nodeRepositoryProvider.future);
+
+  final String? newParent;
+  final int? index;
+  if (zone == DropZone.inside) {
+    newParent = targetId;
+    index = null;
+  } else {
+    newParent = targetPlace.parentId;
+    final others = [
+      for (final id in targetPlace.siblings)
+        if (id != drag.id) id,
+    ];
+    final at = targetId == null ? others.length : others.indexOf(targetId);
+    index = zone == DropZone.after && targetId != null ? at + 1 : at;
+  }
+
+  final oldParent = drag.place.parentId;
+  final oldIndex = drag.place.siblings.indexOf(drag.id);
+  if (newParent == oldParent && (index ?? -1) == oldIndex) return;
+
+  await repo.move(drag.id, newParentId: newParent, index: index);
+  if (newParent != null) expanded.expandAll([newParent]);
+  messenger
+    ?..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        content: Text(l10n.movedItem(l10n.titleOrUntitled(drag.title))),
+        action: SnackBarAction(
+          label: l10n.undo,
+          onPressed: () =>
+              repo.move(drag.id, newParentId: oldParent, index: oldIndex),
+        ),
+      ),
+    );
+}
+
+/// Touch devices start a drag with a long press; with a mouse, dragging
+/// starts as soon as the pointer moves.
+bool get touchFirst =>
+    defaultTargetPlatform == TargetPlatform.android ||
+    defaultTargetPlatform == TargetPlatform.iOS;
+
+/// One row plus, when expanded, its children.
+class _TreeBranch extends ConsumerWidget {
+  const _TreeBranch({
+    required this.entry,
+    required this.depth,
+    required this.onOpen,
+    required this.selectedId,
+    required this.place,
+  });
+
+  final NodeWithChildCount entry;
+  final int depth;
+  final OpenNode onOpen;
+  final String? selectedId;
+  final TreePlace place;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final node = entry.node;
+    final expanded = ref.watch(expandedNodesProvider).contains(node.id);
+    final hasChildren = entry.childCount > 0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _TreeRow(
+          entry: entry,
+          depth: depth,
+          expanded: expanded && hasChildren,
+          selected: node.id == selectedId,
+          onTap: () => onOpen(node.id),
+          onToggle: hasChildren
+              ? () => ref.read(expandedNodesProvider.notifier).toggle(node.id)
+              : null,
+          place: place,
+        ),
+        if (expanded && hasChildren)
+          switch (ref.watch(childrenProvider(node.id))) {
+            AsyncData(value: final children) => Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (final child in children)
+                  _TreeBranch(
+                    entry: child,
+                    depth: depth + 1,
+                    onOpen: onOpen,
+                    selectedId: selectedId,
+                    place: TreePlace(
+                      parentId: node.id,
+                      path: [...place.path, node.id],
+                      siblings: [for (final c in children) c.node.id],
+                    ),
+                  ),
+              ],
+            ),
+            _ => const SizedBox.shrink(),
+          },
+      ],
+    );
+  }
+}
+
+class _TreeRow extends ConsumerStatefulWidget {
+  const _TreeRow({
+    required this.entry,
+    required this.depth,
+    required this.expanded,
+    required this.selected,
+    required this.onTap,
+    required this.onToggle,
+    required this.place,
+  });
+
+  final NodeWithChildCount entry;
+  final int depth;
+  final bool expanded;
+  final bool selected;
+  final VoidCallback onTap;
+  final VoidCallback? onToggle;
+  final TreePlace place;
+
+  @override
+  ConsumerState<_TreeRow> createState() => _TreeRowState();
+}
+
+class _TreeRowState extends ConsumerState<_TreeRow> {
+  /// Right-click on an item opens its status menu at the pointer (notes have
+  /// no status); with a mouse, so does long-press. On touch, long-press
+  /// drags instead.
+  final _menu = MenuController();
+
+  /// Where a drag hovering over this row would land, if one is.
+  DropZone? _zone;
+
+  DropZone _zoneAt(Offset global) {
+    final box = context.findRenderObject()! as RenderBox;
+    final y = box.globalToLocal(global).dy / box.size.height;
+    // Notes don't hold items, so there is no "inside" band.
+    if (!widget.entry.node.type.isItem) {
+      return y < 0.5 ? DropZone.before : DropZone.after;
+    }
+    if (y < 0.25) return DropZone.before;
+    if (y > 0.75) return DropZone.after;
+    return DropZone.inside;
+  }
+
+  void _setZone(DropZone? zone) {
+    if (zone != _zone) setState(() => _zone = zone);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final _TreeRow(:entry, :depth, :expanded, :selected, :onTap, :onToggle) =
+        widget;
+    final node = entry.node;
+    final done = isFinished(node.status);
+    final hasStatus = node.type.isItem;
+    final indent = 4.0 + depth * 20;
+
+    final content = Padding(
+      padding: EdgeInsets.only(left: indent, right: 12),
+      child: SizedBox(
+        height: 40,
+        child: Row(
+          children: [
+            SizedBox(
+              width: 32,
+              child: onToggle == null
+                  ? null
+                  : IconButton(
+                      iconSize: 20,
+                      padding: EdgeInsets.zero,
+                      tooltip: expanded ? l10n.collapse : l10n.expand,
+                      icon: Icon(
+                        expanded ? Icons.expand_more : Icons.chevron_right,
+                      ),
+                      onPressed: onToggle,
+                    ),
+            ),
+            SizedBox(
+              width: 18,
+              child: switch (nodeIcon(node)) {
+                final icon? => Icon(
+                  icon,
+                  size: 18,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                null => null,
+              },
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                l10n.titleOrUntitled(node.title),
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  decoration: done ? TextDecoration.lineThrough : null,
+                  color: node.title.trim().isEmpty || done
+                      ? theme.colorScheme.onSurfaceVariant
+                      : null,
+                ),
+              ),
+            ),
+            if (entry.childCount > 0)
+              Text(
+                '${entry.childCount}',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+
+    final row = MenuAnchor(
+      controller: _menu,
+      menuChildren: hasStatus ? statusMenuItems(context, ref, node) : const [],
+      child: Material(
+        color: _zone == DropZone.inside
+            ? theme.colorScheme.primaryContainer
+            : selected
+            ? theme.colorScheme.secondaryContainer
+            : Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          onSecondaryTapUp: hasStatus
+              ? (d) => _menu.open(position: d.localPosition)
+              : null,
+          onLongPress: hasStatus && !touchFirst ? () => _menu.open() : null,
+          child: content,
+        ),
+      ),
+    );
+
+    final drag = TreeDrag(id: node.id, title: node.title, place: widget.place);
+    final feedback = Material(
+      elevation: 4,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Text(l10n.titleOrUntitled(node.title)),
+      ),
+    );
+    final dimmed = Opacity(opacity: 0.4, child: row);
+    final draggable = touchFirst
+        ? LongPressDraggable<TreeDrag>(
+            data: drag,
+            dragAnchorStrategy: pointerDragAnchorStrategy,
+            feedback: feedback,
+            childWhenDragging: dimmed,
+            child: row,
+          )
+        : Draggable<TreeDrag>(
+            data: drag,
+            dragAnchorStrategy: pointerDragAnchorStrategy,
+            feedback: feedback,
+            childWhenDragging: dimmed,
+            child: row,
+          );
+
+    return DragTarget<TreeDrag>(
+      onWillAcceptWithDetails: (d) => canDrop(d.data, node.id, widget.place),
+      onMove: (d) {
+        if (canDrop(d.data, node.id, widget.place)) _setZone(_zoneAt(d.offset));
+      },
+      onLeave: (_) => _setZone(null),
+      onAcceptWithDetails: (d) {
+        final zone = _zoneAt(d.offset);
+        _setZone(null);
+        moveDropped(
+          context,
+          ref,
+          d.data,
+          targetId: node.id,
+          targetPlace: widget.place,
+          zone: zone,
+        );
+      },
+      builder: (context, candidates, rejected) {
+        final zone = _zone;
+        // A line where the item would land, above or below this row. The
+        // Stack is always there so rows keep their state while hovered.
+        return Stack(
+          children: [
+            draggable,
+            if (zone == DropZone.before || zone == DropZone.after)
+              Positioned(
+                left: indent + 32,
+                right: 8,
+                top: zone == DropZone.before ? 0 : null,
+                bottom: zone == DropZone.after ? 0 : null,
+                child: IgnorePointer(
+                  child: Container(height: 2, color: theme.colorScheme.primary),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// Space under the last top-level row: dropping there moves the item to the
+/// end of the top level.
+class _EndDropTarget extends ConsumerWidget {
+  const _EndDropTarget({required this.siblings});
+
+  final List<String> siblings;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final place = TreePlace(parentId: null, path: const [], siblings: siblings);
+    return DragTarget<TreeDrag>(
+      onAcceptWithDetails: (d) => moveDropped(
+        context,
+        ref,
+        d.data,
+        targetId: null,
+        targetPlace: place,
+        zone: DropZone.after,
+      ),
+      builder: (context, candidates, _) => Container(
+        height: 48,
+        alignment: Alignment.topCenter,
+        child: candidates.isEmpty
+            ? null
+            : Container(
+                margin: const EdgeInsets.fromLTRB(36, 0, 8, 0),
+                height: 2,
+                color: theme.colorScheme.primary,
+              ),
+      ),
+    );
+  }
+}
