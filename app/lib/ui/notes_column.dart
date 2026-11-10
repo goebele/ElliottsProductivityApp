@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../domain/markdown_format.dart';
 import '../data/database.dart';
 import '../l10n/app_localizations.dart';
 import '../providers.dart';
 import 'labels.dart';
+import 'linked_notes.dart';
 import 'tree_pane.dart';
 import 'tree_providers.dart';
+
+/// The item's own notes plus the ones from above.
+int _noteCount(WidgetRef ref, String parentId) =>
+    (ref.watch(notesProvider(parentId)).value?.length ?? 0) +
+    (ref.watch(linkedNotesProvider(parentId)).value?.length ?? 0);
 
 /// "Notes (n)" button that opens or closes the notes column (wide layout).
 class NotesToggle extends ConsumerWidget {
@@ -17,7 +24,7 @@ class NotesToggle extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final count = ref.watch(notesProvider(parentId)).value?.length ?? 0;
+    final count = _noteCount(ref, parentId);
     final open = ref.watch(notesColumnOpenProvider);
     return TextButton.icon(
       icon: Icon(open ? Icons.sticky_note_2 : Icons.sticky_note_2_outlined),
@@ -28,7 +35,8 @@ class NotesToggle extends ConsumerWidget {
 }
 
 /// The column beside an item listing its notes (DESIGN.md §6.1, v0.5).
-/// Documents (M4) and items linked from ancestors (§6.10) will join it.
+/// Below them, notes from above: linked or shared down by ancestors (§6.10).
+/// Documents (M3) will join it.
 class NotesColumn extends StatelessWidget {
   const NotesColumn({super.key, required this.parentId, required this.onOpen});
 
@@ -44,6 +52,7 @@ class NotesColumn extends StatelessWidget {
         Text(l10n.notesHeading, style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
         NotesList(parentId: parentId, onOpen: onOpen),
+        LinkedNotesList(childId: parentId, onOpen: onOpen),
       ],
     );
   }
@@ -59,13 +68,16 @@ class NotesSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final count = ref.watch(notesProvider(parentId)).value?.length ?? 0;
+    final count = _noteCount(ref, parentId);
     return ExpansionTile(
       tilePadding: EdgeInsets.zero,
       childrenPadding: const EdgeInsets.only(bottom: 8),
       leading: const Icon(Icons.sticky_note_2_outlined),
       title: Text(l10n.notesToggle(count)),
-      children: [NotesList(parentId: parentId, onOpen: onOpen)],
+      children: [
+        NotesList(parentId: parentId, onOpen: onOpen),
+        LinkedNotesList(childId: parentId, onOpen: onOpen),
+      ],
     );
   }
 }
@@ -109,10 +121,21 @@ class NotesList extends ConsumerWidget {
               subtitle: note.bodyMd.trim().isEmpty
                   ? null
                   : Text(
-                      note.bodyMd.trim(),
+                      markdownPlainText(note.bodyMd),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
+              trailing: IconButton(
+                tooltip: note.sharedWithChildren
+                    ? l10n.stopSharing
+                    : l10n.shareWithAll,
+                isSelected: note.sharedWithChildren,
+                icon: const Icon(Icons.push_pin_outlined),
+                selectedIcon: const Icon(Icons.push_pin),
+                onPressed: () async =>
+                    (await ref.read(nodeRepositoryProvider.future))
+                        .setNoteShared(note.id, !note.sharedWithChildren),
+              ),
               onTap: () => onOpen(note.id),
             ),
           ),

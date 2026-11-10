@@ -72,11 +72,11 @@ class TreePane extends ConsumerWidget {
                       place: TreePlace(
                         parentId: null,
                         path: const [],
-                        siblings: [for (final s in nodes) s.node.id],
+                        siblings: [for (final s in nodes) s.key],
                       ),
                     ),
                   // Drop below everything: last at the top level.
-                  _EndDropTarget(siblings: [for (final s in nodes) s.node.id]),
+                  _EndDropTarget(siblings: [for (final s in nodes) s.key]),
                 ],
               ),
             ),
@@ -103,16 +103,27 @@ class TreePlace {
   /// Ancestors of the row, top-level first.
   final List<String> path;
 
-  /// The row and its siblings, in order.
+  /// Row keys ([NodeWithChildCount.key]) of the row and its siblings, in
+  /// order.
   final List<String> siblings;
 }
 
-/// What is being dragged: a node and where it came from (for Undo).
+/// What is being dragged: a node (or one of its shortcuts) and where it came
+/// from (for Undo).
 class TreeDrag {
-  const TreeDrag({required this.id, required this.title, required this.place});
+  const TreeDrag({
+    required this.id,
+    required this.title,
+    required this.place,
+    this.placementId,
+  });
   final String id;
   final String title;
   final TreePlace place;
+
+  /// Set when a shortcut row is dragged: the shortcut moves, not the node.
+  final String? placementId;
+  String get key => placementId ?? id;
 }
 
 /// Where a drop on a row lands: just above it, inside it (as its last
@@ -124,16 +135,19 @@ enum DropZone { before, inside, after }
 bool canDrop(TreeDrag drag, String id, TreePlace place) =>
     drag.id != id && !place.path.contains(drag.id);
 
-/// Moves [drag] relative to the row [targetId] at [targetPlace] (null id =
-/// the end of that list), then offers Undo.
+/// Moves [drag] relative to the row for node [targetId] (row key
+/// [targetKey]) at [targetPlace] (null = the end of that list), then offers
+/// Undo. A dragged shortcut moves only the shortcut.
 Future<void> moveDropped(
   BuildContext context,
   WidgetRef ref,
   TreeDrag drag, {
   required String? targetId,
+  String? targetKey,
   required TreePlace targetPlace,
   required DropZone zone,
 }) async {
+  targetKey ??= targetId;
   final l10n = AppLocalizations.of(context);
   final messenger = ScaffoldMessenger.maybeOf(context);
   final expanded = ref.read(expandedNodesProvider.notifier);
@@ -147,18 +161,29 @@ Future<void> moveDropped(
   } else {
     newParent = targetPlace.parentId;
     final others = [
-      for (final id in targetPlace.siblings)
-        if (id != drag.id) id,
+      for (final key in targetPlace.siblings)
+        if (key != drag.key) key,
     ];
-    final at = targetId == null ? others.length : others.indexOf(targetId);
-    index = zone == DropZone.after && targetId != null ? at + 1 : at;
+    final at = targetKey == null ? others.length : others.indexOf(targetKey);
+    index = zone == DropZone.after && targetKey != null ? at + 1 : at;
   }
 
   final oldParent = drag.place.parentId;
-  final oldIndex = drag.place.siblings.indexOf(drag.id);
+  final oldIndex = drag.place.siblings.indexOf(drag.key);
   if (newParent == oldParent && (index ?? -1) == oldIndex) return;
 
-  await repo.move(drag.id, newParentId: newParent, index: index);
+  Future<void> moveTo(String? parent, int? at) => drag.placementId == null
+      ? repo.move(drag.id, newParentId: parent, index: at)
+      : repo.movePlacement(drag.placementId!, newParentId: parent, index: at);
+  try {
+    await moveTo(newParent, index);
+  } on MoveWouldCreateCycleException {
+    messenger?.showSnackBar(SnackBar(content: Text(l10n.cantMoveThere)));
+    return;
+  } on PlacementNotAllowedException {
+    messenger?.showSnackBar(SnackBar(content: Text(l10n.cantMoveThere)));
+    return;
+  }
   if (newParent != null) expanded.expandAll([newParent]);
   messenger
     ?..hideCurrentSnackBar()
@@ -167,8 +192,7 @@ Future<void> moveDropped(
         content: Text(l10n.movedItem(l10n.titleOrUntitled(drag.title))),
         action: SnackBarAction(
           label: l10n.undo,
-          onPressed: () =>
-              repo.move(drag.id, newParentId: oldParent, index: oldIndex),
+          onPressed: () => moveTo(oldParent, oldIndex),
         ),
       ),
     );
@@ -210,7 +234,15 @@ class _TreeBranch extends ConsumerWidget {
           depth: depth,
           expanded: expanded && hasChildren,
           selected: node.id == selectedId,
-          onTap: () => onOpen(node.id),
+          onTap: () {
+            ref
+                .read(openedViaProvider.notifier)
+                .opening(
+                  node.id,
+                  viaParent: entry.isShortcut ? place.parentId : null,
+                );
+            onOpen(node.id);
+          },
           onToggle: hasChildren
               ? () => ref.read(expandedNodesProvider.notifier).toggle(node.id)
               : null,
@@ -230,7 +262,7 @@ class _TreeBranch extends ConsumerWidget {
                     place: TreePlace(
                       parentId: node.id,
                       path: [...place.path, node.id],
-                      siblings: [for (final c in children) c.node.id],
+                      siblings: [for (final c in children) c.key],
                     ),
                   ),
               ],
@@ -345,6 +377,7 @@ class _TreeRowState extends ConsumerState<_TreeRow> {
                 ),
               ),
             ),
+            if (entry.isShortcut) const ShortcutMarker(),
             if (entry.childCount > 0)
               Text(
                 '${entry.childCount}',
@@ -359,7 +392,19 @@ class _TreeRowState extends ConsumerState<_TreeRow> {
 
     final row = MenuAnchor(
       controller: _menu,
-      menuChildren: hasStatus ? statusMenuItems(context, ref, node) : const [],
+      menuChildren: [
+        if (hasStatus) ...statusMenuItems(context, ref, node),
+        if (entry.isShortcut) ...[
+          const Divider(height: 1),
+          MenuItemButton(
+            leadingIcon: const Icon(Icons.link_off),
+            onPressed: () async =>
+                (await ref.read(nodeRepositoryProvider.future))
+                    .removePlacement(entry.placementId!),
+            child: Text(l10n.removeShortcut),
+          ),
+        ],
+      ],
       child: Material(
         color: _zone == DropZone.inside
             ? theme.colorScheme.primaryContainer
@@ -377,7 +422,12 @@ class _TreeRowState extends ConsumerState<_TreeRow> {
       ),
     );
 
-    final drag = TreeDrag(id: node.id, title: node.title, place: widget.place);
+    final drag = TreeDrag(
+      id: node.id,
+      title: node.title,
+      place: widget.place,
+      placementId: entry.placementId,
+    );
     final feedback = Material(
       elevation: 4,
       borderRadius: BorderRadius.circular(8),
@@ -417,6 +467,7 @@ class _TreeRowState extends ConsumerState<_TreeRow> {
           ref,
           d.data,
           targetId: node.id,
+          targetKey: entry.key,
           targetPlace: widget.place,
           zone: zone,
         );
@@ -475,6 +526,27 @@ class _EndDropTarget extends ConsumerWidget {
                 height: 2,
                 color: theme.colorScheme.primary,
               ),
+      ),
+    );
+  }
+}
+
+/// The ↗ on a shortcut row: the node really lives elsewhere (§6.12).
+class ShortcutMarker extends StatelessWidget {
+  const ShortcutMarker({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Tooltip(
+      message: l10n.shortcutTooltip,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: Icon(
+          Icons.north_east,
+          size: 14,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
       ),
     );
   }

@@ -2091,6 +2091,20 @@ class $NodesTable extends Nodes with TableInfo<$NodesTable, Node> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _sharedWithChildrenMeta =
+      const VerificationMeta('sharedWithChildren');
+  @override
+  late final GeneratedColumn<bool> sharedWithChildren = GeneratedColumn<bool>(
+    'shared_with_children',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("shared_with_children" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   late final GeneratedColumnWithTypeConverter<Lifecycle, String> lifecycle =
       GeneratedColumn<String>(
@@ -2152,6 +2166,7 @@ class $NodesTable extends Nodes with TableInfo<$NodesTable, Node> {
     rrule,
     repeatStart,
     exclusiveChildren,
+    sharedWithChildren,
     lifecycle,
     lifecycleAt,
     lifecycleRootId,
@@ -2340,6 +2355,15 @@ class $NodesTable extends Nodes with TableInfo<$NodesTable, Node> {
         ),
       );
     }
+    if (data.containsKey('shared_with_children')) {
+      context.handle(
+        _sharedWithChildrenMeta,
+        sharedWithChildren.isAcceptableOrUnknown(
+          data['shared_with_children']!,
+          _sharedWithChildrenMeta,
+        ),
+      );
+    }
     if (data.containsKey('lifecycle_at')) {
       context.handle(
         _lifecycleAtMeta,
@@ -2481,6 +2505,10 @@ class $NodesTable extends Nodes with TableInfo<$NodesTable, Node> {
         DriftSqlType.bool,
         data['${effectivePrefix}exclusive_children'],
       )!,
+      sharedWithChildren: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}shared_with_children'],
+      )!,
       lifecycle: $NodesTable.$converterlifecycle.fromSql(
         attachedDatabase.typeMapping.read(
           DriftSqlType.string,
@@ -2581,6 +2609,10 @@ class Node extends DataClass implements Insertable<Node> {
   /// one of them, the one furthest past its own due date.
   final bool exclusiveChildren;
 
+  /// Notes only (§6.10): shared with every item under the note's owner, as
+  /// if each had linked it. "Pinned" for all sub-items.
+  final bool sharedWithChildren;
+
   /// Archive / Trash state, separate from [status] (§6.11).
   final Lifecycle lifecycle;
   final DateTime? lifecycleAt;
@@ -2616,6 +2648,7 @@ class Node extends DataClass implements Insertable<Node> {
     this.rrule,
     this.repeatStart,
     required this.exclusiveChildren,
+    required this.sharedWithChildren,
     required this.lifecycle,
     this.lifecycleAt,
     this.lifecycleRootId,
@@ -2684,6 +2717,7 @@ class Node extends DataClass implements Insertable<Node> {
       map['repeat_start'] = Variable<String>(repeatStart);
     }
     map['exclusive_children'] = Variable<bool>(exclusiveChildren);
+    map['shared_with_children'] = Variable<bool>(sharedWithChildren);
     {
       map['lifecycle'] = Variable<String>(
         $NodesTable.$converterlifecycle.toSql(lifecycle),
@@ -2753,6 +2787,7 @@ class Node extends DataClass implements Insertable<Node> {
           ? const Value.absent()
           : Value(repeatStart),
       exclusiveChildren: Value(exclusiveChildren),
+      sharedWithChildren: Value(sharedWithChildren),
       lifecycle: Value(lifecycle),
       lifecycleAt: lifecycleAt == null && nullToAbsent
           ? const Value.absent()
@@ -2796,6 +2831,7 @@ class Node extends DataClass implements Insertable<Node> {
       rrule: serializer.fromJson<String?>(json['rrule']),
       repeatStart: serializer.fromJson<String?>(json['repeatStart']),
       exclusiveChildren: serializer.fromJson<bool>(json['exclusiveChildren']),
+      sharedWithChildren: serializer.fromJson<bool>(json['sharedWithChildren']),
       lifecycle: $NodesTable.$converterlifecycle.fromJson(
         serializer.fromJson<String>(json['lifecycle']),
       ),
@@ -2834,6 +2870,7 @@ class Node extends DataClass implements Insertable<Node> {
       'rrule': serializer.toJson<String?>(rrule),
       'repeatStart': serializer.toJson<String?>(repeatStart),
       'exclusiveChildren': serializer.toJson<bool>(exclusiveChildren),
+      'sharedWithChildren': serializer.toJson<bool>(sharedWithChildren),
       'lifecycle': serializer.toJson<String>(
         $NodesTable.$converterlifecycle.toJson(lifecycle),
       ),
@@ -2870,6 +2907,7 @@ class Node extends DataClass implements Insertable<Node> {
     Value<String?> rrule = const Value.absent(),
     Value<String?> repeatStart = const Value.absent(),
     bool? exclusiveChildren,
+    bool? sharedWithChildren,
     Lifecycle? lifecycle,
     Value<DateTime?> lifecycleAt = const Value.absent(),
     Value<String?> lifecycleRootId = const Value.absent(),
@@ -2903,6 +2941,7 @@ class Node extends DataClass implements Insertable<Node> {
     rrule: rrule.present ? rrule.value : this.rrule,
     repeatStart: repeatStart.present ? repeatStart.value : this.repeatStart,
     exclusiveChildren: exclusiveChildren ?? this.exclusiveChildren,
+    sharedWithChildren: sharedWithChildren ?? this.sharedWithChildren,
     lifecycle: lifecycle ?? this.lifecycle,
     lifecycleAt: lifecycleAt.present ? lifecycleAt.value : this.lifecycleAt,
     lifecycleRootId: lifecycleRootId.present
@@ -2950,6 +2989,9 @@ class Node extends DataClass implements Insertable<Node> {
       exclusiveChildren: data.exclusiveChildren.present
           ? data.exclusiveChildren.value
           : this.exclusiveChildren,
+      sharedWithChildren: data.sharedWithChildren.present
+          ? data.sharedWithChildren.value
+          : this.sharedWithChildren,
       lifecycle: data.lifecycle.present ? data.lifecycle.value : this.lifecycle,
       lifecycleAt: data.lifecycleAt.present
           ? data.lifecycleAt.value
@@ -2990,6 +3032,7 @@ class Node extends DataClass implements Insertable<Node> {
           ..write('rrule: $rrule, ')
           ..write('repeatStart: $repeatStart, ')
           ..write('exclusiveChildren: $exclusiveChildren, ')
+          ..write('sharedWithChildren: $sharedWithChildren, ')
           ..write('lifecycle: $lifecycle, ')
           ..write('lifecycleAt: $lifecycleAt, ')
           ..write('lifecycleRootId: $lifecycleRootId')
@@ -3026,6 +3069,7 @@ class Node extends DataClass implements Insertable<Node> {
     rrule,
     repeatStart,
     exclusiveChildren,
+    sharedWithChildren,
     lifecycle,
     lifecycleAt,
     lifecycleRootId,
@@ -3061,6 +3105,7 @@ class Node extends DataClass implements Insertable<Node> {
           other.rrule == this.rrule &&
           other.repeatStart == this.repeatStart &&
           other.exclusiveChildren == this.exclusiveChildren &&
+          other.sharedWithChildren == this.sharedWithChildren &&
           other.lifecycle == this.lifecycle &&
           other.lifecycleAt == this.lifecycleAt &&
           other.lifecycleRootId == this.lifecycleRootId);
@@ -3094,6 +3139,7 @@ class NodesCompanion extends UpdateCompanion<Node> {
   final Value<String?> rrule;
   final Value<String?> repeatStart;
   final Value<bool> exclusiveChildren;
+  final Value<bool> sharedWithChildren;
   final Value<Lifecycle> lifecycle;
   final Value<DateTime?> lifecycleAt;
   final Value<String?> lifecycleRootId;
@@ -3126,6 +3172,7 @@ class NodesCompanion extends UpdateCompanion<Node> {
     this.rrule = const Value.absent(),
     this.repeatStart = const Value.absent(),
     this.exclusiveChildren = const Value.absent(),
+    this.sharedWithChildren = const Value.absent(),
     this.lifecycle = const Value.absent(),
     this.lifecycleAt = const Value.absent(),
     this.lifecycleRootId = const Value.absent(),
@@ -3159,6 +3206,7 @@ class NodesCompanion extends UpdateCompanion<Node> {
     this.rrule = const Value.absent(),
     this.repeatStart = const Value.absent(),
     this.exclusiveChildren = const Value.absent(),
+    this.sharedWithChildren = const Value.absent(),
     this.lifecycle = const Value.absent(),
     this.lifecycleAt = const Value.absent(),
     this.lifecycleRootId = const Value.absent(),
@@ -3200,6 +3248,7 @@ class NodesCompanion extends UpdateCompanion<Node> {
     Expression<String>? rrule,
     Expression<String>? repeatStart,
     Expression<bool>? exclusiveChildren,
+    Expression<bool>? sharedWithChildren,
     Expression<String>? lifecycle,
     Expression<DateTime>? lifecycleAt,
     Expression<String>? lifecycleRootId,
@@ -3233,6 +3282,8 @@ class NodesCompanion extends UpdateCompanion<Node> {
       if (rrule != null) 'rrule': rrule,
       if (repeatStart != null) 'repeat_start': repeatStart,
       if (exclusiveChildren != null) 'exclusive_children': exclusiveChildren,
+      if (sharedWithChildren != null)
+        'shared_with_children': sharedWithChildren,
       if (lifecycle != null) 'lifecycle': lifecycle,
       if (lifecycleAt != null) 'lifecycle_at': lifecycleAt,
       if (lifecycleRootId != null) 'lifecycle_root_id': lifecycleRootId,
@@ -3268,6 +3319,7 @@ class NodesCompanion extends UpdateCompanion<Node> {
     Value<String?>? rrule,
     Value<String?>? repeatStart,
     Value<bool>? exclusiveChildren,
+    Value<bool>? sharedWithChildren,
     Value<Lifecycle>? lifecycle,
     Value<DateTime?>? lifecycleAt,
     Value<String?>? lifecycleRootId,
@@ -3301,6 +3353,7 @@ class NodesCompanion extends UpdateCompanion<Node> {
       rrule: rrule ?? this.rrule,
       repeatStart: repeatStart ?? this.repeatStart,
       exclusiveChildren: exclusiveChildren ?? this.exclusiveChildren,
+      sharedWithChildren: sharedWithChildren ?? this.sharedWithChildren,
       lifecycle: lifecycle ?? this.lifecycle,
       lifecycleAt: lifecycleAt ?? this.lifecycleAt,
       lifecycleRootId: lifecycleRootId ?? this.lifecycleRootId,
@@ -3398,6 +3451,9 @@ class NodesCompanion extends UpdateCompanion<Node> {
     if (exclusiveChildren.present) {
       map['exclusive_children'] = Variable<bool>(exclusiveChildren.value);
     }
+    if (sharedWithChildren.present) {
+      map['shared_with_children'] = Variable<bool>(sharedWithChildren.value);
+    }
     if (lifecycle.present) {
       map['lifecycle'] = Variable<String>(
         $NodesTable.$converterlifecycle.toSql(lifecycle.value),
@@ -3445,6 +3501,7 @@ class NodesCompanion extends UpdateCompanion<Node> {
           ..write('rrule: $rrule, ')
           ..write('repeatStart: $repeatStart, ')
           ..write('exclusiveChildren: $exclusiveChildren, ')
+          ..write('sharedWithChildren: $sharedWithChildren, ')
           ..write('lifecycle: $lifecycle, ')
           ..write('lifecycleAt: $lifecycleAt, ')
           ..write('lifecycleRootId: $lifecycleRootId, ')
@@ -4177,6 +4234,1401 @@ class OccurrenceCompletionsCompanion
           ..write('completedBy: $completedBy, ')
           ..write('completedAt: $completedAt, ')
           ..write('note: $note, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PlacementsTable extends Placements
+    with TableInfo<$PlacementsTable, Placement> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PlacementsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _spaceIdMeta = const VerificationMeta(
+    'spaceId',
+  );
+  @override
+  late final GeneratedColumn<String> spaceId = GeneratedColumn<String>(
+    'space_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdByMeta = const VerificationMeta(
+    'createdBy',
+  );
+  @override
+  late final GeneratedColumn<String> createdBy = GeneratedColumn<String>(
+    'created_by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedByMeta = const VerificationMeta(
+    'updatedBy',
+  );
+  @override
+  late final GeneratedColumn<String> updatedBy = GeneratedColumn<String>(
+    'updated_by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _hlcMeta = const VerificationMeta('hlc');
+  @override
+  late final GeneratedColumn<String> hlc = GeneratedColumn<String>(
+    'hlc',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
+  @override
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _nodeIdMeta = const VerificationMeta('nodeId');
+  @override
+  late final GeneratedColumn<String> nodeId = GeneratedColumn<String>(
+    'node_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _parentNodeIdMeta = const VerificationMeta(
+    'parentNodeId',
+  );
+  @override
+  late final GeneratedColumn<String> parentNodeId = GeneratedColumn<String>(
+    'parent_node_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sortKeyMeta = const VerificationMeta(
+    'sortKey',
+  );
+  @override
+  late final GeneratedColumn<String> sortKey = GeneratedColumn<String>(
+    'sort_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    spaceId,
+    createdAt,
+    createdBy,
+    updatedBy,
+    hlc,
+    deleted,
+    nodeId,
+    parentNodeId,
+    sortKey,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'placements';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Placement> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('space_id')) {
+      context.handle(
+        _spaceIdMeta,
+        spaceId.isAcceptableOrUnknown(data['space_id']!, _spaceIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_spaceIdMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('created_by')) {
+      context.handle(
+        _createdByMeta,
+        createdBy.isAcceptableOrUnknown(data['created_by']!, _createdByMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdByMeta);
+    }
+    if (data.containsKey('updated_by')) {
+      context.handle(
+        _updatedByMeta,
+        updatedBy.isAcceptableOrUnknown(data['updated_by']!, _updatedByMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedByMeta);
+    }
+    if (data.containsKey('hlc')) {
+      context.handle(
+        _hlcMeta,
+        hlc.isAcceptableOrUnknown(data['hlc']!, _hlcMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_hlcMeta);
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
+    }
+    if (data.containsKey('node_id')) {
+      context.handle(
+        _nodeIdMeta,
+        nodeId.isAcceptableOrUnknown(data['node_id']!, _nodeIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nodeIdMeta);
+    }
+    if (data.containsKey('parent_node_id')) {
+      context.handle(
+        _parentNodeIdMeta,
+        parentNodeId.isAcceptableOrUnknown(
+          data['parent_node_id']!,
+          _parentNodeIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('sort_key')) {
+      context.handle(
+        _sortKeyMeta,
+        sortKey.isAcceptableOrUnknown(data['sort_key']!, _sortKeyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sortKeyMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Placement map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Placement(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      spaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}space_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      createdBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_by'],
+      )!,
+      updatedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_by'],
+      )!,
+      hlc: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}hlc'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
+      nodeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}node_id'],
+      )!,
+      parentNodeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}parent_node_id'],
+      ),
+      sortKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sort_key'],
+      )!,
+    );
+  }
+
+  @override
+  $PlacementsTable createAlias(String alias) {
+    return $PlacementsTable(attachedDatabase, alias);
+  }
+}
+
+class Placement extends DataClass implements Insertable<Placement> {
+  /// UUIDv7.
+  final String id;
+
+  /// The space this row belongs to (§5.0, D13).
+  final String spaceId;
+  final DateTime createdAt;
+
+  /// User ID of the creator.
+  final String createdBy;
+
+  /// User ID of whoever made the latest change.
+  final String updatedBy;
+
+  /// Hybrid logical clock stamp of the latest change (see `sync/hlc.dart`).
+  final String hlc;
+
+  /// Tombstone flag. Rows are never hard-deleted until compaction.
+  final bool deleted;
+  final String nodeId;
+
+  /// Where the shortcut shows; null = the top level.
+  final String? parentNodeId;
+
+  /// Order among the parent's children (real ones and shortcuts share one
+  /// key space).
+  final String sortKey;
+  const Placement({
+    required this.id,
+    required this.spaceId,
+    required this.createdAt,
+    required this.createdBy,
+    required this.updatedBy,
+    required this.hlc,
+    required this.deleted,
+    required this.nodeId,
+    this.parentNodeId,
+    required this.sortKey,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['space_id'] = Variable<String>(spaceId);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['created_by'] = Variable<String>(createdBy);
+    map['updated_by'] = Variable<String>(updatedBy);
+    map['hlc'] = Variable<String>(hlc);
+    map['deleted'] = Variable<bool>(deleted);
+    map['node_id'] = Variable<String>(nodeId);
+    if (!nullToAbsent || parentNodeId != null) {
+      map['parent_node_id'] = Variable<String>(parentNodeId);
+    }
+    map['sort_key'] = Variable<String>(sortKey);
+    return map;
+  }
+
+  PlacementsCompanion toCompanion(bool nullToAbsent) {
+    return PlacementsCompanion(
+      id: Value(id),
+      spaceId: Value(spaceId),
+      createdAt: Value(createdAt),
+      createdBy: Value(createdBy),
+      updatedBy: Value(updatedBy),
+      hlc: Value(hlc),
+      deleted: Value(deleted),
+      nodeId: Value(nodeId),
+      parentNodeId: parentNodeId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(parentNodeId),
+      sortKey: Value(sortKey),
+    );
+  }
+
+  factory Placement.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Placement(
+      id: serializer.fromJson<String>(json['id']),
+      spaceId: serializer.fromJson<String>(json['spaceId']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      createdBy: serializer.fromJson<String>(json['createdBy']),
+      updatedBy: serializer.fromJson<String>(json['updatedBy']),
+      hlc: serializer.fromJson<String>(json['hlc']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
+      nodeId: serializer.fromJson<String>(json['nodeId']),
+      parentNodeId: serializer.fromJson<String?>(json['parentNodeId']),
+      sortKey: serializer.fromJson<String>(json['sortKey']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'spaceId': serializer.toJson<String>(spaceId),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'createdBy': serializer.toJson<String>(createdBy),
+      'updatedBy': serializer.toJson<String>(updatedBy),
+      'hlc': serializer.toJson<String>(hlc),
+      'deleted': serializer.toJson<bool>(deleted),
+      'nodeId': serializer.toJson<String>(nodeId),
+      'parentNodeId': serializer.toJson<String?>(parentNodeId),
+      'sortKey': serializer.toJson<String>(sortKey),
+    };
+  }
+
+  Placement copyWith({
+    String? id,
+    String? spaceId,
+    DateTime? createdAt,
+    String? createdBy,
+    String? updatedBy,
+    String? hlc,
+    bool? deleted,
+    String? nodeId,
+    Value<String?> parentNodeId = const Value.absent(),
+    String? sortKey,
+  }) => Placement(
+    id: id ?? this.id,
+    spaceId: spaceId ?? this.spaceId,
+    createdAt: createdAt ?? this.createdAt,
+    createdBy: createdBy ?? this.createdBy,
+    updatedBy: updatedBy ?? this.updatedBy,
+    hlc: hlc ?? this.hlc,
+    deleted: deleted ?? this.deleted,
+    nodeId: nodeId ?? this.nodeId,
+    parentNodeId: parentNodeId.present ? parentNodeId.value : this.parentNodeId,
+    sortKey: sortKey ?? this.sortKey,
+  );
+  Placement copyWithCompanion(PlacementsCompanion data) {
+    return Placement(
+      id: data.id.present ? data.id.value : this.id,
+      spaceId: data.spaceId.present ? data.spaceId.value : this.spaceId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
+      updatedBy: data.updatedBy.present ? data.updatedBy.value : this.updatedBy,
+      hlc: data.hlc.present ? data.hlc.value : this.hlc,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+      nodeId: data.nodeId.present ? data.nodeId.value : this.nodeId,
+      parentNodeId: data.parentNodeId.present
+          ? data.parentNodeId.value
+          : this.parentNodeId,
+      sortKey: data.sortKey.present ? data.sortKey.value : this.sortKey,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Placement(')
+          ..write('id: $id, ')
+          ..write('spaceId: $spaceId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedBy: $updatedBy, ')
+          ..write('hlc: $hlc, ')
+          ..write('deleted: $deleted, ')
+          ..write('nodeId: $nodeId, ')
+          ..write('parentNodeId: $parentNodeId, ')
+          ..write('sortKey: $sortKey')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    spaceId,
+    createdAt,
+    createdBy,
+    updatedBy,
+    hlc,
+    deleted,
+    nodeId,
+    parentNodeId,
+    sortKey,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Placement &&
+          other.id == this.id &&
+          other.spaceId == this.spaceId &&
+          other.createdAt == this.createdAt &&
+          other.createdBy == this.createdBy &&
+          other.updatedBy == this.updatedBy &&
+          other.hlc == this.hlc &&
+          other.deleted == this.deleted &&
+          other.nodeId == this.nodeId &&
+          other.parentNodeId == this.parentNodeId &&
+          other.sortKey == this.sortKey);
+}
+
+class PlacementsCompanion extends UpdateCompanion<Placement> {
+  final Value<String> id;
+  final Value<String> spaceId;
+  final Value<DateTime> createdAt;
+  final Value<String> createdBy;
+  final Value<String> updatedBy;
+  final Value<String> hlc;
+  final Value<bool> deleted;
+  final Value<String> nodeId;
+  final Value<String?> parentNodeId;
+  final Value<String> sortKey;
+  final Value<int> rowid;
+  const PlacementsCompanion({
+    this.id = const Value.absent(),
+    this.spaceId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.updatedBy = const Value.absent(),
+    this.hlc = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.nodeId = const Value.absent(),
+    this.parentNodeId = const Value.absent(),
+    this.sortKey = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PlacementsCompanion.insert({
+    required String id,
+    required String spaceId,
+    required DateTime createdAt,
+    required String createdBy,
+    required String updatedBy,
+    required String hlc,
+    this.deleted = const Value.absent(),
+    required String nodeId,
+    this.parentNodeId = const Value.absent(),
+    required String sortKey,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       spaceId = Value(spaceId),
+       createdAt = Value(createdAt),
+       createdBy = Value(createdBy),
+       updatedBy = Value(updatedBy),
+       hlc = Value(hlc),
+       nodeId = Value(nodeId),
+       sortKey = Value(sortKey);
+  static Insertable<Placement> custom({
+    Expression<String>? id,
+    Expression<String>? spaceId,
+    Expression<DateTime>? createdAt,
+    Expression<String>? createdBy,
+    Expression<String>? updatedBy,
+    Expression<String>? hlc,
+    Expression<bool>? deleted,
+    Expression<String>? nodeId,
+    Expression<String>? parentNodeId,
+    Expression<String>? sortKey,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (spaceId != null) 'space_id': spaceId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (createdBy != null) 'created_by': createdBy,
+      if (updatedBy != null) 'updated_by': updatedBy,
+      if (hlc != null) 'hlc': hlc,
+      if (deleted != null) 'deleted': deleted,
+      if (nodeId != null) 'node_id': nodeId,
+      if (parentNodeId != null) 'parent_node_id': parentNodeId,
+      if (sortKey != null) 'sort_key': sortKey,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PlacementsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? spaceId,
+    Value<DateTime>? createdAt,
+    Value<String>? createdBy,
+    Value<String>? updatedBy,
+    Value<String>? hlc,
+    Value<bool>? deleted,
+    Value<String>? nodeId,
+    Value<String?>? parentNodeId,
+    Value<String>? sortKey,
+    Value<int>? rowid,
+  }) {
+    return PlacementsCompanion(
+      id: id ?? this.id,
+      spaceId: spaceId ?? this.spaceId,
+      createdAt: createdAt ?? this.createdAt,
+      createdBy: createdBy ?? this.createdBy,
+      updatedBy: updatedBy ?? this.updatedBy,
+      hlc: hlc ?? this.hlc,
+      deleted: deleted ?? this.deleted,
+      nodeId: nodeId ?? this.nodeId,
+      parentNodeId: parentNodeId ?? this.parentNodeId,
+      sortKey: sortKey ?? this.sortKey,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (spaceId.present) {
+      map['space_id'] = Variable<String>(spaceId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (createdBy.present) {
+      map['created_by'] = Variable<String>(createdBy.value);
+    }
+    if (updatedBy.present) {
+      map['updated_by'] = Variable<String>(updatedBy.value);
+    }
+    if (hlc.present) {
+      map['hlc'] = Variable<String>(hlc.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
+    if (nodeId.present) {
+      map['node_id'] = Variable<String>(nodeId.value);
+    }
+    if (parentNodeId.present) {
+      map['parent_node_id'] = Variable<String>(parentNodeId.value);
+    }
+    if (sortKey.present) {
+      map['sort_key'] = Variable<String>(sortKey.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PlacementsCompanion(')
+          ..write('id: $id, ')
+          ..write('spaceId: $spaceId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedBy: $updatedBy, ')
+          ..write('hlc: $hlc, ')
+          ..write('deleted: $deleted, ')
+          ..write('nodeId: $nodeId, ')
+          ..write('parentNodeId: $parentNodeId, ')
+          ..write('sortKey: $sortKey, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LinksTable extends Links with TableInfo<$LinksTable, Link> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LinksTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _spaceIdMeta = const VerificationMeta(
+    'spaceId',
+  );
+  @override
+  late final GeneratedColumn<String> spaceId = GeneratedColumn<String>(
+    'space_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdByMeta = const VerificationMeta(
+    'createdBy',
+  );
+  @override
+  late final GeneratedColumn<String> createdBy = GeneratedColumn<String>(
+    'created_by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedByMeta = const VerificationMeta(
+    'updatedBy',
+  );
+  @override
+  late final GeneratedColumn<String> updatedBy = GeneratedColumn<String>(
+    'updated_by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _hlcMeta = const VerificationMeta('hlc');
+  @override
+  late final GeneratedColumn<String> hlc = GeneratedColumn<String>(
+    'hlc',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
+  @override
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _fromNodeIdMeta = const VerificationMeta(
+    'fromNodeId',
+  );
+  @override
+  late final GeneratedColumn<String> fromNodeId = GeneratedColumn<String>(
+    'from_node_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<LinkKind, String> targetKind =
+      GeneratedColumn<String>(
+        'target_kind',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<LinkKind>($LinksTable.$convertertargetKind);
+  static const VerificationMeta _targetIdMeta = const VerificationMeta(
+    'targetId',
+  );
+  @override
+  late final GeneratedColumn<String> targetId = GeneratedColumn<String>(
+    'target_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _urlMeta = const VerificationMeta('url');
+  @override
+  late final GeneratedColumn<String> url = GeneratedColumn<String>(
+    'url',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _labelMeta = const VerificationMeta('label');
+  @override
+  late final GeneratedColumn<String> label = GeneratedColumn<String>(
+    'label',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<LinkOrigin, String> origin =
+      GeneratedColumn<String>(
+        'origin',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<LinkOrigin>($LinksTable.$converterorigin);
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    spaceId,
+    createdAt,
+    createdBy,
+    updatedBy,
+    hlc,
+    deleted,
+    fromNodeId,
+    targetKind,
+    targetId,
+    url,
+    label,
+    origin,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'links';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Link> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('space_id')) {
+      context.handle(
+        _spaceIdMeta,
+        spaceId.isAcceptableOrUnknown(data['space_id']!, _spaceIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_spaceIdMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('created_by')) {
+      context.handle(
+        _createdByMeta,
+        createdBy.isAcceptableOrUnknown(data['created_by']!, _createdByMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdByMeta);
+    }
+    if (data.containsKey('updated_by')) {
+      context.handle(
+        _updatedByMeta,
+        updatedBy.isAcceptableOrUnknown(data['updated_by']!, _updatedByMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedByMeta);
+    }
+    if (data.containsKey('hlc')) {
+      context.handle(
+        _hlcMeta,
+        hlc.isAcceptableOrUnknown(data['hlc']!, _hlcMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_hlcMeta);
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
+    }
+    if (data.containsKey('from_node_id')) {
+      context.handle(
+        _fromNodeIdMeta,
+        fromNodeId.isAcceptableOrUnknown(
+          data['from_node_id']!,
+          _fromNodeIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_fromNodeIdMeta);
+    }
+    if (data.containsKey('target_id')) {
+      context.handle(
+        _targetIdMeta,
+        targetId.isAcceptableOrUnknown(data['target_id']!, _targetIdMeta),
+      );
+    }
+    if (data.containsKey('url')) {
+      context.handle(
+        _urlMeta,
+        url.isAcceptableOrUnknown(data['url']!, _urlMeta),
+      );
+    }
+    if (data.containsKey('label')) {
+      context.handle(
+        _labelMeta,
+        label.isAcceptableOrUnknown(data['label']!, _labelMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Link map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Link(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      spaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}space_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      createdBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_by'],
+      )!,
+      updatedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_by'],
+      )!,
+      hlc: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}hlc'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
+      fromNodeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}from_node_id'],
+      )!,
+      targetKind: $LinksTable.$convertertargetKind.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}target_kind'],
+        )!,
+      ),
+      targetId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}target_id'],
+      ),
+      url: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}url'],
+      ),
+      label: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}label'],
+      ),
+      origin: $LinksTable.$converterorigin.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}origin'],
+        )!,
+      ),
+    );
+  }
+
+  @override
+  $LinksTable createAlias(String alias) {
+    return $LinksTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<LinkKind, String> $convertertargetKind =
+      const TolerantEnumConverter(LinkKind.values, LinkKind.node);
+  static TypeConverter<LinkOrigin, String> $converterorigin =
+      const TolerantEnumConverter(LinkOrigin.values, LinkOrigin.attached);
+}
+
+class Link extends DataClass implements Insertable<Link> {
+  /// UUIDv7.
+  final String id;
+
+  /// The space this row belongs to (§5.0, D13).
+  final String spaceId;
+  final DateTime createdAt;
+
+  /// User ID of the creator.
+  final String createdBy;
+
+  /// User ID of whoever made the latest change.
+  final String updatedBy;
+
+  /// Hybrid logical clock stamp of the latest change (see `sync/hlc.dart`).
+  final String hlc;
+
+  /// Tombstone flag. Rows are never hard-deleted until compaction.
+  final bool deleted;
+  final String fromNodeId;
+  final LinkKind targetKind;
+
+  /// The linked node (for `note`, the note node). Null for `url`.
+  final String? targetId;
+  final String? url;
+  final String? label;
+  final LinkOrigin origin;
+  const Link({
+    required this.id,
+    required this.spaceId,
+    required this.createdAt,
+    required this.createdBy,
+    required this.updatedBy,
+    required this.hlc,
+    required this.deleted,
+    required this.fromNodeId,
+    required this.targetKind,
+    this.targetId,
+    this.url,
+    this.label,
+    required this.origin,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['space_id'] = Variable<String>(spaceId);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['created_by'] = Variable<String>(createdBy);
+    map['updated_by'] = Variable<String>(updatedBy);
+    map['hlc'] = Variable<String>(hlc);
+    map['deleted'] = Variable<bool>(deleted);
+    map['from_node_id'] = Variable<String>(fromNodeId);
+    {
+      map['target_kind'] = Variable<String>(
+        $LinksTable.$convertertargetKind.toSql(targetKind),
+      );
+    }
+    if (!nullToAbsent || targetId != null) {
+      map['target_id'] = Variable<String>(targetId);
+    }
+    if (!nullToAbsent || url != null) {
+      map['url'] = Variable<String>(url);
+    }
+    if (!nullToAbsent || label != null) {
+      map['label'] = Variable<String>(label);
+    }
+    {
+      map['origin'] = Variable<String>(
+        $LinksTable.$converterorigin.toSql(origin),
+      );
+    }
+    return map;
+  }
+
+  LinksCompanion toCompanion(bool nullToAbsent) {
+    return LinksCompanion(
+      id: Value(id),
+      spaceId: Value(spaceId),
+      createdAt: Value(createdAt),
+      createdBy: Value(createdBy),
+      updatedBy: Value(updatedBy),
+      hlc: Value(hlc),
+      deleted: Value(deleted),
+      fromNodeId: Value(fromNodeId),
+      targetKind: Value(targetKind),
+      targetId: targetId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(targetId),
+      url: url == null && nullToAbsent ? const Value.absent() : Value(url),
+      label: label == null && nullToAbsent
+          ? const Value.absent()
+          : Value(label),
+      origin: Value(origin),
+    );
+  }
+
+  factory Link.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Link(
+      id: serializer.fromJson<String>(json['id']),
+      spaceId: serializer.fromJson<String>(json['spaceId']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      createdBy: serializer.fromJson<String>(json['createdBy']),
+      updatedBy: serializer.fromJson<String>(json['updatedBy']),
+      hlc: serializer.fromJson<String>(json['hlc']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
+      fromNodeId: serializer.fromJson<String>(json['fromNodeId']),
+      targetKind: serializer.fromJson<LinkKind>(json['targetKind']),
+      targetId: serializer.fromJson<String?>(json['targetId']),
+      url: serializer.fromJson<String?>(json['url']),
+      label: serializer.fromJson<String?>(json['label']),
+      origin: serializer.fromJson<LinkOrigin>(json['origin']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'spaceId': serializer.toJson<String>(spaceId),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'createdBy': serializer.toJson<String>(createdBy),
+      'updatedBy': serializer.toJson<String>(updatedBy),
+      'hlc': serializer.toJson<String>(hlc),
+      'deleted': serializer.toJson<bool>(deleted),
+      'fromNodeId': serializer.toJson<String>(fromNodeId),
+      'targetKind': serializer.toJson<LinkKind>(targetKind),
+      'targetId': serializer.toJson<String?>(targetId),
+      'url': serializer.toJson<String?>(url),
+      'label': serializer.toJson<String?>(label),
+      'origin': serializer.toJson<LinkOrigin>(origin),
+    };
+  }
+
+  Link copyWith({
+    String? id,
+    String? spaceId,
+    DateTime? createdAt,
+    String? createdBy,
+    String? updatedBy,
+    String? hlc,
+    bool? deleted,
+    String? fromNodeId,
+    LinkKind? targetKind,
+    Value<String?> targetId = const Value.absent(),
+    Value<String?> url = const Value.absent(),
+    Value<String?> label = const Value.absent(),
+    LinkOrigin? origin,
+  }) => Link(
+    id: id ?? this.id,
+    spaceId: spaceId ?? this.spaceId,
+    createdAt: createdAt ?? this.createdAt,
+    createdBy: createdBy ?? this.createdBy,
+    updatedBy: updatedBy ?? this.updatedBy,
+    hlc: hlc ?? this.hlc,
+    deleted: deleted ?? this.deleted,
+    fromNodeId: fromNodeId ?? this.fromNodeId,
+    targetKind: targetKind ?? this.targetKind,
+    targetId: targetId.present ? targetId.value : this.targetId,
+    url: url.present ? url.value : this.url,
+    label: label.present ? label.value : this.label,
+    origin: origin ?? this.origin,
+  );
+  Link copyWithCompanion(LinksCompanion data) {
+    return Link(
+      id: data.id.present ? data.id.value : this.id,
+      spaceId: data.spaceId.present ? data.spaceId.value : this.spaceId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
+      updatedBy: data.updatedBy.present ? data.updatedBy.value : this.updatedBy,
+      hlc: data.hlc.present ? data.hlc.value : this.hlc,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+      fromNodeId: data.fromNodeId.present
+          ? data.fromNodeId.value
+          : this.fromNodeId,
+      targetKind: data.targetKind.present
+          ? data.targetKind.value
+          : this.targetKind,
+      targetId: data.targetId.present ? data.targetId.value : this.targetId,
+      url: data.url.present ? data.url.value : this.url,
+      label: data.label.present ? data.label.value : this.label,
+      origin: data.origin.present ? data.origin.value : this.origin,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Link(')
+          ..write('id: $id, ')
+          ..write('spaceId: $spaceId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedBy: $updatedBy, ')
+          ..write('hlc: $hlc, ')
+          ..write('deleted: $deleted, ')
+          ..write('fromNodeId: $fromNodeId, ')
+          ..write('targetKind: $targetKind, ')
+          ..write('targetId: $targetId, ')
+          ..write('url: $url, ')
+          ..write('label: $label, ')
+          ..write('origin: $origin')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    spaceId,
+    createdAt,
+    createdBy,
+    updatedBy,
+    hlc,
+    deleted,
+    fromNodeId,
+    targetKind,
+    targetId,
+    url,
+    label,
+    origin,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Link &&
+          other.id == this.id &&
+          other.spaceId == this.spaceId &&
+          other.createdAt == this.createdAt &&
+          other.createdBy == this.createdBy &&
+          other.updatedBy == this.updatedBy &&
+          other.hlc == this.hlc &&
+          other.deleted == this.deleted &&
+          other.fromNodeId == this.fromNodeId &&
+          other.targetKind == this.targetKind &&
+          other.targetId == this.targetId &&
+          other.url == this.url &&
+          other.label == this.label &&
+          other.origin == this.origin);
+}
+
+class LinksCompanion extends UpdateCompanion<Link> {
+  final Value<String> id;
+  final Value<String> spaceId;
+  final Value<DateTime> createdAt;
+  final Value<String> createdBy;
+  final Value<String> updatedBy;
+  final Value<String> hlc;
+  final Value<bool> deleted;
+  final Value<String> fromNodeId;
+  final Value<LinkKind> targetKind;
+  final Value<String?> targetId;
+  final Value<String?> url;
+  final Value<String?> label;
+  final Value<LinkOrigin> origin;
+  final Value<int> rowid;
+  const LinksCompanion({
+    this.id = const Value.absent(),
+    this.spaceId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.updatedBy = const Value.absent(),
+    this.hlc = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.fromNodeId = const Value.absent(),
+    this.targetKind = const Value.absent(),
+    this.targetId = const Value.absent(),
+    this.url = const Value.absent(),
+    this.label = const Value.absent(),
+    this.origin = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LinksCompanion.insert({
+    required String id,
+    required String spaceId,
+    required DateTime createdAt,
+    required String createdBy,
+    required String updatedBy,
+    required String hlc,
+    this.deleted = const Value.absent(),
+    required String fromNodeId,
+    required LinkKind targetKind,
+    this.targetId = const Value.absent(),
+    this.url = const Value.absent(),
+    this.label = const Value.absent(),
+    required LinkOrigin origin,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       spaceId = Value(spaceId),
+       createdAt = Value(createdAt),
+       createdBy = Value(createdBy),
+       updatedBy = Value(updatedBy),
+       hlc = Value(hlc),
+       fromNodeId = Value(fromNodeId),
+       targetKind = Value(targetKind),
+       origin = Value(origin);
+  static Insertable<Link> custom({
+    Expression<String>? id,
+    Expression<String>? spaceId,
+    Expression<DateTime>? createdAt,
+    Expression<String>? createdBy,
+    Expression<String>? updatedBy,
+    Expression<String>? hlc,
+    Expression<bool>? deleted,
+    Expression<String>? fromNodeId,
+    Expression<String>? targetKind,
+    Expression<String>? targetId,
+    Expression<String>? url,
+    Expression<String>? label,
+    Expression<String>? origin,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (spaceId != null) 'space_id': spaceId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (createdBy != null) 'created_by': createdBy,
+      if (updatedBy != null) 'updated_by': updatedBy,
+      if (hlc != null) 'hlc': hlc,
+      if (deleted != null) 'deleted': deleted,
+      if (fromNodeId != null) 'from_node_id': fromNodeId,
+      if (targetKind != null) 'target_kind': targetKind,
+      if (targetId != null) 'target_id': targetId,
+      if (url != null) 'url': url,
+      if (label != null) 'label': label,
+      if (origin != null) 'origin': origin,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LinksCompanion copyWith({
+    Value<String>? id,
+    Value<String>? spaceId,
+    Value<DateTime>? createdAt,
+    Value<String>? createdBy,
+    Value<String>? updatedBy,
+    Value<String>? hlc,
+    Value<bool>? deleted,
+    Value<String>? fromNodeId,
+    Value<LinkKind>? targetKind,
+    Value<String?>? targetId,
+    Value<String?>? url,
+    Value<String?>? label,
+    Value<LinkOrigin>? origin,
+    Value<int>? rowid,
+  }) {
+    return LinksCompanion(
+      id: id ?? this.id,
+      spaceId: spaceId ?? this.spaceId,
+      createdAt: createdAt ?? this.createdAt,
+      createdBy: createdBy ?? this.createdBy,
+      updatedBy: updatedBy ?? this.updatedBy,
+      hlc: hlc ?? this.hlc,
+      deleted: deleted ?? this.deleted,
+      fromNodeId: fromNodeId ?? this.fromNodeId,
+      targetKind: targetKind ?? this.targetKind,
+      targetId: targetId ?? this.targetId,
+      url: url ?? this.url,
+      label: label ?? this.label,
+      origin: origin ?? this.origin,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (spaceId.present) {
+      map['space_id'] = Variable<String>(spaceId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (createdBy.present) {
+      map['created_by'] = Variable<String>(createdBy.value);
+    }
+    if (updatedBy.present) {
+      map['updated_by'] = Variable<String>(updatedBy.value);
+    }
+    if (hlc.present) {
+      map['hlc'] = Variable<String>(hlc.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
+    if (fromNodeId.present) {
+      map['from_node_id'] = Variable<String>(fromNodeId.value);
+    }
+    if (targetKind.present) {
+      map['target_kind'] = Variable<String>(
+        $LinksTable.$convertertargetKind.toSql(targetKind.value),
+      );
+    }
+    if (targetId.present) {
+      map['target_id'] = Variable<String>(targetId.value);
+    }
+    if (url.present) {
+      map['url'] = Variable<String>(url.value);
+    }
+    if (label.present) {
+      map['label'] = Variable<String>(label.value);
+    }
+    if (origin.present) {
+      map['origin'] = Variable<String>(
+        $LinksTable.$converterorigin.toSql(origin.value),
+      );
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LinksCompanion(')
+          ..write('id: $id, ')
+          ..write('spaceId: $spaceId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedBy: $updatedBy, ')
+          ..write('hlc: $hlc, ')
+          ..write('deleted: $deleted, ')
+          ..write('fromNodeId: $fromNodeId, ')
+          ..write('targetKind: $targetKind, ')
+          ..write('targetId: $targetId, ')
+          ..write('url: $url, ')
+          ..write('label: $label, ')
+          ..write('origin: $origin, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -5257,6 +6709,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $NodesTable nodes = $NodesTable(this);
   late final $OccurrenceCompletionsTable occurrenceCompletions =
       $OccurrenceCompletionsTable(this);
+  late final $PlacementsTable placements = $PlacementsTable(this);
+  late final $LinksTable links = $LinksTable(this);
   late final $ChangeLogTable changeLog = $ChangeLogTable(this);
   late final $DevicesTable devices = $DevicesTable(this);
   late final Index nodesParentSort = Index(
@@ -5266,6 +6720,22 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final Index occurrenceCompletionsNode = Index(
     'occurrence_completions_node',
     'CREATE INDEX occurrence_completions_node ON occurrence_completions (node_id, occurrence_date)',
+  );
+  late final Index placementsParent = Index(
+    'placements_parent',
+    'CREATE INDEX placements_parent ON placements (parent_node_id, sort_key)',
+  );
+  late final Index placementsNode = Index(
+    'placements_node',
+    'CREATE INDEX placements_node ON placements (node_id)',
+  );
+  late final Index linksUnique = Index(
+    'links_unique',
+    'CREATE UNIQUE INDEX links_unique ON links (from_node_id, target_kind, target_id) WHERE deleted = 0',
+  );
+  late final Index linksTarget = Index(
+    'links_target',
+    'CREATE INDEX links_target ON links (target_kind, target_id)',
   );
   late final Index changeLogHlc = Index(
     'change_log_hlc',
@@ -5285,10 +6755,16 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     spaceMembers,
     nodes,
     occurrenceCompletions,
+    placements,
+    links,
     changeLog,
     devices,
     nodesParentSort,
     occurrenceCompletionsNode,
+    placementsParent,
+    placementsNode,
+    linksUnique,
+    linksTarget,
     changeLogHlc,
     changeLogField,
   ];
@@ -6190,6 +7666,7 @@ typedef $$NodesTableCreateCompanionBuilder = NodesCompanion Function({
   Value<String?> rrule,
   Value<String?> repeatStart,
   Value<bool> exclusiveChildren,
+  Value<bool> sharedWithChildren,
   Value<Lifecycle> lifecycle,
   Value<DateTime?> lifecycleAt,
   Value<String?> lifecycleRootId,
@@ -6223,6 +7700,7 @@ typedef $$NodesTableUpdateCompanionBuilder = NodesCompanion Function({
   Value<String?> rrule,
   Value<String?> repeatStart,
   Value<bool> exclusiveChildren,
+  Value<bool> sharedWithChildren,
   Value<Lifecycle> lifecycle,
   Value<DateTime?> lifecycleAt,
   Value<String?> lifecycleRootId,
@@ -6372,6 +7850,11 @@ class $$NodesTableFilterComposer extends Composer<_$AppDatabase, $NodesTable> {
 
   ColumnFilters<bool> get exclusiveChildren => $composableBuilder(
     column: $table.exclusiveChildren,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get sharedWithChildren => $composableBuilder(
+    column: $table.sharedWithChildren,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6536,6 +8019,11 @@ class $$NodesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get sharedWithChildren => $composableBuilder(
+    column: $table.sharedWithChildren,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get lifecycle => $composableBuilder(
     column: $table.lifecycle,
     builder: (column) => ColumnOrderings(column),
@@ -6654,6 +8142,11 @@ class $$NodesTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<bool> get sharedWithChildren => $composableBuilder(
+    column: $table.sharedWithChildren,
+    builder: (column) => column,
+  );
+
   GeneratedColumnWithTypeConverter<Lifecycle, String> get lifecycle =>
       $composableBuilder(column: $table.lifecycle, builder: (column) => column);
 
@@ -6723,6 +8216,7 @@ class $$NodesTableTableManager
                 Value<String?> rrule = const Value.absent(),
                 Value<String?> repeatStart = const Value.absent(),
                 Value<bool> exclusiveChildren = const Value.absent(),
+                Value<bool> sharedWithChildren = const Value.absent(),
                 Value<Lifecycle> lifecycle = const Value.absent(),
                 Value<DateTime?> lifecycleAt = const Value.absent(),
                 Value<String?> lifecycleRootId = const Value.absent(),
@@ -6755,6 +8249,7 @@ class $$NodesTableTableManager
                 rrule: rrule,
                 repeatStart: repeatStart,
                 exclusiveChildren: exclusiveChildren,
+                sharedWithChildren: sharedWithChildren,
                 lifecycle: lifecycle,
                 lifecycleAt: lifecycleAt,
                 lifecycleRootId: lifecycleRootId,
@@ -6789,6 +8284,7 @@ class $$NodesTableTableManager
                 Value<String?> rrule = const Value.absent(),
                 Value<String?> repeatStart = const Value.absent(),
                 Value<bool> exclusiveChildren = const Value.absent(),
+                Value<bool> sharedWithChildren = const Value.absent(),
                 Value<Lifecycle> lifecycle = const Value.absent(),
                 Value<DateTime?> lifecycleAt = const Value.absent(),
                 Value<String?> lifecycleRootId = const Value.absent(),
@@ -6821,6 +8317,7 @@ class $$NodesTableTableManager
                 rrule: rrule,
                 repeatStart: repeatStart,
                 exclusiveChildren: exclusiveChildren,
+                sharedWithChildren: sharedWithChildren,
                 lifecycle: lifecycle,
                 lifecycleAt: lifecycleAt,
                 lifecycleRootId: lifecycleRootId,
@@ -7225,6 +8722,666 @@ typedef $$OccurrenceCompletionsTableProcessedTableManager =
         >,
       ),
       OccurrenceCompletion,
+      PrefetchHooks Function()
+    >;
+typedef $$PlacementsTableCreateCompanionBuilder = PlacementsCompanion Function({
+  required String id,
+  required String spaceId,
+  required DateTime createdAt,
+  required String createdBy,
+  required String updatedBy,
+  required String hlc,
+  Value<bool> deleted,
+  required String nodeId,
+  Value<String?> parentNodeId,
+  required String sortKey,
+  Value<int> rowid,
+});
+typedef $$PlacementsTableUpdateCompanionBuilder = PlacementsCompanion Function({
+  Value<String> id,
+  Value<String> spaceId,
+  Value<DateTime> createdAt,
+  Value<String> createdBy,
+  Value<String> updatedBy,
+  Value<String> hlc,
+  Value<bool> deleted,
+  Value<String> nodeId,
+  Value<String?> parentNodeId,
+  Value<String> sortKey,
+  Value<int> rowid,
+});
+
+class $$PlacementsTableFilterComposer
+    extends Composer<_$AppDatabase, $PlacementsTable> {
+  $$PlacementsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get spaceId => $composableBuilder(
+    column: $table.spaceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedBy => $composableBuilder(
+    column: $table.updatedBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get hlc => $composableBuilder(
+    column: $table.hlc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nodeId => $composableBuilder(
+    column: $table.nodeId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get parentNodeId => $composableBuilder(
+    column: $table.parentNodeId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sortKey => $composableBuilder(
+    column: $table.sortKey,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$PlacementsTableOrderingComposer
+    extends Composer<_$AppDatabase, $PlacementsTable> {
+  $$PlacementsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get spaceId => $composableBuilder(
+    column: $table.spaceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedBy => $composableBuilder(
+    column: $table.updatedBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get hlc => $composableBuilder(
+    column: $table.hlc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nodeId => $composableBuilder(
+    column: $table.nodeId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get parentNodeId => $composableBuilder(
+    column: $table.parentNodeId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sortKey => $composableBuilder(
+    column: $table.sortKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$PlacementsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PlacementsTable> {
+  $$PlacementsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get spaceId =>
+      $composableBuilder(column: $table.spaceId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get createdBy =>
+      $composableBuilder(column: $table.createdBy, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedBy =>
+      $composableBuilder(column: $table.updatedBy, builder: (column) => column);
+
+  GeneratedColumn<String> get hlc =>
+      $composableBuilder(column: $table.hlc, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+
+  GeneratedColumn<String> get nodeId =>
+      $composableBuilder(column: $table.nodeId, builder: (column) => column);
+
+  GeneratedColumn<String> get parentNodeId => $composableBuilder(
+    column: $table.parentNodeId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sortKey =>
+      $composableBuilder(column: $table.sortKey, builder: (column) => column);
+}
+
+class $$PlacementsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PlacementsTable,
+          Placement,
+          $$PlacementsTableFilterComposer,
+          $$PlacementsTableOrderingComposer,
+          $$PlacementsTableAnnotationComposer,
+          $$PlacementsTableCreateCompanionBuilder,
+          $$PlacementsTableUpdateCompanionBuilder,
+          (
+            Placement,
+            BaseReferences<_$AppDatabase, $PlacementsTable, Placement>,
+          ),
+          Placement,
+          PrefetchHooks Function()
+        > {
+  $$PlacementsTableTableManager(_$AppDatabase db, $PlacementsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PlacementsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PlacementsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PlacementsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> spaceId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<String> createdBy = const Value.absent(),
+                Value<String> updatedBy = const Value.absent(),
+                Value<String> hlc = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<String> nodeId = const Value.absent(),
+                Value<String?> parentNodeId = const Value.absent(),
+                Value<String> sortKey = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PlacementsCompanion(
+                id: id,
+                spaceId: spaceId,
+                createdAt: createdAt,
+                createdBy: createdBy,
+                updatedBy: updatedBy,
+                hlc: hlc,
+                deleted: deleted,
+                nodeId: nodeId,
+                parentNodeId: parentNodeId,
+                sortKey: sortKey,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String spaceId,
+                required DateTime createdAt,
+                required String createdBy,
+                required String updatedBy,
+                required String hlc,
+                Value<bool> deleted = const Value.absent(),
+                required String nodeId,
+                Value<String?> parentNodeId = const Value.absent(),
+                required String sortKey,
+                Value<int> rowid = const Value.absent(),
+              }) => PlacementsCompanion.insert(
+                id: id,
+                spaceId: spaceId,
+                createdAt: createdAt,
+                createdBy: createdBy,
+                updatedBy: updatedBy,
+                hlc: hlc,
+                deleted: deleted,
+                nodeId: nodeId,
+                parentNodeId: parentNodeId,
+                sortKey: sortKey,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$PlacementsTable, Placement>(table),
+                  BaseReferences<_$AppDatabase, $PlacementsTable, Placement>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$PlacementsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PlacementsTable,
+      Placement,
+      $$PlacementsTableFilterComposer,
+      $$PlacementsTableOrderingComposer,
+      $$PlacementsTableAnnotationComposer,
+      $$PlacementsTableCreateCompanionBuilder,
+      $$PlacementsTableUpdateCompanionBuilder,
+      (Placement, BaseReferences<_$AppDatabase, $PlacementsTable, Placement>),
+      Placement,
+      PrefetchHooks Function()
+    >;
+typedef $$LinksTableCreateCompanionBuilder = LinksCompanion Function({
+  required String id,
+  required String spaceId,
+  required DateTime createdAt,
+  required String createdBy,
+  required String updatedBy,
+  required String hlc,
+  Value<bool> deleted,
+  required String fromNodeId,
+  required LinkKind targetKind,
+  Value<String?> targetId,
+  Value<String?> url,
+  Value<String?> label,
+  required LinkOrigin origin,
+  Value<int> rowid,
+});
+typedef $$LinksTableUpdateCompanionBuilder = LinksCompanion Function({
+  Value<String> id,
+  Value<String> spaceId,
+  Value<DateTime> createdAt,
+  Value<String> createdBy,
+  Value<String> updatedBy,
+  Value<String> hlc,
+  Value<bool> deleted,
+  Value<String> fromNodeId,
+  Value<LinkKind> targetKind,
+  Value<String?> targetId,
+  Value<String?> url,
+  Value<String?> label,
+  Value<LinkOrigin> origin,
+  Value<int> rowid,
+});
+
+class $$LinksTableFilterComposer extends Composer<_$AppDatabase, $LinksTable> {
+  $$LinksTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get spaceId => $composableBuilder(
+    column: $table.spaceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedBy => $composableBuilder(
+    column: $table.updatedBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get hlc => $composableBuilder(
+    column: $table.hlc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fromNodeId => $composableBuilder(
+    column: $table.fromNodeId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<LinkKind, LinkKind, String> get targetKind =>
+      $composableBuilder(
+        column: $table.targetKind,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+
+  ColumnFilters<String> get targetId => $composableBuilder(
+    column: $table.targetId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get url => $composableBuilder(
+    column: $table.url,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get label => $composableBuilder(
+    column: $table.label,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<LinkOrigin, LinkOrigin, String> get origin =>
+      $composableBuilder(
+        column: $table.origin,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+}
+
+class $$LinksTableOrderingComposer
+    extends Composer<_$AppDatabase, $LinksTable> {
+  $$LinksTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get spaceId => $composableBuilder(
+    column: $table.spaceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedBy => $composableBuilder(
+    column: $table.updatedBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get hlc => $composableBuilder(
+    column: $table.hlc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fromNodeId => $composableBuilder(
+    column: $table.fromNodeId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get targetKind => $composableBuilder(
+    column: $table.targetKind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get targetId => $composableBuilder(
+    column: $table.targetId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get url => $composableBuilder(
+    column: $table.url,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get label => $composableBuilder(
+    column: $table.label,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get origin => $composableBuilder(
+    column: $table.origin,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LinksTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LinksTable> {
+  $$LinksTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get spaceId =>
+      $composableBuilder(column: $table.spaceId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get createdBy =>
+      $composableBuilder(column: $table.createdBy, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedBy =>
+      $composableBuilder(column: $table.updatedBy, builder: (column) => column);
+
+  GeneratedColumn<String> get hlc =>
+      $composableBuilder(column: $table.hlc, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+
+  GeneratedColumn<String> get fromNodeId => $composableBuilder(
+    column: $table.fromNodeId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumnWithTypeConverter<LinkKind, String> get targetKind =>
+      $composableBuilder(
+        column: $table.targetKind,
+        builder: (column) => column,
+      );
+
+  GeneratedColumn<String> get targetId =>
+      $composableBuilder(column: $table.targetId, builder: (column) => column);
+
+  GeneratedColumn<String> get url =>
+      $composableBuilder(column: $table.url, builder: (column) => column);
+
+  GeneratedColumn<String> get label =>
+      $composableBuilder(column: $table.label, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<LinkOrigin, String> get origin =>
+      $composableBuilder(column: $table.origin, builder: (column) => column);
+}
+
+class $$LinksTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LinksTable,
+          Link,
+          $$LinksTableFilterComposer,
+          $$LinksTableOrderingComposer,
+          $$LinksTableAnnotationComposer,
+          $$LinksTableCreateCompanionBuilder,
+          $$LinksTableUpdateCompanionBuilder,
+          (Link, BaseReferences<_$AppDatabase, $LinksTable, Link>),
+          Link,
+          PrefetchHooks Function()
+        > {
+  $$LinksTableTableManager(_$AppDatabase db, $LinksTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LinksTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LinksTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LinksTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> spaceId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<String> createdBy = const Value.absent(),
+                Value<String> updatedBy = const Value.absent(),
+                Value<String> hlc = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<String> fromNodeId = const Value.absent(),
+                Value<LinkKind> targetKind = const Value.absent(),
+                Value<String?> targetId = const Value.absent(),
+                Value<String?> url = const Value.absent(),
+                Value<String?> label = const Value.absent(),
+                Value<LinkOrigin> origin = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LinksCompanion(
+                id: id,
+                spaceId: spaceId,
+                createdAt: createdAt,
+                createdBy: createdBy,
+                updatedBy: updatedBy,
+                hlc: hlc,
+                deleted: deleted,
+                fromNodeId: fromNodeId,
+                targetKind: targetKind,
+                targetId: targetId,
+                url: url,
+                label: label,
+                origin: origin,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String spaceId,
+                required DateTime createdAt,
+                required String createdBy,
+                required String updatedBy,
+                required String hlc,
+                Value<bool> deleted = const Value.absent(),
+                required String fromNodeId,
+                required LinkKind targetKind,
+                Value<String?> targetId = const Value.absent(),
+                Value<String?> url = const Value.absent(),
+                Value<String?> label = const Value.absent(),
+                required LinkOrigin origin,
+                Value<int> rowid = const Value.absent(),
+              }) => LinksCompanion.insert(
+                id: id,
+                spaceId: spaceId,
+                createdAt: createdAt,
+                createdBy: createdBy,
+                updatedBy: updatedBy,
+                hlc: hlc,
+                deleted: deleted,
+                fromNodeId: fromNodeId,
+                targetKind: targetKind,
+                targetId: targetId,
+                url: url,
+                label: label,
+                origin: origin,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$LinksTable, Link>(table),
+                  BaseReferences<_$AppDatabase, $LinksTable, Link>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LinksTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LinksTable,
+      Link,
+      $$LinksTableFilterComposer,
+      $$LinksTableOrderingComposer,
+      $$LinksTableAnnotationComposer,
+      $$LinksTableCreateCompanionBuilder,
+      $$LinksTableUpdateCompanionBuilder,
+      (Link, BaseReferences<_$AppDatabase, $LinksTable, Link>),
+      Link,
       PrefetchHooks Function()
     >;
 typedef $$ChangeLogTableCreateCompanionBuilder = ChangeLogCompanion Function({
@@ -7771,6 +9928,10 @@ class $AppDatabaseManager {
       $$NodesTableTableManager(_db, _db.nodes);
   $$OccurrenceCompletionsTableTableManager get occurrenceCompletions =>
       $$OccurrenceCompletionsTableTableManager(_db, _db.occurrenceCompletions);
+  $$PlacementsTableTableManager get placements =>
+      $$PlacementsTableTableManager(_db, _db.placements);
+  $$LinksTableTableManager get links =>
+      $$LinksTableTableManager(_db, _db.links);
   $$ChangeLogTableTableManager get changeLog =>
       $$ChangeLogTableTableManager(_db, _db.changeLog);
   $$DevicesTableTableManager get devices =>

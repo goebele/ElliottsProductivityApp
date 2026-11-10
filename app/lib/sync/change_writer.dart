@@ -10,7 +10,7 @@ import 'hlc.dart';
 ///
 /// Each insert or update stamps the row with a new HLC and the author, writes
 /// it, and records one `change_log` op per field in the same transaction.
-/// Sync (M3) sends those ops to peers; undo, reports and sharing can reuse them.
+/// Sync (M7) sends those ops to peers; undo, reports and sharing can reuse them.
 ///
 /// Callers pass companions with only the fields they mean to set; the
 /// bookkeeping columns (`created_*`, `updated_by`, `hlc`) are filled in here.

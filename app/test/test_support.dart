@@ -18,12 +18,21 @@ class TestEnv {
   static Future<TestEnv> create() async {
     driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
     final db = AppDatabase(NativeDatabase.memory());
-    final identity =
-        await IdentityService(db, InMemorySecretStore()).ensureIdentity();
-    final writer = await ChangeWriter.open(db,
-        userId: identity.userId, deviceId: identity.deviceId);
-    final nodes = NodeRepository(db, writer,
-        personalSpaceId: identity.personalSpaceId, userId: identity.userId);
+    final identity = await IdentityService(
+      db,
+      InMemorySecretStore(),
+    ).ensureIdentity();
+    final writer = await ChangeWriter.open(
+      db,
+      userId: identity.userId,
+      deviceId: identity.deviceId,
+    );
+    final nodes = NodeRepository(
+      db,
+      writer,
+      personalSpaceId: identity.personalSpaceId,
+      userId: identity.userId,
+    );
     return TestEnv._(db, identity, writer, nodes);
   }
 

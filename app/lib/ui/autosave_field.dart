@@ -7,12 +7,15 @@ import 'package:flutter/material.dart';
 ///
 /// Saving per pause rather than per keystroke keeps the change log small.
 /// While the field is not focused, outside changes (e.g. from sync) replace
-/// its text.
+/// its text. Edits made through [controller] (a formatting toolbar, say) are
+/// saved the same way as typing.
 class AutosaveField extends StatefulWidget {
   const AutosaveField({
     super.key,
     required this.value,
     required this.onSave,
+    this.controller,
+    this.focusNode,
     this.decoration,
     this.style,
     this.maxLines = 1,
@@ -22,6 +25,11 @@ class AutosaveField extends StatefulWidget {
 
   final String value;
   final ValueChanged<String> onSave;
+
+  /// Optional, for callers that edit the text too. Its text is set from
+  /// [value] when the field starts.
+  final TextEditingController? controller;
+  final FocusNode? focusNode;
   final InputDecoration? decoration;
   final TextStyle? style;
   final int? maxLines;
@@ -35,29 +43,36 @@ class AutosaveField extends StatefulWidget {
 class _AutosaveFieldState extends State<AutosaveField> {
   static const _pause = Duration(milliseconds: 600);
 
-  late final _controller = TextEditingController(text: widget.value);
-  final _focus = FocusNode();
+  late final TextEditingController _controller;
+  late final FocusNode _focus;
   Timer? _timer;
   late String _saved = widget.value;
 
   @override
   void initState() {
     super.initState();
-    _focus.addListener(() {
-      if (!_focus.hasFocus) _flush();
-    });
+    _controller = widget.controller ?? TextEditingController();
+    _controller.text = widget.value;
+    _controller.addListener(_changed);
+    _focus = widget.focusNode ?? FocusNode();
+    _focus.addListener(_focusChanged);
+  }
+
+  void _focusChanged() {
+    if (!_focus.hasFocus) _flush();
   }
 
   @override
   void didUpdateWidget(AutosaveField old) {
     super.didUpdateWidget(old);
     if (!_focus.hasFocus && widget.value != _controller.text) {
-      _controller.text = widget.value;
       _saved = widget.value;
+      _controller.text = widget.value;
     }
   }
 
-  void _changed(String _) {
+  void _changed() {
+    if (_controller.text == _saved) return; // selection moves, outside sets
     _timer?.cancel();
     _timer = Timer(_pause, _flush);
   }
@@ -74,8 +89,10 @@ class _AutosaveFieldState extends State<AutosaveField> {
   @override
   void dispose() {
     _flush();
-    _focus.dispose();
-    _controller.dispose();
+    _controller.removeListener(_changed);
+    _focus.removeListener(_focusChanged);
+    if (widget.focusNode == null) _focus.dispose();
+    if (widget.controller == null) _controller.dispose();
     super.dispose();
   }
 
@@ -92,7 +109,6 @@ class _AutosaveFieldState extends State<AutosaveField> {
       keyboardType: widget.maxLines == 1
           ? TextInputType.text
           : TextInputType.multiline,
-      onChanged: _changed,
       onSubmitted: widget.maxLines == 1 ? (_) => _flush() : null,
     );
   }

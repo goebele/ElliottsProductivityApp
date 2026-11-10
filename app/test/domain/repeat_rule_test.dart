@@ -7,16 +7,26 @@ void main() {
   group('RRULE text', () {
     test('writes standard RRULE text, with INTERVAL only when above 1', () {
       expect(const RepeatRule.daily().toRrule(), 'FREQ=DAILY');
-      expect(const RepeatRule.daily(interval: 3).toRrule(),
-          'FREQ=DAILY;INTERVAL=3');
-      expect(RepeatRule.weekly({5, 1, 3}).toRrule(),
-          'FREQ=WEEKLY;BYDAY=MO,WE,FR');
-      expect(RepeatRule.weekly({1, 4}, interval: 2).toRrule(),
-          'FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,TH');
-      expect(RepeatRule.weekdaysOnly.toRrule(),
-          'FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR');
-      expect(RepeatRule.monthly(15, interval: 3).toRrule(),
-          'FREQ=MONTHLY;INTERVAL=3;BYMONTHDAY=15');
+      expect(
+        const RepeatRule.daily(interval: 3).toRrule(),
+        'FREQ=DAILY;INTERVAL=3',
+      );
+      expect(
+        RepeatRule.weekly({5, 1, 3}).toRrule(),
+        'FREQ=WEEKLY;BYDAY=MO,WE,FR',
+      );
+      expect(
+        RepeatRule.weekly({1, 4}, interval: 2).toRrule(),
+        'FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,TH',
+      );
+      expect(
+        RepeatRule.weekdaysOnly.toRrule(),
+        'FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR',
+      );
+      expect(
+        RepeatRule.monthly(15, interval: 3).toRrule(),
+        'FREQ=MONTHLY;INTERVAL=3;BYMONTHDAY=15',
+      );
     });
 
     test('reads back what it writes', () {
@@ -32,20 +42,28 @@ void main() {
       }
     });
 
-    test('every weekday means interval 1; lower case and INTERVAL=1 are fine',
-        () {
-      expect(
+    test(
+      'every weekday means interval 1; lower case and INTERVAL=1 are fine',
+      () {
+        expect(
           RepeatRule.parse('FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR')!.isEveryWeekday,
-          isTrue);
-      expect(
+          isTrue,
+        );
+        expect(
           RepeatRule.parse('FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,TU,WE,TH,FR')!
               .isEveryWeekday,
-          isFalse);
-      expect(RepeatRule.parse('FREQ=DAILY;INTERVAL=1'),
-          const RepeatRule.daily());
-      expect(RepeatRule.parse('FREQ=WEEKLY;BYDAY=mo,we'),
-          RepeatRule.weekly({1, 3}));
-    });
+          isFalse,
+        );
+        expect(
+          RepeatRule.parse('FREQ=DAILY;INTERVAL=1'),
+          const RepeatRule.daily(),
+        );
+        expect(
+          RepeatRule.parse('FREQ=WEEKLY;BYDAY=mo,we'),
+          RepeatRule.weekly({1, 3}),
+        );
+      },
+    );
 
     test('anything else is not ours to edit, so parse returns null', () {
       for (final rrule in [
@@ -72,8 +90,11 @@ void main() {
       expect(rule.occursOn(d(2026, 11, 2), start), isTrue);
       expect(rule.occursOn(d(2026, 11, 3), start), isFalse);
       expect(rule.occursOn(d(2026, 11, 5), start), isTrue);
-      expect(rule.occursOn(d(2026, 10, 30), start), isFalse,
-          reason: 'nothing before the start');
+      expect(
+        rule.occursOn(d(2026, 10, 30), start),
+        isFalse,
+        reason: 'nothing before the start',
+      );
       expect(rule.nextOnOrAfter(d(2026, 11, 6), start), d(2026, 11, 8));
       expect(rule.lastOnOrBefore(d(2026, 11, 7), start), d(2026, 11, 5));
       expect(rule.lastOnOrBefore(d(2026, 11, 1), start), isNull);
@@ -93,9 +114,10 @@ void main() {
       final rule = RepeatRule.monthly(31);
       final start = d(2026, 1, 1);
       expect(rule.nextOnOrAfter(d(2026, 2, 1), start), d(2026, 3, 31));
-      expect(RepeatRule.monthly(15, interval: 2)
-              .nextOnOrAfter(d(2026, 2, 1), start),
-          d(2026, 3, 15));
+      expect(
+        RepeatRule.monthly(15, interval: 2).nextOnOrAfter(d(2026, 2, 1), start),
+        d(2026, 3, 15),
+      );
     });
 
     test('works across a daylight-saving change', () {

@@ -1,6 +1,12 @@
 # Elliott's Productivity App — Design Doc
 
-**Status:** Draft v0.7 · **Last updated:** 2026-11-08 · **Owners:** Elliott, Claude
+**Status:** Draft v0.8 · **Last updated:** 2026-11-09 · **Owners:** Elliott, Claude
+
+> **v0.8:** **LAN sync moves to M7**, after the single-device features
+> (attachments, calendar, time, Today view), so the UI is fully usable on
+> one machine first. Blob and timer sync move with it (§12). Polish (M8)
+> gains a concrete **accessibility pass**, including keyboard tree controls.
+> Removal confirmations name outside links and shortcuts (§6.11).
 
 > **v0.7:** Completing is an explicit, labelled **Done** button (with a
 > short burst, a haptic tap on phones and Undo), not a toggle. On a
@@ -8,14 +14,20 @@
 > compact menu, also on right-click of a tree row. Tree rows and Items rows
 > can be **dragged** to reorder or nest. **Archive and Trash** are built: a ⋮
 > menu on each item, confirmations, and Archive/Trash lists under the tree
-> (§6.11). Plain tasks have no row icon, so
+> (§6.11). **Child views** (panels, checklist, steps) have a switcher by
+> the Items heading (§6.13). **Markdown** renders via
+> `flutter_markdown_plus`, with a formatting toolbar and preview (§6.3).
+> **Placements** are built as ↗ shortcuts: "Also show in…", shown in the
+> tree and Items, draggable and removable (§6.12). **Linked ancestor notes**:
+> a "From above" list in the notes column, a "Link from above…" picker, and
+> 📌 notes shared with all sub-items (§6.10). Plain tasks have no row icon, so
 > nothing looks like a checkbox that can't be ticked (§6.1).
 
 > **v0.6:** Repeats can be **every N days / weeks / months** from a start
 > date ("Weekly pattern" for chosen weekdays, e.g. fortnightly). A repeating
 > item's children can be an **exclusive set** that takes turns, one per
-> occurrence, by who is most overdue (D36, §6.5.1). Until M3, local data may
-> be wiped freely; migrations are kept only as far as is convenient.
+> occurrence, by who is most overdue (D36, §6.5.1). Until sync (M7), local
+> data may be wiped freely; migrations are kept only as far as is convenient.
 
 > **v0.4:** Item types cut to **goal, project, task, idea**. List, routine
 > and event are now things any item can *have*, not types; inbox is a
@@ -167,7 +179,7 @@ data.
 | Localization | `flutter_localizations` + `gen-l10n` (ARB files) |
 | mDNS | `bonsoir` |
 | RRULE | `rrule` |
-| Markdown rendering / editing | a maintained markdown widget package, plus a plain `TextField` with a formatting toolbar |
+| Markdown rendering / editing | `flutter_markdown_plus` (the maintained fork of the discontinued `flutter_markdown`; GitHub-flavoured, custom syntax for `[[node links]]`), plus a plain `TextField` with a formatting toolbar |
 | Notifications | `flutter_local_notifications` |
 | Global hotkey (Windows) | `hotkey_manager` |
 | System tray (Windows) | `tray_manager` |
@@ -242,7 +254,7 @@ lists, routines or events.
 | `title` | Short text |
 | `body_md` | Markdown text: an item's **description**, or a note's content (may be empty) |
 | `body_format` | `md_lww` in v1. Leaves room for a CRDT note format later. |
-| `child_view` | `panels · checklist · steps`; `NULL` = `panels`. "Show as list" sets `checklist`. Personal overrides go in `node_user_prefs`. |
+| `child_view` | `panels · checklist · steps`; `NULL` = `panels`. Picked with the view switcher by the Items heading. Personal overrides go in `node_user_prefs`. |
 | `status` | `open · active · waiting · done · dropped` |
 | `completed_by` | The user who completed it (non-recurring nodes) |
 | `priority` | Optional 1–4 |
@@ -383,14 +395,14 @@ change-log compaction and Trash purges.
     change (§5.3).
   - **Items list:** a drag handle on each row of a node's Items list
     reorders its children.
-  - **Keyboard (v0.7, to build):** Tab and Shift+Tab move focus into and
+  - **Keyboard (built in M8, with the accessibility pass):** Tab and Shift+Tab move focus into and
     out of the tree as one stop. Inside it, ↑/↓ move between rows, → expands
     (or goes to the first child), ← collapses (or goes to the parent), and
     Enter opens the row. **Alt+Shift+↑/↓** moves the item up or down among
     its siblings, and **Alt+Shift+→/←** indents it (last item of the
     sibling above) or outdents it (just after its parent). Moves offer Undo
     like drags.
-  - **Screen readers:** each row exposes the same moves as accessibility
+  - **Screen readers (M8):** each row exposes the same moves as accessibility
     actions (Move up, Move down, Indent, Outdent), so TalkBack and Narrator
     users never need to drag (WCAG 2.5.7).
   - *Later, optional:* a "Move to…" picker for long distances.
@@ -419,7 +431,7 @@ change-log compaction and Trash purges.
 - **Add-ons row (v0.5):** "+ Description" (the editor appears only once
   added; v0.7: it closes with its ✕ or Esc, after which a non-empty
   description shows as read-only text that opens the editor when clicked,
-  and an empty one goes back to the chip), "Show as list", and dates. The item's dates (deadline, time slot,
+  and an empty one goes back to the chip), and dates (v0.7: "Show as list" became the view switcher, §6.13). The item's dates (deadline, time slot,
   repeat) show as chips; tapping any opens the **one date & time dialog**,
   where each part has its own switch, and a chip's ✕ removes just that part.
   With no dates yet, one "+ Date & time" chip opens the dialog. Goals and
@@ -475,6 +487,19 @@ Example: working on *Test New Feature*, you can reach *Implement Feature*
 - Markdown subset: headings, bold and italic, lists, checkboxes, code, links,
   and `[[node links]]`.
 - Editor: a plain-text editor with a toolbar and a live preview toggle.
+  **Built (v0.7):** toolbar for bold, italic, heading (`## `), bulleted and
+  numbered lists, link and code (inline, or fenced across lines); each
+  toggles off again. **Preview** renders what is in the field. A closed
+  description and the notes column render Markdown; card previews (panels,
+  note cards) show the text without markup. Task-list checkboxes render
+  read-only. Links open in the browser (http, https, mailto only).
+  `[[node links]]`, backlinks and "Convert checkboxes to items" come with
+  linking.
+- **Note pages (v0.7):** a note opens formatted and read-only with an
+  **Edit** button (a new, empty note opens in its editor). Editing shows
+  **Save** (or Esc), which returns to the formatted view; clicking the text
+  edits too. **← Back to {item}** returns to the item the note belongs to.
+  Saving is still automatic; Save only ends editing.
 - Backlinks: a node's detail lists every node that links to it.
 - **Lists that people tick off belong in child nodes, not markdown
   checkboxes.** Child nodes merge per field, so two people ticking off items
@@ -540,7 +565,7 @@ on the list every day, but only one exercise is suggested.
   parent's occurrence date). Undo writes a tombstone so it syncs.
 - **Display (M1):** a card on the parent: "Next up: Arms · 2 days overdue"
   with Mark done, "Done: Arms" with Undo, or "Nothing due right now". Each
-  child shows its cadence and when it was last done. The Today view (M7)
+  child shows its cadence and when it was last done. The Today view (M6)
   will show the current pick.
 - **Reminders:** local notifications, scheduled for the next N days and
   rescheduled when the app opens or a sync finishes. Android needs the
@@ -589,7 +614,7 @@ on the list every day, but only one exercise is suggested.
   things there; items you create by hand never land in the inbox. Two kinds
   of capture:
   - **Inbox:** "remind me soon". A task with an *unsorted* flag (field to be
-    added in M7), surfaced quickly until you file it.
+    added in M6), surfaced quickly until you file it.
   - **Idea:** "think about this later". `type = idea`, surfaced in a periodic
     review to flesh out, turn into a task or project, or just keep.
 - The Inbox view lets you sort each one into the tree with a type-ahead
@@ -611,10 +636,9 @@ Lets a child reuse the notes and docs of its parent or any other ancestor.
 Nothing is copied, so each item still has exactly one original.
 
 **Where it's offered**
-- **When creating a child:** the new-child form has a "Link from above"
-  section, which lists the ancestors' notes and attachments with checkboxes.
-- **Later, from the child:** in the child's detail, **Link from ancestors…**
-  opens the same picker.
+- **From the child:** **Link from above…** at the end of the "From above"
+  list in its notes column opens the picker. (Not offered at creation:
+  children are added from a one-line field, v0.8.)
 - The picker groups items by ancestor level (Parent → Grandparent → … →
   top-level project). Items already linked are shown ticked, and unticking one
   removes the link.
@@ -646,6 +670,39 @@ Nothing is copied, so each item still has exactly one original.
 - **Sharing:** a link from a shared space to an item in a personal space
   shows as "Private item" to other members.
 
+**Built (v0.7).** Since v0.5 an item's notes are `note` items, so what a
+child links is an **ancestor's note item** (`target_kind = note`,
+`target_id` = the note). Descriptions and attachments aren't linkable yet.
+- **Where (v0.7, revised):** linked notes are a separate **From above**
+  list in the item's **notes column** (or notes section on narrow screens),
+  under its own notes. "Notes (n)" counts both. Each card shows the title, a
+  preview, a small **↳ from: Trip** tag (opens the owner) and **Unlink**.
+- **Shared with all sub-items (📌):** a note's pin button (on its card in
+  the owner's notes column, or on the note's page) sets
+  `nodes.shared_with_children`. The note then appears in the From above list
+  of **every item under the owner, at any depth**, tagged **📌 pinned by:
+  Trip**, nearest ancestor first, before explicit links. It can't be unlinked
+  from a sub-item (unpin it on the owner); in the picker it shows ticked and
+  locked. A note both pinned and linked is listed once.
+- **Link from above…** opens a picker grouped by ancestor, nearest first
+  ("Europe (parent)", then "Trip"…), with checkboxes; ticking links and
+  unticking unlinks at once. Notes linked earlier that are no longer above
+  (the item moved, D17) are listed under "Linked earlier, no longer above".
+- **Editing:** clicking a linked note opens the original note's page, so
+  edits go to the one original. Its **Back** button returns to the item you
+  came from, and the breadcrumb shows "🔗 via Pack bags".
+- A note's page lists **Linked into N items** as chips.
+- Owner archived or trashed: the card is greyed ("Source archived" / "Source
+  in Trash") with **Restore source**. Purged: "Source deleted" with
+  **Clear**.
+- Links are offered from the child's notes column, not when creating it:
+  children are added by a one-line field under Items, so there is no form
+  to put a picker in (v0.8).
+- Archive, Trash and Delete forever confirmations say how many items
+  elsewhere link the group's notes (§6.11).
+- Schema v6 adds `links` with the unique index among non-deleted rows;
+  v7 adds `nodes.shared_with_children`.
+
 ### 6.11 Archive and Trash
 Two ways to remove something. **Children always go with their parent.**
 
@@ -663,8 +720,9 @@ Two ways to remove something. **Children always go with their parent.**
   Restoring the root brings back exactly that group. Children that were
   archived separately earlier stay archived.
 - **Confirmation:** the dialog shows the size of the subtree ("Project X and
-  23 items") and any items outside it that link into it ("Used by 3 items
-  elsewhere").
+  23 items"), any items outside it that link its notes ("Used by 3 items
+  elsewhere"), and its shortcuts placed outside it, which disappear with it
+  and come back on Restore.
 - **Purging:** after 30 days in Trash (or **Empty Trash**), rows become
   tombstones. Attachment files are freed once no live row references their
   hash on any device. **`activity` rows are kept**, so reports still show the
@@ -673,8 +731,8 @@ Two ways to remove something. **Children always go with their parent.**
   device.
 - **UI (v0.7):** a ⋮ menu at the end of an item's title row has **Archive**
   and **Move to Trash**. Every removal asks first, naming the subtree size
-  ("It and 3 items inside it…"); the "used by items elsewhere" line waits
-  for links. After removing, the page moves to the parent, and a snack bar
+  ("It and 3 items inside it…"), plus the "used by items elsewhere" and
+  shortcuts lines when they apply. After removing, the page moves to the parent, and a snack bar
   offers Undo. **Archive** and **Trash** entries (with counts) sit under the
   tree; each lists one row per group (newest first) with how many items went
   with it, where it was, when, and for Trash the days left. Rows have
@@ -705,6 +763,28 @@ A node has **one real parent** but can **appear in other places for you**.
   the top-level project, value inheritance, archive cascades and cycle checks
   would all become ambiguous. Placements give the same everyday result while
   keeping one clear tree.
+- **Built (v0.7), as "shortcuts":**
+  - **Add:** ⋮ → **Also show in…** opens a searchable picker of your items
+    (plus Top level). Places it can't go are greyed: itself, anything shown
+    under it, its real parent, and places it already shows. Notes can't be
+    placed. Undo in the snack bar.
+  - **Show:** a shortcut sits among the parent's real children (one shared
+    sort-key space) in the **tree** and in the parent's **Items** (every child
+    view), marked ↗. It counts toward the parent's item count and progress.
+    Shortcuts don't take part in a one-at-a-time set.
+  - **Move:** dragging a ↗ row (tree or Items) moves only the shortcut;
+    the real row moves the real item. Moving an item to where one of its
+    shortcuts is drops that shortcut.
+  - **Remove:** right-click a ↗ row → **Remove shortcut**, or ⋮ → "Remove
+    shortcut from Errands" on the item's page.
+  - **Breadcrumb:** opened through a shortcut, the page shows "↗ via
+    Errands" (tap to go there) before the real path.
+  - **Loops:** a placement or move is refused if the new parent is shown
+    anywhere under the node, through real children or shortcuts.
+  - **Archive:** archiving the item hides its shortcuts; archiving the
+    shortcut's parent does not archive the item (it isn't really there).
+  - Schema v5 adds `placements` (personal space). Effective values and tags
+    through placements come with values and tags.
 
 ### 6.13 Child views
 How a node **shows its children**. Set on the node (`child_view`), and you can
@@ -713,7 +793,7 @@ override it just for yourself.
 | View | Looks like | Good for |
 |------|-----------|----------|
 | **Panels** *(default)* | One card per child, showing status, due date, assignees, tags, estimate vs. time spent, progress bar, note preview and child count | Projects, goals, anything with substance |
-| **Checklist** | A plain list with inline checkboxes. Children that have their own children show a small "›" to drill in. | Shopping lists, packing lists ("Show as list") |
+| **Checklist** | A plain list with inline checkboxes. Children that have their own children show a small "›" to drill in. | Shopping lists, packing lists |
 | **Steps** | A numbered sequence. **Only the next unfinished step is highlighted**; the rest are dimmed. | Procedures and "just do the next thing" (ADHD-friendly) |
 | *Later:* Board | Kanban columns by status | Workflows |
 | *Later:* Table | Rows with columns (due, assignee, estimate, tags) | Planning and triage |
@@ -722,6 +802,24 @@ override it just for yourself.
 
 Every view can still nest without limit. The view only changes how one level
 is drawn, and you can always drill into a child.
+
+**Built in v0.7:**
+- **Switcher:** three icon buttons (Panels, Checklist, Steps) beside the
+  "Items" heading. Panels is the default for every item.
+- **Panels:** one full-width card per child, stacked: icon, title, note
+  count, then status (if not open), deadline, time slot and repeat; a
+  progress bar of done/dropped vs. all items ("4/6"); and two lines of the
+  description. Assignees, tags and time come with those features. Finished
+  children are dimmed and struck through.
+- **Checklist:** a checkbox, the title, and "›" with a count for children
+  that have items.
+- **Steps:** numbered. The first unfinished step is highlighted with a
+  **Done** button; later steps are dimmed (still openable); finished steps
+  show ✓, which unticks them.
+- **All views** keep drag handles to reorder. A one-at-a-time set (D36)
+  ignores the view: its rows show cadence and last completion, and the
+  switcher is hidden.
+- *Later:* the personal override (`node_user_prefs`).
 
 ### 6.14 Tags
 - Create tags anywhere with `#name` in a title or note, or from the tag picker.
@@ -970,17 +1068,21 @@ paint".
 
 ## 12. Milestones
 
+The UI is made fully usable on one device first (M1–M6); sync comes after
+(M7). Everything is still written through the change log from day one
+(§7), so sync can be switched on without reworking the data layer.
+
 | # | Milestone | Done when… |
 |---|-----------|------------|
 | M0 | Project skeleton | The Flutter app builds and runs on Windows and an Android phone; Drift is set up; gen-l10n is wired up; the user identity key is created on first run; CI runs tests |
 | M1 | Tree + notes | Create, nest, reorder and move nodes; markdown notes; child views (panels, checklist, steps); placements; linking ancestor notes; Archive and Trash; works offline on one device |
 | M2 | Values, tags + search | Values with statements and inheritance; shared and private tags; FTS5 search with every filter |
-| M3 | LAN sync | Pairing (code confirmed on both devices + optional PIN); mDNS; HLC change log; field-level merge; version handshake and passing along unknown ops; phone ⇄ PC sync verified with a two-instance test harness |
-| M4 | Attachments + markup | Capture or import, hash store, blob sync, viewer, drawing overlay, open-in; linking ancestor attachments |
-| M5 | Calendar + routines | RRULE expansion, recurring subtrees, calendar views, occurrence completions, reminders, .ics export |
-| M6 | Time + reports | Estimates, timers (synced), manual entries, roll-ups, progress bars, weekly review |
-| M7 | Motivation + friction | Today view, quick-capture (hotkey, widget, share sheet), context resume, QR place tags |
-| M8 | Polish | Backups, conflict-copy UI, performance with 10k+ nodes |
+| M3 | Attachments + markup | Capture or import, hash store, viewer, drawing overlay, open-in; linking ancestor attachments |
+| M4 | Calendar + routines | RRULE expansion, recurring subtrees, calendar views, occurrence completions, reminders, .ics export |
+| M5 | Time + reports | Estimates, timers, manual entries, roll-ups, progress bars, weekly review |
+| M6 | Motivation + friction | Today view, quick-capture (hotkey, widget, share sheet), context resume, QR place tags |
+| M7 | LAN sync | Pairing (code confirmed on both devices + optional PIN); mDNS; HLC change log; field-level merge; version handshake and passing along unknown ops; attachment blob sync; running timers sync; phone ⇄ PC sync verified with a two-instance test harness |
+| M8 | Polish + accessibility | Backups, conflict-copy UI, performance with 10k+ nodes. **Accessibility pass:** keyboard tree controls (§6.1); screen-reader move actions on tree and Items rows; labels, focus order and traversal checked with Narrator and TalkBack; text scaling to 200% without clipping; contrast to WCAG 2.1 AA in light and dark; touch targets of at least 48 dp |
 | Next | Sharing | Encrypted relay, send / share / merge, assignees in the UI, contact labels |
 | After | iOS, push | Plus streaks, board/table/gallery views, geofence/Wi-Fi/Bluetooth triggers, Google Calendar, SQLCipher |
 
@@ -992,13 +1094,13 @@ paint".
 | Q-B | Should text-doc markup be highlights only, or also freehand drawing over a rendered page? | Highlights only |
 | Q-C | Should "done" tasks stay in the tree, or move to an archive view after N days? | See Q-H |
 | Q-E | Should the Today view allow time-blocking (dragging tasks onto the calendar)? | Later (Timeline view) |
-| Q-F | Exact markdown package choice | Decide in M1 after a short spike |
+| Q-F | Exact markdown package choice | ✅ `flutter_markdown_plus` (v0.7) |
 | Q-G | Restoring one child from Trash whose parent is also in Trash: where does it go? | Restore it under the nearest live ancestor (or as top-level) and say so |
 | Q-H | Should done items be auto-archived after 7 days? | Yes, with a setting to turn it off |
 | Q-I | Should time tracked on a **shared** task be visible to the other members? | No by default; opt in per space |
 | Q-J | Offer an offline recovery phrase for the user identity key? | Yes, optional, in the sharing release |
 | Q-K | Merge rules when a sent node's space and the larger shared space have different members | Merge only if the larger space includes all members; otherwise keep a nested space |
-| Q-L | Should a recurring parent auto-complete when all children are done for that occurrence? | Yes (as specified in §6.5); for an exclusive set, when its one pick is done. Confirm in M5 |
+| Q-L | Should a recurring parent auto-complete when all children are done for that occurrence? | Yes (as specified in §6.5); for an exclusive set, when its one pick is done. Confirm in M4 |
 
 *Resolved: Q-D (goal progress comes from children, with a manual override;
 see §6.16).*

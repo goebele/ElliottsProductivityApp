@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 
 import '../data/database.dart';
@@ -43,11 +45,29 @@ DateTime seriesStart(Node node) {
 }
 
 class NodeWithChildCount {
-  const NodeWithChildCount(this.node, this.childCount, {this.noteCount = 0});
+  const NodeWithChildCount(
+    this.node,
+    this.childCount, {
+    this.noteCount = 0,
+    this.doneCount = 0,
+    this.placementId,
+  });
   final Node node;
+
+  /// Set when this row is one of your shortcuts (§6.12) rather than the
+  /// node's real place.
+  final String? placementId;
+  bool get isShortcut => placementId != null;
+
+  /// Identifies the row among its siblings: a node can show both in its real
+  /// place and as a shortcut, but never twice under one parent.
+  String get key => placementId ?? node.id;
 
   /// Live items under the node (notes not counted).
   final int childCount;
+
+  /// How many of those are done or dropped, for progress bars.
+  final int doneCount;
 
   /// Live notes under the node.
   final int noteCount;
@@ -120,6 +140,63 @@ class RemovedGroup {
   final Node root;
   final int others;
   final String? parentTitle;
+}
+
+/// One of a node's shortcuts and where it shows ([parentId] null = the top
+/// level).
+/// How a group is used outside itself (§6.11), shown before removing it.
+class ExternalUses {
+  const ExternalUses({this.linkingItems = 0, this.shortcuts = 0});
+
+  /// Live items outside the group that link one of its notes.
+  final int linkingItems;
+
+  /// Shortcuts to items in the group placed outside it.
+  final int shortcuts;
+
+  bool get isEmpty => linkingItems == 0 && shortcuts == 0;
+}
+
+class PlacementInfo {
+  const PlacementInfo(this.id, this.parentId, this.parentTitle);
+  final String id;
+  final String? parentId;
+  final String? parentTitle;
+}
+
+/// What the "Also show in…" picker offers: live items in tree order with
+/// their depth, and the ones the node can't go under.
+class PlacementChoices {
+  const PlacementChoices({
+    required this.items,
+    required this.blocked,
+    required this.topLevelAllowed,
+  });
+  final List<(Node, int)> items;
+  final Set<String> blocked;
+  final bool topLevelAllowed;
+}
+
+class PlacementNotAllowedException implements Exception {
+  const PlacementNotAllowedException(this.reason);
+  final String reason;
+
+  @override
+  String toString() => 'PlacementNotAllowedException: $reason';
+}
+
+/// A note linked into an item (§6.10). [note] is null once the note is
+/// purged; otherwise it may be live, archived or trashed. [owner] is the
+/// item the note belongs to.
+class LinkedNote {
+  const LinkedNote(this.noteId, this.note, this.owner, {this.shared = false});
+  final String noteId;
+  final Node? note;
+  final Node? owner;
+
+  /// Comes from an ancestor sharing the note with all its sub-items, not
+  /// from a link on this item; it can't be unlinked here.
+  final bool shared;
 }
 
 class NodeRepository {
@@ -196,24 +273,40 @@ class NodeRepository {
   Stream<List<NodeWithChildCount>> watchChildrenWithCounts(String? parentId) {
     final live = Lifecycle.live.name;
     final note = NodeType.note.name;
+    // Items under n: real children plus your shortcuts there.
     String countOf(String typeTest) =>
         '''
-        (SELECT COUNT(*) FROM nodes c
-         WHERE c.parent_id = n.id AND c.deleted = 0 AND c.lifecycle = '$live'
-           AND c.type $typeTest)''';
+        ((SELECT COUNT(*) FROM nodes c
+          WHERE c.parent_id = n.id AND c.deleted = 0 AND c.lifecycle = '$live'
+            AND c.type $typeTest)
+         + (SELECT COUNT(*) FROM placements pp JOIN nodes c ON c.id = pp.node_id
+          WHERE pp.parent_node_id = n.id AND pp.deleted = 0 AND c.deleted = 0
+            AND c.lifecycle = '$live' AND c.type $typeTest))''';
+    final counts =
+        '''
+        ${countOf("<> '$note'")} AS child_count,
+        ${countOf("= '$note'")} AS note_count,
+        ${countOf("<> '$note' AND c.status IN ('done', 'dropped')")} AS done_count''';
+    final top = parentId == null;
     return _db
         .customSelect(
           '''
-      SELECT n.*,
-        ${countOf("<> '$note'")} AS child_count,
-        ${countOf("= '$note'")} AS note_count
+      SELECT n.*, $counts, NULL AS placement_id,
+        n.sort_key AS display_key, n.id AS entry_key
       FROM nodes n
-      WHERE ${parentId == null ? 'n.parent_id IS NULL' : "n.parent_id = ?1 AND n.type <> '$note'"}
+      WHERE ${top ? 'n.parent_id IS NULL' : "n.parent_id = ?1 AND n.type <> '$note'"}
         AND n.deleted = 0 AND n.lifecycle = '$live'
-      ORDER BY n.sort_key, n.id
+      UNION ALL
+      SELECT n.*, $counts, p.id AS placement_id,
+        p.sort_key AS display_key, p.id AS entry_key
+      FROM placements p JOIN nodes n ON n.id = p.node_id
+      WHERE ${top ? 'p.parent_node_id IS NULL' : 'p.parent_node_id = ?1'}
+        AND p.deleted = 0 AND n.deleted = 0 AND n.lifecycle = '$live'
+        AND n.type <> '$note'
+      ORDER BY display_key, entry_key
       ''',
-          variables: [if (parentId != null) Variable.withString(parentId)],
-          readsFrom: {_db.nodes},
+          variables: [if (!top) Variable.withString(parentId)],
+          readsFrom: {_db.nodes, _db.placements},
         )
         .watch()
         .map(
@@ -223,6 +316,8 @@ class NodeRepository {
                 _db.nodes.map(row.data),
                 row.read<int>('child_count'),
                 noteCount: row.read<int>('note_count'),
+                doneCount: row.read<int>('done_count'),
+                placementId: row.readNullable<String>('placement_id'),
               ),
           ],
         );
@@ -336,7 +431,7 @@ class NodeRepository {
       NodesCompanion(
         startAt: Value(start?.toUtc()),
         endAt: Value(end?.toUtc()),
-        // TODO(M5): store the device's IANA zone so repeats survive DST.
+        // TODO(M4): store the device's IANA zone so repeats survive DST.
       ),
     );
   }
@@ -383,6 +478,62 @@ class NodeRepository {
   /// (its descendants, notes included; not [id] itself).
   Future<int> subtreeSize(String id) async =>
       (await _liveDescendants(id)).length;
+
+  /// Items outside the group that [rootId] heads which use it: they link
+  /// one of its notes, or show one of its items through a shortcut. For a
+  /// live item the group is it and its live descendants; for a removed one,
+  /// the group it was archived or trashed with.
+  Future<ExternalUses> externalUses(String rootId) async {
+    final root = await get(rootId);
+    if (root == null || root.deleted) return const ExternalUses();
+    final ids = root.lifecycle == Lifecycle.live
+        ? {rootId, ...await _liveDescendants(rootId)}
+        : {...await _groupIds(rootId)};
+    final group = Variable.withString(jsonEncode(ids.toList()));
+
+    final linking = await _db
+        .customSelect(
+          '''
+          SELECT DISTINCT l.from_node_id AS id FROM links l
+          JOIN nodes f ON f.id = l.from_node_id
+          WHERE l.deleted = 0 AND l.target_kind = ?2
+            AND l.target_id IN (SELECT value FROM json_each(?1))
+            AND f.deleted = 0 AND f.lifecycle = ?3
+          ''',
+          variables: [
+            group,
+            Variable.withString(LinkKind.note.name),
+            Variable.withString(Lifecycle.live.name),
+          ],
+          readsFrom: {_db.links, _db.nodes},
+        )
+        .get();
+
+    // Shortcuts at the top level, or under a live item outside the group.
+    final shortcuts = await _db
+        .customSelect(
+          '''
+          SELECT p.parent_node_id AS parent FROM placements p
+          LEFT JOIN nodes q ON q.id = p.parent_node_id
+          WHERE p.deleted = 0
+            AND p.node_id IN (SELECT value FROM json_each(?1))
+            AND (p.parent_node_id IS NULL
+                 OR (q.deleted = 0 AND q.lifecycle = ?2))
+          ''',
+          variables: [group, Variable.withString(Lifecycle.live.name)],
+          readsFrom: {_db.placements, _db.nodes},
+        )
+        .get();
+
+    return ExternalUses(
+      linkingItems: linking
+          .where((r) => !ids.contains(r.read<String>('id')))
+          .length,
+      shortcuts: shortcuts
+          .where((r) => !ids.contains(r.read<String?>('parent')))
+          .length,
+    );
+  }
 
   /// Hides [id] and its live descendants as one group, kept indefinitely.
   Future<void> archive(String id, {DateTime? now}) =>
@@ -563,6 +714,344 @@ class NodeRepository {
     return [for (final r in rows) r.read(_db.nodes.id)!];
   }
 
+  // ----------------------------------------------------------- placements
+
+  /// Shows [nodeId] also under [parentId] (null = the top level), for you
+  /// only (§6.12). Returns the placement id.
+  Future<String> addPlacement(
+    String nodeId,
+    String? parentId, {
+    int? index,
+  }) async {
+    final node = await _require(nodeId);
+    await _checkPlacement(node, parentId);
+    final id = newId();
+    await _writer.insert(
+      _db.placements,
+      PlacementsCompanion(
+        id: Value(id),
+        spaceId: Value(personalSpaceId),
+        nodeId: Value(nodeId),
+        parentNodeId: Value(parentId),
+        sortKey: Value(await _keyAt(parentId, index)),
+        deleted: const Value(false),
+      ),
+    );
+    return id;
+  }
+
+  /// Moves a shortcut to [index] under [newParentId]; the real node stays.
+  Future<void> movePlacement(
+    String placementId, {
+    String? newParentId,
+    int? index,
+  }) async {
+    final p = await _placement(placementId);
+    final node = await _require(p.nodeId);
+    if (newParentId != p.parentNodeId) {
+      await _checkPlacement(node, newParentId);
+    }
+    await _writer.update(
+      _db.placements,
+      placementId,
+      PlacementsCompanion(
+        parentNodeId: Value(newParentId),
+        sortKey: Value(
+          await _keyAt(newParentId, index, excluding: placementId),
+        ),
+      ),
+    );
+  }
+
+  Future<void> removePlacement(String placementId) => _writer.update(
+    _db.placements,
+    placementId,
+    const PlacementsCompanion(deleted: Value(true)),
+  );
+
+  /// The node's shortcuts, with where each one shows.
+  Stream<List<PlacementInfo>> watchPlacementsOf(String nodeId) => _db
+      .customSelect(
+        '''
+        SELECT p.id, p.parent_node_id, parent.title AS parent_title
+        FROM placements p LEFT JOIN nodes parent ON parent.id = p.parent_node_id
+        WHERE p.node_id = ?1 AND p.deleted = 0
+        ORDER BY p.created_at, p.id
+        ''',
+        variables: [Variable.withString(nodeId)],
+        readsFrom: {_db.placements, _db.nodes},
+      )
+      .watch()
+      .map(
+        (rows) => [
+          for (final r in rows)
+            PlacementInfo(
+              r.read<String>('id'),
+              r.readNullable<String>('parent_node_id'),
+              r.readNullable<String>('parent_title'),
+            ),
+        ],
+      );
+
+  /// Every live item in tree order with its depth, and which of them [nodeId]
+  /// may be shown under (for the "Also show in…" picker).
+  Future<PlacementChoices> placementChoices(String nodeId) async {
+    final node = await _require(nodeId);
+    final all =
+        await (_db.select(_db.nodes)
+              ..where(
+                (n) =>
+                    n.deleted.equals(false) &
+                    n.lifecycle.equalsValue(Lifecycle.live) &
+                    n.type.equalsValue(NodeType.note).not(),
+              )
+              ..orderBy([
+                (n) => OrderingTerm.asc(n.sortKey),
+                (n) => OrderingTerm.asc(n.id),
+              ]))
+            .get();
+    final byParent = <String?, List<Node>>{};
+    final ids = {for (final n in all) n.id};
+    for (final n in all) {
+      // A parent that isn't listed (archived, say) hides its subtree.
+      if (n.parentId == null || ids.contains(n.parentId)) {
+        byParent.putIfAbsent(n.parentId, () => []).add(n);
+      }
+    }
+    final ordered = <(Node, int)>[];
+    void walk(String? parent, int depth) {
+      for (final n in byParent[parent] ?? const <Node>[]) {
+        ordered.add((n, depth));
+        if (depth < _maxDepth) walk(n.id, depth + 1);
+      }
+    }
+
+    walk(null, 0);
+    final placed = {
+      for (final p in await _livePlacements(nodeId: nodeId)) p.parentNodeId,
+    };
+    final blocked = {
+      nodeId,
+      ...await _shownUnder(nodeId),
+      ?node.parentId,
+      for (final p in placed) ?p,
+    };
+    return PlacementChoices(
+      items: ordered,
+      blocked: blocked,
+      topLevelAllowed: node.parentId != null && !placed.contains(null),
+    );
+  }
+
+  Future<void> _checkPlacement(Node node, String? parentId) async {
+    if (node.type == NodeType.note) {
+      throw const PlacementNotAllowedException('Notes have no shortcuts.');
+    }
+    if (parentId == node.parentId) {
+      throw const PlacementNotAllowedException('That is where it really is.');
+    }
+    if ((await _livePlacements(nodeId: node.id))
+        .any((p) => p.parentNodeId == parentId)) {
+      throw const PlacementNotAllowedException('It already shows there.');
+    }
+    if (parentId != null) {
+      if (parentId == node.id ||
+          (await _shownUnder(node.id)).contains(parentId)) {
+        throw MoveWouldCreateCycleException(node.id, parentId);
+      }
+      final parent = await _require(parentId);
+      if (parent.type == NodeType.note) {
+        throw const PlacementNotAllowedException('Notes hold no items.');
+      }
+    }
+  }
+
+  Future<Placement> _placement(String id) async {
+    final p = await (_db.select(
+      _db.placements,
+    )..where((p) => p.id.equals(id))).getSingleOrNull();
+    if (p == null || p.deleted) throw StateError('No placement with id $id.');
+    return p;
+  }
+
+  /// Live placements of [nodeId], or (with [under]) under [parentId].
+  Future<List<Placement>> _livePlacements({
+    String? nodeId,
+    String? parentId,
+    bool under = false,
+  }) =>
+      (_db.select(_db.placements)..where((p) {
+            var w = p.deleted.equals(false);
+            if (nodeId != null) w = w & p.nodeId.equals(nodeId);
+            if (under) {
+              w =
+                  w &
+                  (parentId == null
+                      ? p.parentNodeId.isNull()
+                      : p.parentNodeId.equals(parentId));
+            }
+            return w;
+          }))
+          .get();
+
+  /// Every node shown anywhere under [id]: real descendants and, through
+  /// shortcuts, theirs. Placing or moving [id] under one of these would
+  /// make the tree loop.
+  Future<Set<String>> _shownUnder(String id) async {
+    final rows = await _db
+        .customSelect(
+          '''
+      WITH RECURSIVE
+        edges(parent, child) AS (
+          SELECT parent_id, id FROM nodes
+          WHERE deleted = 0 AND parent_id IS NOT NULL
+          UNION ALL
+          SELECT parent_node_id, node_id FROM placements
+          WHERE deleted = 0 AND parent_node_id IS NOT NULL
+        ),
+        reach(id) AS (
+          SELECT ?1
+          UNION
+          SELECT e.child FROM edges e JOIN reach r ON e.parent = r.id
+        )
+      SELECT id FROM reach WHERE id <> ?1
+      ''',
+          variables: [Variable.withString(id)],
+          readsFrom: {_db.nodes, _db.placements},
+        )
+        .get();
+    return {for (final r in rows) r.read<String>('id')};
+  }
+
+  // ------------------------------------------------- linked ancestor notes
+
+  /// The notes of [childId]'s ancestors, nearest first (parent, then
+  /// grandparent, …), for "Link from above" (§6.10). Ancestors without live
+  /// notes are left out.
+  Future<List<(Node, List<Node>)>> ancestorNotes(String childId) async {
+    final result = <(Node, List<Node>)>[];
+    for (final a in (await ancestors(childId)).reversed) {
+      if (a.deleted || a.lifecycle != Lifecycle.live) continue;
+      final notes = await this.notes(a.id);
+      if (notes.isNotEmpty) result.add((a, notes));
+    }
+    return result;
+  }
+
+  /// Shares a note with every item under its owner, or stops sharing it.
+  Future<void> setNoteShared(String noteId, bool shared) =>
+      update(noteId, NodesCompanion(sharedWithChildren: Value(shared)));
+
+  /// Links [noteId] into [childId]. Linking twice changes nothing.
+  Future<void> linkNote(String childId, String noteId) async {
+    final child = await _require(childId);
+    final note = await _require(noteId);
+    if (note.type != NodeType.note) {
+      throw ArgumentError.value(noteId, 'noteId', 'is not a note');
+    }
+    if (await _noteLink(childId, noteId) != null) return;
+    await _writer.insert(
+      _db.links,
+      LinksCompanion(
+        id: Value(newId()),
+        spaceId: Value(child.spaceId),
+        fromNodeId: Value(childId),
+        targetKind: const Value(LinkKind.note),
+        targetId: Value(noteId),
+        origin: const Value(LinkOrigin.attached),
+        deleted: const Value(false),
+      ),
+    );
+  }
+
+  /// Removes the link only; the note itself is never touched.
+  Future<void> unlinkNote(String childId, String noteId) async {
+    final link = await _noteLink(childId, noteId);
+    if (link == null) return;
+    await _writer.update(
+      _db.links,
+      link.id,
+      const LinksCompanion(deleted: Value(true)),
+    );
+  }
+
+  /// The notes linked into [childId], oldest link first, with each note's
+  /// owner. A note that is gone (purged) comes back with [LinkedNote.note]
+  /// null.
+  Stream<List<LinkedNote>> watchLinkedNotes(String childId) => _db
+      .customSelect(
+        '''
+        SELECT l.target_id FROM links l
+        WHERE l.from_node_id = ?1 AND l.target_kind = ?2 AND l.deleted = 0
+        ORDER BY l.created_at, l.id
+        ''',
+        variables: [
+          Variable.withString(childId),
+          Variable.withString(LinkKind.note.name),
+        ],
+        readsFrom: {_db.links, _db.nodes},
+      )
+      .watch()
+      .asyncMap((rows) async {
+        final out = <LinkedNote>[];
+        final seen = <String>{};
+        // Shared down from an ancestor: nearest ancestor first.
+        for (final (owner, notes) in await ancestorNotes(childId)) {
+          for (final n in notes) {
+            if (n.sharedWithChildren && seen.add(n.id)) {
+              out.add(LinkedNote(n.id, n, owner, shared: true));
+            }
+          }
+        }
+        for (final r in rows) {
+          final noteId = r.read<String>('target_id');
+          if (!seen.add(noteId)) continue;
+          final note = await get(noteId);
+          final owner = note?.parentId == null
+              ? null
+              : await get(note!.parentId!);
+          out.add(
+            LinkedNote(
+              noteId,
+              note == null || note.deleted ? null : note,
+              owner,
+            ),
+          );
+        }
+        return out;
+      });
+
+  /// The live items that link [noteId] in ("Linked into: N items").
+  Stream<List<Node>> watchLinkedInto(String noteId) => _db
+      .customSelect(
+        '''
+        SELECT n.* FROM links l JOIN nodes n ON n.id = l.from_node_id
+        WHERE l.target_kind = ?1 AND l.target_id = ?2 AND l.deleted = 0
+          AND n.deleted = 0 AND n.lifecycle = ?3
+        ORDER BY l.created_at, l.id
+        ''',
+        variables: [
+          Variable.withString(LinkKind.note.name),
+          Variable.withString(noteId),
+          Variable.withString(Lifecycle.live.name),
+        ],
+        readsFrom: {_db.links, _db.nodes},
+      )
+      .watch()
+      .map((rows) => [for (final r in rows) _db.nodes.map(r.data)]);
+
+  Future<Link?> _noteLink(String childId, String noteId) =>
+      (_db.select(_db.links)
+            ..where(
+              (l) =>
+                  l.fromNodeId.equals(childId) &
+                  l.targetKind.equalsValue(LinkKind.note) &
+                  l.targetId.equals(noteId) &
+                  l.deleted.equals(false),
+            )
+            ..limit(1))
+          .getSingleOrNull();
+
   // ---------------------------------------------------------- occurrences
 
   /// Records that [nodeId] was done for the occurrence on [occurrenceDate].
@@ -721,10 +1210,11 @@ class NodeRepository {
     };
   }
 
-  /// Shows the node's children as a checklist ("show as list") or panels.
-  Future<void> setShowAsList(String id, bool asList) => update(
+  /// How the node shows its children (§6.13). Panels, the default, is
+  /// stored as null.
+  Future<void> setChildView(String id, ChildView view) => update(
     id,
-    NodesCompanion(childView: Value(asList ? ChildView.checklist : null)),
+    NodesCompanion(childView: Value(view == ChildView.panels ? null : view)),
   );
 
   /// Moves [id] under [newParentId] (null = top level) at [index] among the
@@ -735,20 +1225,27 @@ class NodeRepository {
   Future<void> move(String id, {String? newParentId, int? index}) async {
     await _require(id);
     if (newParentId != null) {
-      if (newParentId == id ||
-          (await ancestors(newParentId)).any((n) => n.id == id)) {
+      // Shortcuts count: a parent shown anywhere under the node would make
+      // the tree loop.
+      if (newParentId == id || (await _shownUnder(id)).contains(newParentId)) {
         throw MoveWouldCreateCycleException(id, newParentId);
       }
       await _require(newParentId);
     }
     // TODO(sharing): moving across spaces re-tags the subtree (§11.5).
-    await update(
-      id,
-      NodesCompanion(
-        parentId: Value(newParentId),
-        sortKey: Value(await _keyAt(newParentId, index, excluding: id)),
-      ),
-    );
+    await _db.transaction(() async {
+      await update(
+        id,
+        NodesCompanion(
+          parentId: Value(newParentId),
+          sortKey: Value(await _keyAt(newParentId, index, excluding: id)),
+        ),
+      );
+      // A shortcut to where it now really is would show it twice.
+      for (final p in await _livePlacements(nodeId: id)) {
+        if (p.parentNodeId == newParentId) await removePlacement(p.id);
+      }
+    });
   }
 
   // -------------------------------------------------------------- helpers
@@ -761,16 +1258,26 @@ class NodeRepository {
     return node;
   }
 
-  /// A sort key that places a node at [index] among [parentId]'s children.
+  /// A sort key for [index] among [parentId]'s rows: its real children and
+  /// your shortcuts there. [excluding] is a row key (node or placement id).
   Future<String> _keyAt(
     String? parentId,
     int? index, {
     String? excluding,
   }) async {
-    final siblings = [
-      for (final n in await children(parentId))
-        if (n.id != excluding) n,
-    ];
+    final siblings =
+        [
+          for (final n in await children(parentId))
+            if (n.id != excluding) (key: n.id, sortKey: n.sortKey),
+          for (final p in await _livePlacements(
+            parentId: parentId,
+            under: true,
+          ))
+            if (p.id != excluding) (key: p.id, sortKey: p.sortKey),
+        ]..sort((a, b) {
+          final c = a.sortKey.compareTo(b.sortKey);
+          return c != 0 ? c : a.key.compareTo(b.key);
+        });
     final at = (index ?? siblings.length).clamp(0, siblings.length);
     final before = at == 0 ? null : siblings[at - 1].sortKey;
     // Two devices can pick the same key for different nodes; the list then

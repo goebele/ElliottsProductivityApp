@@ -84,6 +84,36 @@ class RemovedView extends Notifier<Lifecycle?> {
   void show(Lifecycle? which) => state = which;
 }
 
+/// A node's shortcuts (§6.12), live.
+final placementsOfProvider = StreamProvider.family<List<PlacementInfo>, String>(
+  (ref, nodeId) async* {
+    final repo = await ref.watch(nodeRepositoryProvider.future);
+    yield* repo.watchPlacementsOf(nodeId);
+  },
+);
+
+/// The shortcut the open node was reached through, if any, so its
+/// breadcrumb can say "via Errands".
+final openedViaProvider = NotifierProvider<OpenedVia, OpenedViaShortcut?>(
+  OpenedVia.new,
+);
+
+/// [link]: opened from an item the note is linked into (§6.10), rather
+/// than through a shortcut.
+typedef OpenedViaShortcut = ({String nodeId, String parentId, bool link});
+
+class OpenedVia extends Notifier<OpenedViaShortcut?> {
+  @override
+  OpenedViaShortcut? build() => null;
+
+  /// Records how [nodeId] is being opened: through a shortcut under
+  /// [parentId], or (null) in its real place.
+  void opening(String nodeId, {String? viaParent, bool link = false}) =>
+      state = viaParent == null
+      ? null
+      : (nodeId: nodeId, parentId: viaParent, link: link);
+}
+
 /// Whether the notes column beside an item is open. Collapsed by default;
 /// one setting for all items, per device, in memory for now.
 final notesColumnOpenProvider = NotifierProvider<NotesColumnOpen, bool>(

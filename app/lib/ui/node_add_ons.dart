@@ -94,14 +94,6 @@ class NodeAddOns extends ConsumerWidget {
             label: Text(l10n.addDateTime),
             onPressed: openDates,
           ),
-        FilterChip(
-          avatar: const Icon(Icons.checklist),
-          label: Text(l10n.showAsList),
-          selected: node.childView == ChildView.checklist,
-          showCheckmark: false,
-          onSelected: (on) async =>
-              (await _repo(ref)).setShowAsList(node.id, on),
-        ),
       ],
     );
   }

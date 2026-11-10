@@ -7,17 +7,19 @@ import '../domain/node_repository.dart';
 import '../l10n/app_localizations.dart';
 import '../providers.dart';
 import 'autosave_field.dart';
+import 'child_views.dart';
 import 'done_button.dart';
 import 'labels.dart';
 import 'node_add_ons.dart';
+import 'linked_notes.dart';
+import 'markdown.dart';
 import 'notes_column.dart';
 import 'removal.dart';
 import 'tree_pane.dart';
 import 'tree_providers.dart';
 
 /// Everything about one node: breadcrumbs, title, type, status, note and its
-/// children (DESIGN.md §6.1). Child views (panels, checklist, steps) come in
-/// a later slice; for now children are a simple list.
+/// children in its child view (DESIGN.md §6.1, §6.13).
 class NodeDetail extends ConsumerWidget {
   const NodeDetail({
     super.key,
@@ -73,6 +75,20 @@ class _DetailState extends ConsumerState<_Detail> {
   /// non-empty description shows as read-only text.
   bool _editingDescription = false;
 
+  /// A note opens formatted and read-only, with Edit; a new (empty) note
+  /// opens in its editor. Save goes back to the formatted view.
+  late bool _editingNote = widget.node.bodyMd.isEmpty;
+  final _noteEditor = GlobalKey<MarkdownEditorState>();
+
+  /// The text Save just showed, until the saved copy comes back from the
+  /// database (so the view never flashes the old text).
+  String? _savedNote;
+
+  void _saveNote() => setState(() {
+    _savedNote = _noteEditor.currentState?.text;
+    _editingNote = false;
+  });
+
   /// From this width the notes column sits beside the item; narrower, notes
   /// are a collapsed section at the bottom.
   static const _sideColumnWidth = 900.0;
@@ -105,6 +121,39 @@ class _DetailState extends ConsumerState<_Detail> {
     },
   );
 
+  /// The item this note was opened from, if it was opened from an item it
+  /// is linked into.
+  String? _openedFromLink(Node node) {
+    final via = ref.watch(openedViaProvider);
+    return via != null && via.link && via.nodeId == node.id
+        ? via.parentId
+        : null;
+  }
+
+  /// The formatted note; clicking it edits.
+  Widget _noteView(Node node, AppLocalizations l10n, ThemeData theme) {
+    final saved = _savedNote;
+    final body = saved != null && saved != node.bodyMd ? saved : node.bodyMd;
+    return Tooltip(
+      message: l10n.noteEdit,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(4),
+        onTap: () => setState(() => _editingNote = true),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: body.trim().isEmpty
+              ? Text(
+                  l10n.noteEmpty,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                )
+              : MarkdownView(body),
+        ),
+      ),
+    );
+  }
+
   Widget _main(BuildContext context, {required bool sideColumn}) {
     final node = widget.node;
     final onOpen = widget.onOpen;
@@ -125,6 +174,51 @@ class _DetailState extends ConsumerState<_Detail> {
             if (!isNote && sideColumn) NotesToggle(parentId: node.id),
           ],
         ),
+        if (isNote) ...[
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              // Takes the room left by Edit/Save; a long title is cut short.
+              Expanded(
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  // Opened from an item it is linked into: back there.
+                  child: switch (_openedFromLink(node) ?? node.parentId) {
+                    final back? => _BackToParent(
+                      parentId: back,
+                      onBack: () => widget.onLeave(back),
+                    ),
+                    null => null,
+                  },
+                ),
+              ),
+              if (node.parentId != null)
+                IconButton(
+                  tooltip: node.sharedWithChildren
+                      ? l10n.stopSharing
+                      : l10n.shareWithAll,
+                  isSelected: node.sharedWithChildren,
+                  icon: const Icon(Icons.push_pin_outlined),
+                  selectedIcon: const Icon(Icons.push_pin),
+                  onPressed: () async =>
+                      (await _repo(ref))
+                          .setNoteShared(node.id, !node.sharedWithChildren),
+                ),
+              if (_editingNote)
+                FilledButton.icon(
+                  icon: const Icon(Icons.check),
+                  label: Text(l10n.noteSave),
+                  onPressed: _saveNote,
+                )
+              else
+                FilledButton.tonalIcon(
+                  icon: const Icon(Icons.edit_outlined),
+                  label: Text(l10n.noteEdit),
+                  onPressed: () => setState(() => _editingNote = true),
+                ),
+            ],
+          ),
+        ],
         const SizedBox(height: 8),
         Row(
           children: [
@@ -182,16 +276,24 @@ class _DetailState extends ConsumerState<_Detail> {
         const SizedBox(height: 16),
         if (isNote)
           // A note is its text: always shown, nothing else to add.
-          AutosaveField(
-            value: node.bodyMd,
-            maxLines: null,
-            minLines: 10,
-            decoration: InputDecoration(
-              hintText: l10n.noteBodyHint,
-              border: const OutlineInputBorder(),
-            ),
-            onSave: (body) async => (await _repo(ref)).setBody(node.id, body),
-          )
+          _editingNote
+              ? CallbackShortcuts(
+                  bindings: {
+                    const SingleActivator(LogicalKeyboardKey.escape): _saveNote,
+                  },
+                  child: MarkdownEditor(
+                    key: _noteEditor,
+                    value: node.bodyMd,
+                    minLines: 10,
+                    autofocus: node.title.isNotEmpty,
+                    hint: l10n.noteBodyHint,
+                    onSave: (body) async =>
+                        (await _repo(ref)).setBody(node.id, body),
+                  ),
+                )
+              : _noteView(node, l10n, theme),
+        if (isNote)
+          LinkedIntoRow(note: node, onOpen: onOpen)
         else ...[
           NodeAddOns(
             node: node,
@@ -205,32 +307,17 @@ class _DetailState extends ConsumerState<_Detail> {
                 const SingleActivator(LogicalKeyboardKey.escape): () =>
                     setState(() => _editingDescription = false),
               },
-              child: Stack(
-                children: [
-                  AutosaveField(
-                    value: node.bodyMd,
-                    maxLines: null,
-                    minLines: 4,
-                    autofocus: true,
-                    decoration: InputDecoration(
-                      hintText: l10n.descriptionHint,
-                      border: const OutlineInputBorder(),
-                      contentPadding: const EdgeInsets.fromLTRB(12, 16, 48, 16),
-                    ),
-                    onSave: (body) async =>
-                        (await _repo(ref)).setBody(node.id, body),
-                  ),
-                  Positioned(
-                    top: 4,
-                    right: 4,
-                    child: IconButton(
-                      tooltip: l10n.closeDescription,
-                      icon: const Icon(Icons.close),
-                      onPressed: () =>
-                          setState(() => _editingDescription = false),
-                    ),
-                  ),
-                ],
+              child: MarkdownEditor(
+                value: node.bodyMd,
+                autofocus: true,
+                hint: l10n.descriptionHint,
+                onSave: (body) async =>
+                    (await _repo(ref)).setBody(node.id, body),
+                trailing: IconButton(
+                  tooltip: l10n.closeDescription,
+                  icon: const Icon(Icons.close),
+                  onPressed: () => setState(() => _editingDescription = false),
+                ),
               ),
             ),
           ] else if (node.bodyMd.isNotEmpty) ...[
@@ -242,15 +329,13 @@ class _DetailState extends ConsumerState<_Detail> {
                 onTap: () => setState(() => _editingDescription = true),
                 child: Padding(
                   padding: const EdgeInsets.all(12),
-                  child: Text(node.bodyMd, style: theme.textTheme.bodyLarge),
+                  child: MarkdownView(node.bodyMd),
                 ),
               ),
             ),
           ],
           const SizedBox(height: 24),
-          Text(l10n.childrenHeading, style: theme.textTheme.titleMedium),
-          const SizedBox(height: 4),
-          _Children(parentId: node.id, onOpen: onOpen),
+          ChildrenSection(parent: node, onOpen: onOpen),
           if (!sideColumn) ...[
             const SizedBox(height: 16),
             NotesSection(parentId: node.id, onOpen: onOpen),
@@ -271,12 +356,31 @@ class _Breadcrumbs extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final ancestors = ref.watch(ancestorsProvider(nodeId)).value ?? const [];
-    if (ancestors.isEmpty) return const SizedBox(height: 24);
+    final via = ref.watch(openedViaProvider);
+    final viaParent = via != null && via.nodeId == nodeId
+        ? ref.watch(nodeProvider(via.parentId)).value
+        : null;
+    if (ancestors.isEmpty && viaParent == null) {
+      return const SizedBox(height: 24);
+    }
 
     final theme = Theme.of(context);
     return Wrap(
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
+        // Opened through a shortcut: the real path, plus where you came from.
+        if (viaParent != null)
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ActionChip(
+              visualDensity: VisualDensity.compact,
+              avatar: Icon(via!.link ? Icons.link : Icons.north_east, size: 16),
+              label: Text(
+                l10n.viaShortcut(l10n.titleOrUntitled(viaParent.title)),
+              ),
+              onPressed: () => onOpen(viaParent.id),
+            ),
+          ),
         for (final a in ancestors) ...[
           InkWell(
             borderRadius: BorderRadius.circular(4),
@@ -302,218 +406,25 @@ class _Breadcrumbs extends ConsumerWidget {
   }
 }
 
-class _Children extends ConsumerStatefulWidget {
-  const _Children({required this.parentId, required this.onOpen});
+/// "← Back to Trip": from a note to the item it belongs to.
+class _BackToParent extends ConsumerWidget {
+  const _BackToParent({required this.parentId, required this.onBack});
 
   final String parentId;
-  final OpenNode onOpen;
-
-  @override
-  ConsumerState<_Children> createState() => _ChildrenState();
-}
-
-class _ChildrenState extends ConsumerState<_Children> {
-  final _addController = TextEditingController();
-  final _addFocus = FocusNode();
-
-  @override
-  void dispose() {
-    _addController.dispose();
-    _addFocus.dispose();
-    super.dispose();
-  }
-
-  Future<void> _add(String title) async {
-    if (title.trim().isEmpty) return;
-    _addController.clear();
-    _addFocus.requestFocus();
-    final repo = await ref.read(nodeRepositoryProvider.future);
-    await repo.create(title: title.trim(), parentId: widget.parentId);
-    // Show the new child in the tree too.
-    ref.read(expandedNodesProvider.notifier).expandAll([widget.parentId]);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final children =
-        ref.watch(childrenProvider(widget.parentId)).value ?? const [];
-    final exclusive = ref.watch(exclusiveProvider(widget.parentId)).value;
-    final material = MaterialLocalizations.of(context);
-    final locale = Localizations.localeOf(context).toString();
-
-    /// In a one-at-a-time set, a row shows its cadence and last completion
-    /// instead of a checkbox: completing happens per occurrence, on the card.
-    String? cadence(Node node) {
-      if (exclusive == null) return null;
-      final rule = node.rrule == null
-          ? l10n.cadenceParent
-          : l10n.repeatSummary(node.rrule!, locale);
-      final last = exclusive.lastDone[node.id];
-      return '$rule · ${last == null ? l10n.neverDone : l10n.lastDoneOn(material.formatMediumDate(last))}';
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (exclusive != null) _ExclusiveCard(status: exclusive),
-        ReorderableListView(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          buildDefaultDragHandles: false,
-          onReorderItem: (from, to) async {
-            if (to == from) return;
-            final repo = await ref.read(nodeRepositoryProvider.future);
-            await repo.move(
-              children[from].node.id,
-              newParentId: widget.parentId,
-              index: to,
-            );
-          },
-          children: [
-            for (final (i, entry) in children.indexed)
-              ListTile(
-                key: ValueKey(entry.node.id),
-                contentPadding: EdgeInsets.zero,
-                dense: true,
-                subtitle: switch (cadence(entry.node)) {
-                  final text? => Text(text),
-                  null => null,
-                },
-                leading: exclusive != null
-                    ? Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: SizedBox(
-                          width: 24,
-                          child: switch (nodeIcon(entry.node)) {
-                            final icon? => Icon(icon),
-                            null => null,
-                          },
-                        ),
-                      )
-                    : Checkbox(
-                        value: entry.node.status == NodeStatus.done,
-                        onChanged: (checked) async {
-                          final repo = await ref.read(
-                            nodeRepositoryProvider.future,
-                          );
-                          await repo.setStatus(
-                            entry.node.id,
-                            checked == true ? NodeStatus.done : NodeStatus.open,
-                          );
-                        },
-                      ),
-                title: Text(
-                  l10n.titleOrUntitled(entry.node.title),
-                  style: TextStyle(
-                    decoration: isFinished(entry.node.status)
-                        ? TextDecoration.lineThrough
-                        : null,
-                  ),
-                ),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (entry.childCount > 0)
-                      Text(
-                        '${entry.childCount}',
-                        style: theme.textTheme.labelSmall,
-                      ),
-                    const Icon(Icons.chevron_right),
-                    ReorderableDragStartListener(
-                      index: i,
-                      child: Tooltip(
-                        message: l10n.reorderHandle,
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 8),
-                          child: Icon(Icons.drag_indicator),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                onTap: () => widget.onOpen(entry.node.id),
-              ),
-          ],
-        ),
-        TextField(
-          controller: _addController,
-          focusNode: _addFocus,
-          decoration: InputDecoration(
-            hintText: l10n.addChildHint,
-            prefixIcon: const Icon(Icons.add),
-            border: InputBorder.none,
-          ),
-          onSubmitted: _add,
-        ),
-      ],
-    );
-  }
-}
-
-/// The current turn of a one-at-a-time set (D36): what's up next, what was
-/// already done for this occurrence, or that nothing is due.
-class _ExclusiveCard extends ConsumerWidget {
-  const _ExclusiveCard({required this.status});
-
-  final ExclusiveStatus status;
+  final VoidCallback onBack;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-
-    Future<void> act(Future<void> Function(NodeRepository repo) f) async =>
-        f(await ref.read(nodeRepositoryProvider.future));
-
-    final (
-      IconData icon,
-      String title,
-      String? detail,
-      Widget? action,
-    ) = switch (status.state) {
-      ExclusiveDue(:final childId, :final overdueDays, :final periodStart) => (
-        Icons.arrow_forward,
-        l10n.exclusiveNext(
-          l10n.titleOrUntitled(status.child(childId)?.title ?? ''),
-        ),
-        overdueDays == null ? l10n.neverDone : l10n.overdueDays(overdueDays),
-        FilledButton.tonal(
-          onPressed: () =>
-              act((r) => r.completeOccurrence(childId, periodStart)),
-          child: Text(l10n.markDone),
-        ),
+    final parent = ref.watch(nodeProvider(parentId)).value;
+    return TextButton.icon(
+      icon: const Icon(Icons.arrow_back),
+      label: Text(
+        l10n.backTo(l10n.titleOrUntitled(parent?.title ?? '')),
+        overflow: TextOverflow.ellipsis,
+        maxLines: 1,
       ),
-      ExclusiveDone(:final childId, :final periodStart) => (
-        Icons.check_circle_outline,
-        l10n.exclusiveDone(
-          l10n.titleOrUntitled(status.child(childId)?.title ?? ''),
-        ),
-        null,
-        TextButton(
-          onPressed: () =>
-              act((r) => r.uncompleteOccurrence(childId, periodStart)),
-          child: Text(l10n.undo),
-        ),
-      ),
-      ExclusiveNothingDue() => (
-        Icons.hourglass_empty,
-        l10n.exclusiveNothing,
-        null,
-        null,
-      ),
-    };
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      color: theme.colorScheme.secondaryContainer,
-      child: ListTile(
-        leading: Icon(icon),
-        title: Text(title),
-        subtitle: detail == null ? null : Text(detail),
-        trailing: action,
-      ),
+      onPressed: onBack,
     );
   }
 }

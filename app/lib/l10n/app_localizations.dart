@@ -352,12 +352,6 @@ abstract class AppLocalizations {
   /// **'Repeat'**
   String get addRepeat;
 
-  /// Toggle that shows an item's children as a checklist
-  ///
-  /// In en, this message translates to:
-  /// **'Show as list'**
-  String get showAsList;
-
   /// Deadline chip text
   ///
   /// In en, this message translates to:
@@ -783,6 +777,312 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =0{deleted today} =1{1 day left} other{{count} days left}}'**
   String daysLeft(int count);
+
+  /// No description provided for @viewPanels.
+  ///
+  /// In en, this message translates to:
+  /// **'Panels'**
+  String get viewPanels;
+
+  /// No description provided for @viewChecklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Checklist'**
+  String get viewChecklist;
+
+  /// No description provided for @viewSteps.
+  ///
+  /// In en, this message translates to:
+  /// **'Steps'**
+  String get viewSteps;
+
+  /// No description provided for @markNotDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark not done'**
+  String get markNotDone;
+
+  /// No description provided for @progressCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{done}/{total}'**
+  String progressCount(int done, int total);
+
+  /// No description provided for @mdBold.
+  ///
+  /// In en, this message translates to:
+  /// **'Bold'**
+  String get mdBold;
+
+  /// No description provided for @mdItalic.
+  ///
+  /// In en, this message translates to:
+  /// **'Italic'**
+  String get mdItalic;
+
+  /// No description provided for @mdHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Heading'**
+  String get mdHeading;
+
+  /// No description provided for @mdBullets.
+  ///
+  /// In en, this message translates to:
+  /// **'Bulleted list'**
+  String get mdBullets;
+
+  /// No description provided for @mdNumbers.
+  ///
+  /// In en, this message translates to:
+  /// **'Numbered list'**
+  String get mdNumbers;
+
+  /// No description provided for @mdLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Link'**
+  String get mdLink;
+
+  /// No description provided for @mdCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Code'**
+  String get mdCode;
+
+  /// No description provided for @mdPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get mdPreview;
+
+  /// No description provided for @mdEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get mdEdit;
+
+  /// No description provided for @mdNothingToPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to preview yet.'**
+  String get mdNothingToPreview;
+
+  /// No description provided for @noteEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get noteEdit;
+
+  /// No description provided for @noteSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get noteSave;
+
+  /// No description provided for @noteEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty note. Click to write.'**
+  String get noteEmpty;
+
+  /// No description provided for @backTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to {title}'**
+  String backTo(String title);
+
+  /// No description provided for @cantMoveThere.
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t move it there: it would end up inside itself.'**
+  String get cantMoveThere;
+
+  /// No description provided for @removeShortcut.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove shortcut'**
+  String get removeShortcut;
+
+  /// No description provided for @shortcutTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Shortcut: this item really lives elsewhere'**
+  String get shortcutTooltip;
+
+  /// No description provided for @alsoShowIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Also show in…'**
+  String get alsoShowIn;
+
+  /// No description provided for @removeShortcutFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove shortcut from {title}'**
+  String removeShortcutFrom(String title);
+
+  /// No description provided for @topLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'Top level'**
+  String get topLevel;
+
+  /// No description provided for @alsoShownIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Also shown in {title}'**
+  String alsoShownIn(String title);
+
+  /// No description provided for @pickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Also show {title} in…'**
+  String pickerTitle(String title);
+
+  /// No description provided for @pickerSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search items'**
+  String get pickerSearch;
+
+  /// No description provided for @pickerNoMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching items.'**
+  String get pickerNoMatches;
+
+  /// No description provided for @viaShortcut.
+  ///
+  /// In en, this message translates to:
+  /// **'via {title}'**
+  String viaShortcut(String title);
+
+  /// No description provided for @linkedNotesHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'From above'**
+  String get linkedNotesHeading;
+
+  /// No description provided for @linkFromAbove.
+  ///
+  /// In en, this message translates to:
+  /// **'Link from above…'**
+  String get linkFromAbove;
+
+  /// No description provided for @linkPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Link notes from above'**
+  String get linkPickerTitle;
+
+  /// No description provided for @linkPickerEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'The items above this one have no notes yet.'**
+  String get linkPickerEmpty;
+
+  /// No description provided for @linkGroupParent.
+  ///
+  /// In en, this message translates to:
+  /// **'{title} (parent)'**
+  String linkGroupParent(String title);
+
+  /// No description provided for @linkGroupElsewhere.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked earlier, no longer above'**
+  String get linkGroupElsewhere;
+
+  /// No description provided for @linkedFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'from: {title}'**
+  String linkedFrom(String title);
+
+  /// No description provided for @linkedInto.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Linked into 1 item:} other{Linked into {count} items:}}'**
+  String linkedInto(int count);
+
+  /// No description provided for @unlink.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlink'**
+  String get unlink;
+
+  /// No description provided for @sourceArchived.
+  ///
+  /// In en, this message translates to:
+  /// **'Source archived'**
+  String get sourceArchived;
+
+  /// No description provided for @sourceTrashed.
+  ///
+  /// In en, this message translates to:
+  /// **'Source in Trash'**
+  String get sourceTrashed;
+
+  /// No description provided for @sourceDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Source deleted'**
+  String get sourceDeleted;
+
+  /// No description provided for @restoreSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore source'**
+  String get restoreSource;
+
+  /// No description provided for @clearLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get clearLink;
+
+  /// No description provided for @done.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get done;
+
+  /// No description provided for @sharedFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'pinned by: {title}'**
+  String sharedFrom(String title);
+
+  /// No description provided for @sharedWithAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared with all sub-items'**
+  String get sharedWithAll;
+
+  /// No description provided for @shareWithAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Share with all sub-items'**
+  String get shareWithAll;
+
+  /// No description provided for @stopSharing.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop sharing with sub-items'**
+  String get stopSharing;
+
+  /// No description provided for @usedByElsewhere.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Used by 1 item elsewhere, which links its notes.} other{Used by {count} items elsewhere, which link its notes.}}'**
+  String usedByElsewhere(int count);
+
+  /// No description provided for @shortcutsElsewhere.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Its shortcut in 1 other place goes too.} other{Its shortcuts in {count} other places go too.}}'**
+  String shortcutsElsewhere(int count);
 }
 
 class _AppLocalizationsDelegate

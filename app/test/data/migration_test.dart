@@ -13,21 +13,23 @@ void main() {
 
   setUpAll(() => verifier = SchemaVerifier(GeneratedHelper()));
 
-  for (final from in [1, 2]) {
-    test('upgrading v$from to the current version gives exactly its schema',
-        () async {
-      final schema = await verifier.schemaAt(from);
-      final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, db.schemaVersion);
-      await db.close();
-    });
+  for (final from in [1, 2, 3, 4, 5, 6]) {
+    test(
+      'upgrading v$from to the current version gives exactly its schema',
+      () async {
+        final schema = await verifier.schemaAt(from);
+        final db = AppDatabase(schema.newConnection());
+        await verifier.migrateAndValidate(db, db.schemaVersion);
+        await db.close();
+      },
+    );
   }
 
-  test('v2 nodes with retired types become tasks (lists keep their layout, notes stay notes)',
-      () async {
+  test('v2 nodes with retired types become tasks (lists keep their layout, notes stay notes)', () async {
     final schema = await verifier.schemaAt(2);
     const now = '2026-11-06T23:05:52.332Z';
-    String node(String id, String type, {String childView = 'NULL'}) => '''
+    String node(String id, String type, {String childView = 'NULL'}) =>
+        '''
       INSERT INTO nodes (id, space_id, created_at, created_by, updated_by, hlc,
         deleted, parent_id, sort_key, type, title, body_md, body_format,
         child_view, status, lifecycle)
@@ -71,11 +73,16 @@ void main() {
     });
 
     // The conversions are ordinary edits, so they will sync.
-    final ops = await (db.select(db.changeLog)
-          ..where((o) => o.columnName.equals('type')))
-        .get();
-    expect(ops.map((o) => o.rowId).toSet(),
-        {'shopping', 'packing', 'gym', 'dentist', 'capture'});
+    final ops = await (db.select(
+      db.changeLog,
+    )..where((o) => o.columnName.equals('type'))).get();
+    expect(ops.map((o) => o.rowId).toSet(), {
+      'shopping',
+      'packing',
+      'gym',
+      'dentist',
+      'capture',
+    });
     expect(ops.map((o) => jsonDecode(o.value)).toSet(), {'task'});
     await db.close();
   });
@@ -111,10 +118,12 @@ void main() {
     expect(ops.map((o) => o.hlc).toSet(), {hlc});
     expect(ops.map((o) => o.originDeviceId).toSet(), {'device-1'});
     final kind = ops.singleWhere(
-        (o) => o.rowId == 'space-1' && o.columnName == 'kind');
+      (o) => o.rowId == 'space-1' && o.columnName == 'kind',
+    );
     expect(jsonDecode(kind.value), 'personal');
     final role = ops.singleWhere(
-        (o) => o.rowId == 'member-1' && o.columnName == 'role');
+      (o) => o.rowId == 'member-1' && o.columnName == 'role',
+    );
     expect(jsonDecode(role.value), 'owner');
 
     // The rows themselves are untouched.

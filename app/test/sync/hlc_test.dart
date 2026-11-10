@@ -24,17 +24,19 @@ void main() {
     ]);
   });
 
-  test('stamps keep increasing when the wall clock stands still or goes back',
-      () {
-    var wall = 100;
-    final clock = HlcClock('a', wallClock: () => wall);
-    final first = clock.now();
-    final second = clock.now();
-    wall = 50;
-    final third = clock.now();
-    expect(first.compareTo(second), lessThan(0));
-    expect(second.compareTo(third), lessThan(0));
-  });
+  test(
+    'stamps keep increasing when the wall clock stands still or goes back',
+    () {
+      var wall = 100;
+      final clock = HlcClock('a', wallClock: () => wall);
+      final first = clock.now();
+      final second = clock.now();
+      wall = 50;
+      final third = clock.now();
+      expect(first.compareTo(second), lessThan(0));
+      expect(second.compareTo(third), lessThan(0));
+    },
+  );
 
   test('receive moves past a remote stamp from the future', () {
     final clock = HlcClock('a', wallClock: () => 100);

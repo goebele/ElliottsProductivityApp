@@ -29,7 +29,7 @@ class LocalIdentity {
 
 /// Thrown when the database knows this device but its private keys are gone
 /// (e.g. OS secure storage was cleared). Recovery is pairing from another
-/// device (§7.2), which arrives in M3.
+/// device (§7.2), which arrives in M7.
 class MissingIdentityKeysException implements Exception {
   @override
   String toString() =>

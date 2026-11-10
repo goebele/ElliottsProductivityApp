@@ -147,10 +147,6 @@
   "@addRepeat": {
     "description": "Chip that makes an item repeat (a routine); also the repeat dialog title"
   },
-  "showAsList": "Show as list",
-  "@showAsList": {
-    "description": "Toggle that shows an item's children as a checklist"
-  },
   "dueOn": "Due {date}",
   "@dueOn": {
     "description": "Deadline chip text",
@@ -544,6 +540,144 @@
   },
   "daysLeft": "{count, plural, =0{deleted today} =1{1 day left} other{{count} days left}}",
   "@daysLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "viewPanels": "Panels",
+  "viewChecklist": "Checklist",
+  "viewSteps": "Steps",
+  "markNotDone": "Mark not done",
+  "progressCount": "{done}/{total}",
+  "@progressCount": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "mdBold": "Bold",
+  "mdItalic": "Italic",
+  "mdHeading": "Heading",
+  "mdBullets": "Bulleted list",
+  "mdNumbers": "Numbered list",
+  "mdLink": "Link",
+  "mdCode": "Code",
+  "mdPreview": "Preview",
+  "mdEdit": "Edit",
+  "mdNothingToPreview": "Nothing to preview yet.",
+  "noteEdit": "Edit",
+  "noteSave": "Save",
+  "noteEmpty": "Empty note. Click to write.",
+  "backTo": "Back to {title}",
+  "@backTo": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "cantMoveThere": "Can't move it there: it would end up inside itself.",
+  "removeShortcut": "Remove shortcut",
+  "shortcutTooltip": "Shortcut: this item really lives elsewhere",
+  "alsoShowIn": "Also show in…",
+  "removeShortcutFrom": "Remove shortcut from {title}",
+  "@removeShortcutFrom": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "topLevel": "Top level",
+  "alsoShownIn": "Also shown in {title}",
+  "@alsoShownIn": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "pickerTitle": "Also show {title} in…",
+  "@pickerTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "pickerSearch": "Search items",
+  "pickerNoMatches": "No matching items.",
+  "viaShortcut": "via {title}",
+  "@viaShortcut": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "linkedNotesHeading": "From above",
+  "linkFromAbove": "Link from above…",
+  "linkPickerTitle": "Link notes from above",
+  "linkPickerEmpty": "The items above this one have no notes yet.",
+  "linkGroupParent": "{title} (parent)",
+  "@linkGroupParent": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "linkGroupElsewhere": "Linked earlier, no longer above",
+  "linkedFrom": "from: {title}",
+  "@linkedFrom": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "linkedInto": "{count, plural, =1{Linked into 1 item:} other{Linked into {count} items:}}",
+  "@linkedInto": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "unlink": "Unlink",
+  "sourceArchived": "Source archived",
+  "sourceTrashed": "Source in Trash",
+  "sourceDeleted": "Source deleted",
+  "restoreSource": "Restore source",
+  "clearLink": "Clear",
+  "done": "Done",
+  "sharedFrom": "pinned by: {title}",
+  "@sharedFrom": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "sharedWithAll": "Shared with all sub-items",
+  "shareWithAll": "Share with all sub-items",
+  "stopSharing": "Stop sharing with sub-items",
+  "usedByElsewhere": "{count, plural, =1{Used by 1 item elsewhere, which links its notes.} other{Used by {count} items elsewhere, which link its notes.}}",
+  "@usedByElsewhere": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shortcutsElsewhere": "{count, plural, =1{Its shortcut in 1 other place goes too.} other{Its shortcuts in {count} other places go too.}}",
+  "@shortcutsElsewhere": {
     "placeholders": {
       "count": {
         "type": "int"

@@ -154,9 +154,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addRepeat => 'Repeat';
 
   @override
-  String get showAsList => 'Show as list';
-
-  @override
   String dueOn(String date) {
     return 'Due $date';
   }
@@ -513,6 +510,202 @@ class AppLocalizationsEn extends AppLocalizations {
       other: '$count days left',
       one: '1 day left',
       zero: 'deleted today',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get viewPanels => 'Panels';
+
+  @override
+  String get viewChecklist => 'Checklist';
+
+  @override
+  String get viewSteps => 'Steps';
+
+  @override
+  String get markNotDone => 'Mark not done';
+
+  @override
+  String progressCount(int done, int total) {
+    return '$done/$total';
+  }
+
+  @override
+  String get mdBold => 'Bold';
+
+  @override
+  String get mdItalic => 'Italic';
+
+  @override
+  String get mdHeading => 'Heading';
+
+  @override
+  String get mdBullets => 'Bulleted list';
+
+  @override
+  String get mdNumbers => 'Numbered list';
+
+  @override
+  String get mdLink => 'Link';
+
+  @override
+  String get mdCode => 'Code';
+
+  @override
+  String get mdPreview => 'Preview';
+
+  @override
+  String get mdEdit => 'Edit';
+
+  @override
+  String get mdNothingToPreview => 'Nothing to preview yet.';
+
+  @override
+  String get noteEdit => 'Edit';
+
+  @override
+  String get noteSave => 'Save';
+
+  @override
+  String get noteEmpty => 'Empty note. Click to write.';
+
+  @override
+  String backTo(String title) {
+    return 'Back to $title';
+  }
+
+  @override
+  String get cantMoveThere =>
+      'Can\'t move it there: it would end up inside itself.';
+
+  @override
+  String get removeShortcut => 'Remove shortcut';
+
+  @override
+  String get shortcutTooltip => 'Shortcut: this item really lives elsewhere';
+
+  @override
+  String get alsoShowIn => 'Also show in…';
+
+  @override
+  String removeShortcutFrom(String title) {
+    return 'Remove shortcut from $title';
+  }
+
+  @override
+  String get topLevel => 'Top level';
+
+  @override
+  String alsoShownIn(String title) {
+    return 'Also shown in $title';
+  }
+
+  @override
+  String pickerTitle(String title) {
+    return 'Also show $title in…';
+  }
+
+  @override
+  String get pickerSearch => 'Search items';
+
+  @override
+  String get pickerNoMatches => 'No matching items.';
+
+  @override
+  String viaShortcut(String title) {
+    return 'via $title';
+  }
+
+  @override
+  String get linkedNotesHeading => 'From above';
+
+  @override
+  String get linkFromAbove => 'Link from above…';
+
+  @override
+  String get linkPickerTitle => 'Link notes from above';
+
+  @override
+  String get linkPickerEmpty => 'The items above this one have no notes yet.';
+
+  @override
+  String linkGroupParent(String title) {
+    return '$title (parent)';
+  }
+
+  @override
+  String get linkGroupElsewhere => 'Linked earlier, no longer above';
+
+  @override
+  String linkedFrom(String title) {
+    return 'from: $title';
+  }
+
+  @override
+  String linkedInto(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Linked into $count items:',
+      one: 'Linked into 1 item:',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get unlink => 'Unlink';
+
+  @override
+  String get sourceArchived => 'Source archived';
+
+  @override
+  String get sourceTrashed => 'Source in Trash';
+
+  @override
+  String get sourceDeleted => 'Source deleted';
+
+  @override
+  String get restoreSource => 'Restore source';
+
+  @override
+  String get clearLink => 'Clear';
+
+  @override
+  String get done => 'Done';
+
+  @override
+  String sharedFrom(String title) {
+    return 'pinned by: $title';
+  }
+
+  @override
+  String get sharedWithAll => 'Shared with all sub-items';
+
+  @override
+  String get shareWithAll => 'Share with all sub-items';
+
+  @override
+  String get stopSharing => 'Stop sharing with sub-items';
+
+  @override
+  String usedByElsewhere(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Used by $count items elsewhere, which link its notes.',
+      one: 'Used by 1 item elsewhere, which links its notes.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String shortcutsElsewhere(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Its shortcuts in $count other places go too.',
+      one: 'Its shortcut in 1 other place goes too.',
     );
     return '$_temp0';
   }

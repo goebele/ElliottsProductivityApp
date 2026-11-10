@@ -6,6 +6,7 @@ import '../domain/node_repository.dart';
 import '../l10n/app_localizations.dart';
 import '../providers.dart';
 import 'labels.dart';
+import 'node_picker.dart';
 import 'tree_providers.dart';
 
 /// Archive and Trash (DESIGN.md §6.11): the confirmations, the node page's
@@ -19,8 +20,9 @@ Future<bool> confirmRemoval(
   BuildContext context,
   Removal kind,
   Node node,
-  int count,
-) async {
+  int count, {
+  ExternalUses uses = const ExternalUses(),
+}) async {
   final l10n = AppLocalizations.of(context);
   final title = '“${l10n.titleOrUntitled(node.title)}”';
   final (heading, body, action) = switch (kind) {
@@ -40,10 +42,15 @@ Future<bool> confirmRemoval(
       l10n.actionDeleteForever,
     ),
   };
+  // What outside the group will notice (§6.11).
+  final notes = [
+    if (uses.linkingItems > 0) l10n.usedByElsewhere(uses.linkingItems),
+    if (uses.shortcuts > 0) l10n.shortcutsElsewhere(uses.shortcuts),
+  ];
   return _confirm(
     context,
     heading,
-    body,
+    notes.isEmpty ? body : '$body\n\n${notes.join('\n')}',
     action,
     destructive: kind != Removal.archive,
   );
@@ -102,7 +109,9 @@ Future<bool> removeNode(
                 ?.others ??
             0
       : await repo.subtreeSize(node.id);
-  if (!context.mounted || !await confirmRemoval(context, kind, node, count)) {
+  final uses = await repo.externalUses(node.id);
+  if (!context.mounted ||
+      !await confirmRemoval(context, kind, node, count, uses: uses)) {
     return false;
   }
   final title = l10n.titleOrUntitled(node.title);
@@ -158,6 +167,42 @@ Future<void> restoreGroup(
     );
 }
 
+/// Picks a place and adds a shortcut to [node] there, with Undo.
+Future<void> addShortcut(BuildContext context, WidgetRef ref, Node node) async {
+  final l10n = AppLocalizations.of(context);
+  final messenger = ScaffoldMessenger.maybeOf(context);
+  final picked = await pickShortcutParent(context, node);
+  if (picked == null) return;
+  final repo = await ref.read(nodeRepositoryProvider.future);
+  final parentId = picked.parentId;
+  final String placementId;
+  try {
+    placementId = await repo.addPlacement(node.id, parentId);
+  } on Exception {
+    messenger?.showSnackBar(SnackBar(content: Text(l10n.cantMoveThere)));
+    return;
+  }
+  if (parentId != null) {
+    ref.read(expandedNodesProvider.notifier).expandAll([parentId]);
+  }
+  final parent = parentId == null ? null : await repo.get(parentId);
+  messenger
+    ?..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        content: Text(
+          l10n.alsoShownIn(
+            parent == null ? l10n.topLevel : l10n.titleOrUntitled(parent.title),
+          ),
+        ),
+        action: SnackBarAction(
+          label: l10n.undo,
+          onPressed: () => repo.removePlacement(placementId),
+        ),
+      ),
+    );
+}
+
 /// The ⋮ menu at the end of a node's title row. [onLeave] is called after
 /// the node is archived or trashed, with its parent, so the page can move
 /// away from it.
@@ -179,7 +224,33 @@ class NodeMenu extends ConsumerWidget {
       }
     }
 
+    final shortcuts = node.type.isItem && live
+        ? ref.watch(placementsOfProvider(node.id)).value ?? const []
+        : const <PlacementInfo>[];
+
     final items = <Widget>[
+      if (live && node.type.isItem) ...[
+        MenuItemButton(
+          leadingIcon: const Icon(Icons.north_east),
+          onPressed: () => addShortcut(context, ref, node),
+          child: Text(l10n.alsoShowIn),
+        ),
+        for (final s in shortcuts)
+          MenuItemButton(
+            leadingIcon: const Icon(Icons.link_off),
+            onPressed: () async =>
+                (await ref.read(nodeRepositoryProvider.future))
+                    .removePlacement(s.id),
+            child: Text(
+              l10n.removeShortcutFrom(
+                s.parentId == null
+                    ? l10n.topLevel
+                    : l10n.titleOrUntitled(s.parentTitle ?? ''),
+              ),
+            ),
+          ),
+        const Divider(height: 1),
+      ],
       if (live) ...[
         MenuItemButton(
           leadingIcon: const Icon(Icons.archive_outlined),

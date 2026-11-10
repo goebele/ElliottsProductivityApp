@@ -101,7 +101,7 @@ class RepeatRule {
 
   // ------------------------------------------------------------ occurrences
   //
-  // Day-level only (times of day and time zones arrive in M5). The series
+  // Day-level only (times of day and time zones arrive in M4). The series
   // starts at [start]: nothing occurs before it, and intervals count from
   // its day / week (weeks start on Monday, RRULE's default) / month.
 

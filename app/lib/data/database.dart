@@ -16,6 +16,8 @@ part 'database.g.dart';
     SpaceMembers,
     Nodes,
     OccurrenceCompletions,
+    Placements,
+    Links,
     ChangeLog,
     Devices,
   ],
@@ -38,7 +40,7 @@ class AppDatabase extends _$AppDatabase {
   /// `dart run drift_dev schema dump lib/data/database.dart drift_schemas/`
   /// and `dart run drift_dev schema generate drift_schemas/ test/generated_migrations/`.
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -66,6 +68,20 @@ class AppDatabase extends _$AppDatabase {
       if (from < 4) {
         await m.createTable(occurrenceCompletions);
         await m.createIndex(occurrenceCompletionsNode);
+      }
+      if (from < 5) {
+        await m.createTable(placements);
+        await m.createIndex(placementsParent);
+        await m.createIndex(placementsNode);
+      }
+      if (from < 6) {
+        await m.createTable(links);
+        await m.createIndex(linksUnique);
+        await m.createIndex(linksTarget);
+      }
+      // Before v2 the nodes table is created whole, with this column.
+      if (from >= 2 && from < 7) {
+        await m.addColumn(nodes, nodes.sharedWithChildren);
       }
     },
   );

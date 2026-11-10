@@ -55,7 +55,12 @@ void main() {
   test('keysBetween returns ordered keys inside the range', () {
     final keys = keysBetween('a0', 'a1', 5);
     expect(keys, hasLength(5));
-    expect(['a0', ...keys, 'a1'], [...['a0', ...keys, 'a1']]..sort());
+    expect(
+      ['a0', ...keys, 'a1'],
+      [
+        ...['a0', ...keys, 'a1'],
+      ]..sort(),
+    );
   });
 
   test('rejects reversed or malformed bounds', () {

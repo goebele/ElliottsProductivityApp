@@ -141,6 +141,11 @@ class Nodes extends Table with SyncColumns {
   BoolColumn get exclusiveChildren =>
       boolean().withDefault(const Constant(false))();
 
+  /// Notes only (§6.10): shared with every item under the note's owner, as
+  /// if each had linked it. "Pinned" for all sub-items.
+  BoolColumn get sharedWithChildren =>
+      boolean().withDefault(const Constant(false))();
+
   /// Archive / Trash state, separate from [status] (§6.11).
   TextColumn get lifecycle =>
       textEnum<Lifecycle>().withDefault(Constant(Lifecycle.live.name))();
@@ -149,6 +154,48 @@ class Nodes extends Table with SyncColumns {
   /// The node the user actually archived or trashed; its whole subtree points
   /// here so restoring it brings back exactly that group.
   TextColumn get lifecycleRootId => text().nullable()();
+}
+
+/// Personal (§5.2, §6.12, D26): extra places a node appears for you only, a
+/// shortcut. The node keeps its one real parent. Removing a shortcut sets
+/// [deleted].
+@TableIndex(name: 'placements_parent', columns: {#parentNodeId, #sortKey})
+@TableIndex(name: 'placements_node', columns: {#nodeId})
+class Placements extends Table with SyncColumns {
+  TextColumn get nodeId => text()();
+
+  /// Where the shortcut shows; null = the top level.
+  TextColumn get parentNodeId => text().nullable()();
+
+  /// Order among the parent's children (real ones and shortcuts share one
+  /// key space).
+  TextColumn get sortKey => text()();
+}
+
+enum LinkKind { node, note, url, attachment }
+
+enum LinkOrigin { inline, attached }
+
+/// Shared (§5.2, §6.10): a link from a node to something. In v0.7 only
+/// `note` links with `origin = attached` exist: a child reusing one of its
+/// ancestors' notes. Nothing is copied; unlinking sets [deleted].
+@TableIndex.sql(
+  'CREATE UNIQUE INDEX links_unique ON links (from_node_id, target_kind, '
+  'target_id) WHERE deleted = 0',
+)
+@TableIndex(name: 'links_target', columns: {#targetKind, #targetId})
+class Links extends Table with SyncColumns {
+  TextColumn get fromNodeId => text()();
+  TextColumn get targetKind =>
+      text().map(const TolerantEnumConverter(LinkKind.values, LinkKind.node))();
+
+  /// The linked node (for `note`, the note node). Null for `url`.
+  TextColumn get targetId => text().nullable()();
+  TextColumn get url => text().nullable()();
+  TextColumn get label => text().nullable()();
+  TextColumn get origin => text().map(
+    const TolerantEnumConverter(LinkOrigin.values, LinkOrigin.attached),
+  )();
 }
 
 /// Completions of repeating items and their descendants (§5.2, D11, D24).
