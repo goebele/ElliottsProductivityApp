@@ -9,11 +9,15 @@ import '../providers.dart';
 import 'autosave_field.dart';
 import 'child_views.dart';
 import 'done_button.dart';
+import 'files.dart';
 import 'labels.dart';
 import 'node_add_ons.dart';
 import 'linked_notes.dart';
 import 'markdown.dart';
 import 'notes_column.dart';
+import 'peek.dart';
+import 'tags.dart';
+import 'values.dart';
 import 'removal.dart';
 import 'tree_pane.dart';
 import 'tree_providers.dart';
@@ -97,28 +101,31 @@ class _DetailState extends ConsumerState<_Detail> {
       ref.read(nodeRepositoryProvider.future);
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) {
-      final side = constraints.maxWidth >= _sideColumnWidth;
-      final node = widget.node;
-      final main = _main(context, sideColumn: side);
-      if (node.type == NodeType.note ||
-          !side ||
-          !ref.watch(notesColumnOpenProvider)) {
-        return main;
-      }
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(child: main),
-          const VerticalDivider(width: 1),
-          SizedBox(
-            width: 300,
-            child: NotesColumn(parentId: node.id, onOpen: widget.onOpen),
-          ),
-        ],
-      );
-    },
+  Widget build(BuildContext context) => FileDropZone(
+    nodeId: widget.node.id,
+    child: LayoutBuilder(
+      builder: (context, constraints) {
+        final side = constraints.maxWidth >= _sideColumnWidth;
+        final node = widget.node;
+        final main = _main(context, sideColumn: side);
+        if (node.type == NodeType.note ||
+            !side ||
+            !ref.watch(notesColumnOpenProvider)) {
+          return main;
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(child: main),
+            const VerticalDivider(width: 1),
+            SizedBox(
+              width: 300,
+              child: NotesColumn(parentId: node.id, onOpen: widget.onOpen),
+            ),
+          ],
+        );
+      },
+    ),
   );
 
   /// The item this note was opened from, if it was opened from an item it
@@ -247,6 +254,12 @@ class _DetailState extends ConsumerState<_Detail> {
             NodeMenu(node: node, onLeave: widget.onLeave),
           ],
         ),
+        if (!isNote) ...[
+          const SizedBox(height: 4),
+          ValueChips(node: node, onOpen: onOpen),
+        ],
+        const SizedBox(height: 6),
+        TagChips(node: node),
         const SizedBox(height: 12),
         Wrap(
           spacing: 12,
@@ -346,15 +359,28 @@ class _DetailState extends ConsumerState<_Detail> {
   }
 }
 
-class _Breadcrumbs extends ConsumerWidget {
+class _Breadcrumbs extends ConsumerStatefulWidget {
   const _Breadcrumbs({required this.nodeId, required this.onOpen});
 
   final String nodeId;
   final OpenNode onOpen;
 
+  /// Narrower than this, a long path shows its first and last levels with
+  /// "…" between; tapping "…" shows the rest.
+  static const collapseWidth = 600.0;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_Breadcrumbs> createState() => _BreadcrumbsState();
+}
+
+class _BreadcrumbsState extends ConsumerState<_Breadcrumbs> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final nodeId = widget.nodeId;
+    final onOpen = widget.onOpen;
     final ancestors = ref.watch(ancestorsProvider(nodeId)).value ?? const [];
     final via = ref.watch(openedViaProvider);
     final viaParent = via != null && via.nodeId == nodeId
@@ -365,43 +391,80 @@ class _Breadcrumbs extends ConsumerWidget {
     }
 
     final theme = Theme.of(context);
-    return Wrap(
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        // Opened through a shortcut: the real path, plus where you came from.
-        if (viaParent != null)
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: ActionChip(
-              visualDensity: VisualDensity.compact,
-              avatar: Icon(via!.link ? Icons.link : Icons.north_east, size: 16),
-              label: Text(
-                l10n.viaShortcut(l10n.titleOrUntitled(viaParent.title)),
-              ),
-              onPressed: () => onOpen(viaParent.id),
+    final chevron = Icon(
+      Icons.chevron_right,
+      size: 16,
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+    Widget crumb(Node a) => PeekTarget(
+      nodeId: a.id,
+      onOpen: onOpen,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(4),
+        onTap: () => onOpen(a.id),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          child: Text(
+            l10n.titleOrUntitled(a.title),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.primary,
             ),
           ),
-        for (final a in ancestors) ...[
-          InkWell(
-            borderRadius: BorderRadius.circular(4),
-            onTap: () => onOpen(a.id),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-              child: Text(
-                l10n.titleOrUntitled(a.title),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.primary,
+        ),
+      ),
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final collapse =
+            !_expanded &&
+            ancestors.length > 2 &&
+            constraints.maxWidth < _Breadcrumbs.collapseWidth;
+        return Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            // Opened through a shortcut: the real path, plus where you came
+            // from.
+            if (viaParent != null)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ActionChip(
+                  visualDensity: VisualDensity.compact,
+                  avatar: Icon(
+                    via!.link ? Icons.link : Icons.north_east,
+                    size: 16,
+                  ),
+                  label: Text(
+                    l10n.viaShortcut(l10n.titleOrUntitled(viaParent.title)),
+                  ),
+                  onPressed: () => onOpen(viaParent.id),
                 ),
               ),
-            ),
-          ),
-          Icon(
-            Icons.chevron_right,
-            size: 16,
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ],
-      ],
+            if (collapse) ...[
+              crumb(ancestors.first),
+              chevron,
+              Tooltip(
+                message: l10n.breadcrumbsShowAll,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(4),
+                  onTap: () => setState(() => _expanded = true),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    child: Text('…', style: theme.textTheme.bodySmall),
+                  ),
+                ),
+              ),
+              chevron,
+              crumb(ancestors.last),
+              chevron,
+            ] else
+              for (final a in ancestors) ...[crumb(a), chevron],
+          ],
+        );
+      },
     );
   }
 }

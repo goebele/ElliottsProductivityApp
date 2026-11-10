@@ -3,10 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/database.dart';
 import '../domain/markdown_format.dart';
+import '../domain/attachment_repository.dart';
 import '../domain/node_repository.dart';
 import '../l10n/app_localizations.dart';
 import '../providers.dart';
+import 'files.dart';
 import 'labels.dart';
+import 'peek.dart';
 import 'removal.dart';
 import 'tree_pane.dart';
 import 'tree_providers.dart';
@@ -40,7 +43,7 @@ final ancestorNotesProvider =
       final repo = await ref.watch(nodeRepositoryProvider.future);
       final db = ref.watch(databaseProvider);
       yield* db
-          .customSelect('SELECT 1', readsFrom: {db.nodes})
+          .customSelect('SELECT 1 AS ancestor_notes', readsFrom: {db.nodes})
           .watch()
           .asyncMap((_) => repo.ancestorNotes(childId));
     });
@@ -64,7 +67,15 @@ class LinkedNotesList extends ConsumerWidget {
     final theme = Theme.of(context);
     final linked = ref.watch(linkedNotesProvider(childId)).value ?? const [];
     final above = ref.watch(ancestorNotesProvider(childId)).value ?? const [];
-    if (linked.isEmpty && above.isEmpty) return const SizedBox.shrink();
+    final files = ref.watch(linkedFilesProvider(childId)).value ?? const [];
+    final aboveFiles =
+        ref.watch(ancestorFilesProvider(childId)).value ?? const [];
+    if (linked.isEmpty &&
+        above.isEmpty &&
+        files.isEmpty &&
+        aboveFiles.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -74,6 +85,8 @@ class LinkedNotesList extends ConsumerWidget {
         const SizedBox(height: 4),
         for (final l in linked)
           _LinkedNoteCard(childId: childId, linked: l, onOpen: onOpen),
+        for (final f in files)
+          _LinkedFileCard(childId: childId, linked: f, onOpen: onOpen),
         Align(
           alignment: Alignment.centerLeft,
           child: TextButton.icon(
@@ -109,6 +122,19 @@ class _FromTag extends StatelessWidget {
     final style = theme.textTheme.labelSmall?.copyWith(
       color: theme.colorScheme.primary,
     );
+    return PeekTarget(
+      nodeId: owner.id,
+      onOpen: onOpen,
+      child: _tag(context, l10n, theme, style),
+    );
+  }
+
+  Widget _tag(
+    BuildContext context,
+    AppLocalizations l10n,
+    ThemeData theme,
+    TextStyle? style,
+  ) {
     return InkWell(
       borderRadius: BorderRadius.circular(4),
       onTap: () => onOpen(owner.id),
@@ -269,6 +295,60 @@ class _LinkedNoteCard extends ConsumerWidget {
   }
 }
 
+/// A file from above: opens in its own page, Back returns here.
+class _LinkedFileCard extends ConsumerWidget {
+  const _LinkedFileCard({
+    required this.childId,
+    required this.linked,
+    required this.onOpen,
+  });
+
+  final String childId;
+  final LinkedFile linked;
+  final OpenNode onOpen;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final a = linked.attachment;
+    Future<void> unlink() async =>
+        (await ref.read(nodeRepositoryProvider.future)).files
+            .unlink(childId, linked.attachmentId);
+    final unlinkButton = IconButton(
+      tooltip: l10n.unlink,
+      iconSize: 18,
+      visualDensity: VisualDensity.compact,
+      icon: const Icon(Icons.link_off),
+      onPressed: unlink,
+    );
+    if (a == null) {
+      return Opacity(
+        opacity: 0.6,
+        child: Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          child: ListTile(
+            dense: true,
+            leading: const Icon(Icons.insert_drive_file_outlined),
+            title: Text(l10n.sourceDeleted),
+            trailing: TextButton(
+              onPressed: unlink,
+              child: Text(l10n.clearLink),
+            ),
+          ),
+        ),
+      );
+    }
+    return FileRow(
+      attachment: a,
+      onTap: () => AttachmentOpener.of(context)(a.id, via: childId),
+      subtitle: linked.owner == null
+          ? null
+          : _FromTag(owner: linked.owner!, onOpen: onOpen),
+      trailing: unlinkButton,
+    );
+  }
+}
+
 /// Ticks the ancestors' notes to link, grouped by ancestor, nearest first.
 /// Changes apply at once; unticking unlinks.
 class _LinkPicker extends ConsumerWidget {
@@ -282,6 +362,12 @@ class _LinkPicker extends ConsumerWidget {
     final theme = Theme.of(context);
     final above = ref.watch(ancestorNotesProvider(childId)).value ?? const [];
     final linked = ref.watch(linkedNotesProvider(childId)).value ?? const [];
+    final aboveFiles =
+        ref.watch(ancestorFilesProvider(childId)).value ?? const [];
+    final linkedFileIds = {
+      for (final f in ref.watch(linkedFilesProvider(childId)).value ?? const [])
+        f.attachmentId,
+    };
     final linkedIds = {
       for (final l in linked)
         if (!l.shared) l.noteId,
@@ -332,7 +418,7 @@ class _LinkPicker extends ConsumerWidget {
         child: ListView(
           shrinkWrap: true,
           children: [
-            if (above.isEmpty && elsewhere.isEmpty)
+            if (above.isEmpty && aboveFiles.isEmpty && elsewhere.isEmpty)
               Padding(
                 padding: const EdgeInsets.all(24),
                 child: Text(l10n.linkPickerEmpty),
@@ -344,6 +430,28 @@ class _LinkPicker extends ConsumerWidget {
                     : l10n.titleOrUntitled(ancestor.title),
               ),
               for (final n in notes) note(n),
+            ],
+            if (aboveFiles.isNotEmpty) ...[
+              heading(l10n.linkedFilesHeading),
+              for (final (ancestor, files) in aboveFiles)
+                for (final f in files)
+                  CheckboxListTile(
+                    dense: true,
+                    secondary: Icon(attachmentIcon(f.kind)),
+                    value: linkedFileIds.contains(f.id),
+                    title: Text(f.filename),
+                    subtitle: Text(
+                      l10n.linkedFrom(l10n.titleOrUntitled(ancestor.title)),
+                    ),
+                    onChanged: (on) async {
+                      final repo = (await ref.read(
+                        nodeRepositoryProvider.future,
+                      )).files;
+                      on == true
+                          ? await repo.link(childId, f.id)
+                          : await repo.unlink(childId, f.id);
+                    },
+                  ),
             ],
             if (elsewhere.isNotEmpty) ...[
               heading(l10n.linkGroupElsewhere),

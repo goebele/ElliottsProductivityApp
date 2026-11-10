@@ -424,10 +424,10 @@ abstract class AppLocalizations {
   /// **'Notes'**
   String get notesHeading;
 
-  /// Button that shows or hides an item's notes column
+  /// No description provided for @notesToggle.
   ///
   /// In en, this message translates to:
-  /// **'Notes ({count})'**
+  /// **'Notes & files ({count})'**
   String notesToggle(int count);
 
   /// Button that adds a note to an item
@@ -973,13 +973,13 @@ abstract class AppLocalizations {
   /// No description provided for @linkPickerTitle.
   ///
   /// In en, this message translates to:
-  /// **'Link notes from above'**
+  /// **'Link from above'**
   String get linkPickerTitle;
 
   /// No description provided for @linkPickerEmpty.
   ///
   /// In en, this message translates to:
-  /// **'The items above this one have no notes yet.'**
+  /// **'The items above this one have no notes or files yet.'**
   String get linkPickerEmpty;
 
   /// No description provided for @linkGroupParent.
@@ -1083,6 +1083,702 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{Its shortcut in 1 other place goes too.} other{Its shortcuts in {count} other places go too.}}'**
   String shortcutsElsewhere(int count);
+
+  /// No description provided for @valuesView.
+  ///
+  /// In en, this message translates to:
+  /// **'Values'**
+  String get valuesView;
+
+  /// No description provided for @valuesIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'What matters to you, and why. Tie values to goals and projects; everything inside them inherits the value.'**
+  String get valuesIntro;
+
+  /// No description provided for @valuesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No values yet.'**
+  String get valuesEmpty;
+
+  /// No description provided for @valueNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New value…'**
+  String get valueNew;
+
+  /// No description provided for @valueEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit value'**
+  String get valueEdit;
+
+  /// No description provided for @valueDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete value'**
+  String get valueDelete;
+
+  /// No description provided for @valueDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete “{name}”?'**
+  String valueDeleteTitle(String name);
+
+  /// No description provided for @valueDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{It isn\'t tied to anything.} =1{It will be untied from 1 item.} other{It will be untied from {count} items.}}'**
+  String valueDeleteBody(int count);
+
+  /// No description provided for @valueName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get valueName;
+
+  /// No description provided for @valueStatement.
+  ///
+  /// In en, this message translates to:
+  /// **'Why it matters'**
+  String get valueStatement;
+
+  /// No description provided for @valueStatementHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. I want the energy to keep up with my kids.'**
+  String get valueStatementHint;
+
+  /// No description provided for @valueIcon.
+  ///
+  /// In en, this message translates to:
+  /// **'Icon'**
+  String get valueIcon;
+
+  /// No description provided for @valueColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Color'**
+  String get valueColor;
+
+  /// No description provided for @valueAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get valueAdd;
+
+  /// No description provided for @valueRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Untie this value'**
+  String get valueRemove;
+
+  /// No description provided for @valueFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} · from {title}'**
+  String valueFrom(String name, String title);
+
+  /// No description provided for @valueInherited.
+  ///
+  /// In en, this message translates to:
+  /// **'Inherited from an item above. Open it to change.'**
+  String get valueInherited;
+
+  /// No description provided for @valueNothingTied.
+  ///
+  /// In en, this message translates to:
+  /// **'Not tied to anything yet. Add it from an item\'s “+ Value”.'**
+  String get valueNothingTied;
+
+  /// No description provided for @save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
+
+  /// No description provided for @tagAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Tag'**
+  String get tagAdd;
+
+  /// No description provided for @tagRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove tag'**
+  String get tagRemove;
+
+  /// No description provided for @tagFromText.
+  ///
+  /// In en, this message translates to:
+  /// **'From the text. Edit the text to remove it.'**
+  String get tagFromText;
+
+  /// No description provided for @tagSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for this tag'**
+  String get tagSearch;
+
+  /// No description provided for @tagPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get tagPickerTitle;
+
+  /// No description provided for @tagPickerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type a tag and press Enter'**
+  String get tagPickerHint;
+
+  /// No description provided for @tagsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No tags yet.'**
+  String get tagsEmpty;
+
+  /// No description provided for @searchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search  (#tag, value:, type:, in:)'**
+  String get searchHint;
+
+  /// No description provided for @searchFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get searchFilters;
+
+  /// No description provided for @searchClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get searchClear;
+
+  /// No description provided for @searchNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing found.'**
+  String get searchNoResults;
+
+  /// No description provided for @searchCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 result} other{{count} results}}'**
+  String searchCount(int count);
+
+  /// No description provided for @searchLinkedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{linked in 1 place} other{linked in {count} places}}'**
+  String searchLinkedIn(int count);
+
+  /// No description provided for @searchArchived.
+  ///
+  /// In en, this message translates to:
+  /// **'archived'**
+  String get searchArchived;
+
+  /// No description provided for @filterValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get filterValue;
+
+  /// No description provided for @filterTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Tag'**
+  String get filterTag;
+
+  /// No description provided for @filterIncludeChildren.
+  ///
+  /// In en, this message translates to:
+  /// **'Include items under tagged ones'**
+  String get filterIncludeChildren;
+
+  /// No description provided for @filterType.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get filterType;
+
+  /// No description provided for @filterStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get filterStatus;
+
+  /// No description provided for @filterProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Project'**
+  String get filterProject;
+
+  /// No description provided for @filterAnyProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Anywhere'**
+  String get filterAnyProject;
+
+  /// No description provided for @filterDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Due'**
+  String get filterDue;
+
+  /// No description provided for @filterDueRange.
+  ///
+  /// In en, this message translates to:
+  /// **'{from} – {to}'**
+  String filterDueRange(String from, String to);
+
+  /// No description provided for @filterArchived.
+  ///
+  /// In en, this message translates to:
+  /// **'Include archived'**
+  String get filterArchived;
+
+  /// No description provided for @zoomIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom in'**
+  String get zoomIn;
+
+  /// No description provided for @zoomTreeHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom tree here'**
+  String get zoomTreeHere;
+
+  /// No description provided for @zoomOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom out one level'**
+  String get zoomOut;
+
+  /// No description provided for @zoomReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the whole tree'**
+  String get zoomReset;
+
+  /// No description provided for @breadcrumbsShowAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the full path'**
+  String get breadcrumbsShowAll;
+
+  /// No description provided for @peekOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get peekOpen;
+
+  /// No description provided for @peekPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin beside'**
+  String get peekPin;
+
+  /// No description provided for @peekUnpin.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get peekUnpin;
+
+  /// No description provided for @peekItems.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item} other{{count} items}}'**
+  String peekItems(int count);
+
+  /// No description provided for @tagsView.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get tagsView;
+
+  /// No description provided for @tagsIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Star the tags you use most, such as #work or #home: they become one-tap choices when tagging an item. Click a count to see those items.'**
+  String get tagsIntro;
+
+  /// No description provided for @tagsFavorites.
+  ///
+  /// In en, this message translates to:
+  /// **'Favorites'**
+  String get tagsFavorites;
+
+  /// No description provided for @tagsOthers.
+  ///
+  /// In en, this message translates to:
+  /// **'Other tags'**
+  String get tagsOthers;
+
+  /// No description provided for @tagsAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All tags'**
+  String get tagsAll;
+
+  /// No description provided for @tagNew.
+  ///
+  /// In en, this message translates to:
+  /// **'Create tag'**
+  String get tagNew;
+
+  /// No description provided for @tagNewHint.
+  ///
+  /// In en, this message translates to:
+  /// **'New tag, then Enter'**
+  String get tagNewHint;
+
+  /// No description provided for @tagNameInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Start with a letter; use letters, numbers, - and _.'**
+  String get tagNameInvalid;
+
+  /// No description provided for @tagFavorite.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to favorites'**
+  String get tagFavorite;
+
+  /// No description provided for @tagUnfavorite.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from favorites'**
+  String get tagUnfavorite;
+
+  /// No description provided for @tagColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Colour'**
+  String get tagColor;
+
+  /// No description provided for @tagNoColor.
+  ///
+  /// In en, this message translates to:
+  /// **'No colour'**
+  String get tagNoColor;
+
+  /// No description provided for @tagUses.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Not used} =1{1 item} other{{count} items}}'**
+  String tagUses(int count);
+
+  /// No description provided for @tagRename.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get tagRename;
+
+  /// No description provided for @tagMerge.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge'**
+  String get tagMerge;
+
+  /// No description provided for @tagRenameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename #{name}'**
+  String tagRenameTitle(String name);
+
+  /// No description provided for @tagRenameNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Where it is written in a title or text, that is rewritten too.'**
+  String get tagRenameNote;
+
+  /// No description provided for @tagMergeNote.
+  ///
+  /// In en, this message translates to:
+  /// **'#{from} will be merged into #{into}: every item with #{from} gets #{into}, and the text is rewritten.'**
+  String tagMergeNote(String from, String into);
+
+  /// No description provided for @tagDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete tag'**
+  String get tagDelete;
+
+  /// No description provided for @tagDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete #{name}?'**
+  String tagDeleteTitle(String name);
+
+  /// No description provided for @tagDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{It isn\'t on any item.} =1{It will be removed from 1 item.} other{It will be removed from {count} items.}} Where it is written in text, the # is removed so it stays plain text.'**
+  String tagDeleteBody(int count);
+
+  /// No description provided for @tagPickerOnItem.
+  ///
+  /// In en, this message translates to:
+  /// **'On this item'**
+  String get tagPickerOnItem;
+
+  /// No description provided for @filesHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Files} other{Files ({count})}}'**
+  String filesHeading(int count);
+
+  /// No description provided for @fileAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get fileAdd;
+
+  /// No description provided for @fileChoose.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose files…'**
+  String get fileChoose;
+
+  /// No description provided for @fileTakePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Take photo'**
+  String get fileTakePhoto;
+
+  /// No description provided for @filePasteImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste image'**
+  String get filePasteImage;
+
+  /// No description provided for @fileNoImageToPaste.
+  ///
+  /// In en, this message translates to:
+  /// **'There\'s no image on the clipboard.'**
+  String get fileNoImageToPaste;
+
+  /// No description provided for @filesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No files yet.'**
+  String get filesEmpty;
+
+  /// No description provided for @filesEmptyDesktop.
+  ///
+  /// In en, this message translates to:
+  /// **'No files yet. Drop files on this item, or paste a screenshot with Ctrl+V.'**
+  String get filesEmptyDesktop;
+
+  /// No description provided for @fileDropHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop to attach'**
+  String get fileDropHere;
+
+  /// No description provided for @fileTooBigTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Large file'**
+  String get fileTooBigTitle;
+
+  /// No description provided for @fileTooBigBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is {size}. Files over 20 MB fill up your devices quickly. Attach it anyway?'**
+  String fileTooBigBody(String name, String size);
+
+  /// No description provided for @fileSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get fileSkip;
+
+  /// No description provided for @fileAttachAnyway.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach anyway'**
+  String get fileAttachAnyway;
+
+  /// No description provided for @fileAttached.
+  ///
+  /// In en, this message translates to:
+  /// **'Attached {name}'**
+  String fileAttached(String name);
+
+  /// No description provided for @filesAttached.
+  ///
+  /// In en, this message translates to:
+  /// **'Attached {count} files'**
+  String filesAttached(int count);
+
+  /// No description provided for @fileNoApp.
+  ///
+  /// In en, this message translates to:
+  /// **'No app on this device can open this file.'**
+  String get fileNoApp;
+
+  /// No description provided for @fileOpenIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in…'**
+  String get fileOpenIn;
+
+  /// No description provided for @fileOpenInNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens a copy in your default app. Changes made there aren\'t saved here; use Replace file to bring in a new version.'**
+  String get fileOpenInNote;
+
+  /// No description provided for @fileReplace.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace file…'**
+  String get fileReplace;
+
+  /// No description provided for @fileExportMarkup.
+  ///
+  /// In en, this message translates to:
+  /// **'Export with markup…'**
+  String get fileExportMarkup;
+
+  /// No description provided for @fileRename.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get fileRename;
+
+  /// No description provided for @fileRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove file'**
+  String get fileRemove;
+
+  /// No description provided for @fileRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed {name}'**
+  String fileRemoved(String name);
+
+  /// No description provided for @fileSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get fileSaved;
+
+  /// No description provided for @fileOwnedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'from {title}'**
+  String fileOwnedBy(String title);
+
+  /// No description provided for @markup.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark up'**
+  String get markup;
+
+  /// No description provided for @markupDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get markupDone;
+
+  /// No description provided for @markupShow.
+  ///
+  /// In en, this message translates to:
+  /// **'Show markup'**
+  String get markupShow;
+
+  /// No description provided for @markupHide.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide markup'**
+  String get markupHide;
+
+  /// No description provided for @markupPen.
+  ///
+  /// In en, this message translates to:
+  /// **'Pen'**
+  String get markupPen;
+
+  /// No description provided for @markupHighlighter.
+  ///
+  /// In en, this message translates to:
+  /// **'Highlighter'**
+  String get markupHighlighter;
+
+  /// No description provided for @markupText.
+  ///
+  /// In en, this message translates to:
+  /// **'Text label'**
+  String get markupText;
+
+  /// No description provided for @markupEraser.
+  ///
+  /// In en, this message translates to:
+  /// **'Eraser'**
+  String get markupEraser;
+
+  /// No description provided for @markupUndo.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo last mark'**
+  String get markupUndo;
+
+  /// No description provided for @markupLabelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Label'**
+  String get markupLabelTitle;
+
+  /// No description provided for @markupHighlight.
+  ///
+  /// In en, this message translates to:
+  /// **'Highlight'**
+  String get markupHighlight;
+
+  /// No description provided for @markupClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get markupClear;
+
+  /// No description provided for @markupSelectHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select text, then Highlight.'**
+  String get markupSelectHint;
+
+  /// No description provided for @linkedFilesHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Files'**
+  String get linkedFilesHeading;
+
+  /// No description provided for @searchFile.
+  ///
+  /// In en, this message translates to:
+  /// **'file'**
+  String get searchFile;
+
+  /// No description provided for @filterHasFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Has files'**
+  String get filterHasFiles;
+
+  /// No description provided for @fileTooBigToShow.
+  ///
+  /// In en, this message translates to:
+  /// **'This file is too big to show here. Use Open in… to read it.'**
+  String get fileTooBigToShow;
 }
 
 class _AppLocalizationsDelegate

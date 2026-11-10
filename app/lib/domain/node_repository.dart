@@ -2,12 +2,17 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 
+import '../data/blob_store.dart';
 import '../data/database.dart';
 import '../sync/change_writer.dart';
+import 'attachment_repository.dart';
 import 'exclusive_picker.dart';
 import 'ids.dart';
 import 'repeat_rule.dart';
+import 'search.dart';
 import 'sort_keys.dart';
+import 'tag_repository.dart';
+import 'value_repository.dart';
 
 export 'exclusive_picker.dart'
     show ExclusiveState, ExclusiveDue, ExclusiveDone, ExclusiveNothingDue;
@@ -205,12 +210,33 @@ class NodeRepository {
     this._writer, {
     required this.personalSpaceId,
     required this.userId,
+    this.blobStore,
   });
 
   final AppDatabase _db;
+
+  /// Where attachment files live; only needed for [files].
+  final BlobStore? blobStore;
   final ChangeWriter _writer;
   final String personalSpaceId;
   final String userId;
+
+  /// Tags (§6.14). Inline `#tags` are kept in step on every title or text
+  /// change made here.
+  late final tags = TagRepository(_db, _writer, spaceId: personalSpaceId);
+
+  /// Core values (§6.2).
+  late final values = ValueRepository(_db, _writer, spaceId: personalSpaceId);
+
+  /// Search (§6.6).
+  late final search = SearchService(_db);
+
+  /// Attachments and markup (§6.4). Needs the blob store.
+  late final files = AttachmentRepository(
+    _db,
+    _writer,
+    blobStore ?? (throw StateError('No blob store')),
+  );
 
   /// Guards ancestor walks against a cycle that slipped in via sync.
   static const _maxDepth = 1000;
@@ -385,13 +411,21 @@ class NodeRepository {
         deleted: const Value(false),
       ),
     );
+    if (title.contains('#') || bodyMd.contains('#')) {
+      await tags.syncInline(id, title, bodyMd);
+    }
     return id;
   }
 
   /// Writes the fields set in [changes]. Use the specific methods below for
   /// status, moves and archive/trash, which keep related fields in step.
-  Future<void> update(String id, NodesCompanion changes) =>
-      _writer.update(_db.nodes, id, changes);
+  Future<void> update(String id, NodesCompanion changes) async {
+    await _writer.update(_db.nodes, id, changes);
+    if (changes.title.present || changes.bodyMd.present) {
+      final node = await get(id);
+      if (node != null) await tags.syncInline(id, node.title, node.bodyMd);
+    }
+  }
 
   Future<void> rename(String id, String title) =>
       update(id, NodesCompanion(title: Value(title)));
@@ -496,8 +530,13 @@ class NodeRepository {
           '''
           SELECT DISTINCT l.from_node_id AS id FROM links l
           JOIN nodes f ON f.id = l.from_node_id
-          WHERE l.deleted = 0 AND l.target_kind = ?2
-            AND l.target_id IN (SELECT value FROM json_each(?1))
+          WHERE l.deleted = 0
+            AND ((l.target_kind = ?2
+                  AND l.target_id IN (SELECT value FROM json_each(?1)))
+              OR (l.target_kind = 'attachment' AND l.target_id IN (
+                  SELECT a.id FROM attachments a
+                  WHERE a.deleted = 0
+                    AND a.node_id IN (SELECT value FROM json_each(?1)))))
             AND f.deleted = 0 AND f.lifecycle = ?3
           ''',
           variables: [
@@ -505,7 +544,7 @@ class NodeRepository {
             Variable.withString(LinkKind.note.name),
             Variable.withString(Lifecycle.live.name),
           ],
-          readsFrom: {_db.links, _db.nodes},
+          readsFrom: {_db.links, _db.nodes, _db.attachments},
         )
         .get();
 
@@ -1117,7 +1156,9 @@ class NodeRepository {
   }) {
     return _db
         .customSelect(
-          'SELECT 1',
+          // Distinct SQL: Drift shares streams with the same text, and
+          // would then only refresh for the first one's tables.
+          'SELECT 1 AS occurrence_status',
           readsFrom: {_db.nodes, _db.occurrenceCompletions},
         )
         .watch()
@@ -1146,7 +1187,7 @@ class NodeRepository {
   }) {
     return _db
         .customSelect(
-          'SELECT 1',
+          'SELECT 1 AS exclusive_status',
           readsFrom: {_db.nodes, _db.occurrenceCompletions},
         )
         .watch()

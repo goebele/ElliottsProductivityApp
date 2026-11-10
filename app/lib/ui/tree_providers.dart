@@ -153,3 +153,45 @@ class ExpandedNodes extends Notifier<Set<String>> {
 
   void expandAll(Iterable<String> ids) => state = {...state, ...ids};
 }
+
+/// The item the tree is zoomed into (§6.1): its children show as the top
+/// level. Null = the whole tree.
+final treeZoomProvider = NotifierProvider<TreeZoom, String?>(TreeZoom.new);
+
+class TreeZoom extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void zoom(String? id) => state = id;
+}
+
+/// Pages opened from the entries under the tree.
+enum SidePage { valuesPage, tagsPage }
+
+/// The page filling the detail pane instead of an item (wide layout).
+final sidePageProvider = NotifierProvider<SidePageState, SidePage?>(
+  SidePageState.new,
+);
+
+class SidePageState extends Notifier<SidePage?> {
+  @override
+  SidePage? build() => null;
+
+  void show(SidePage? page) => state = page;
+}
+
+/// The attachment shown in the detail pane (wide layout), and the item it
+/// was opened from when that isn't its owner.
+typedef OpenedAttachment = ({String id, String? via});
+
+final openAttachmentProvider =
+    NotifierProvider<OpenAttachmentState, OpenedAttachment?>(
+      OpenAttachmentState.new,
+    );
+
+class OpenAttachmentState extends Notifier<OpenedAttachment?> {
+  @override
+  OpenedAttachment? build() => null;
+
+  void open(OpenedAttachment? a) => state = a;
+}

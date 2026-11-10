@@ -18,9 +18,16 @@ part 'database.g.dart';
     OccurrenceCompletions,
     Placements,
     Links,
+    CoreValues,
+    NodeValues,
+    Tags,
+    NodeTags,
+    Attachments,
+    Annotations,
     ChangeLog,
     Devices,
   ],
+  include: {'search.drift'},
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
@@ -40,11 +47,25 @@ class AppDatabase extends _$AppDatabase {
   /// `dart run drift_dev schema dump lib/data/database.dart drift_schemas/`
   /// and `dart run drift_dev schema generate drift_schemas/ test/generated_migrations/`.
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-    onCreate: (m) => m.createAll(),
+    // The search index's triggers need `nodes`, so it comes last.
+    onCreate: (m) async {
+      final search = <DatabaseSchemaEntity>[
+        nodeSearch,
+        nodesSearchInsert,
+        nodesSearchDelete,
+        nodesSearchUpdate,
+      ];
+      for (final e in allSchemaEntities) {
+        if (!search.contains(e)) await m.create(e);
+      }
+      for (final e in search) {
+        await m.create(e);
+      }
+    },
     onUpgrade: (m, from, to) async {
       if (from < 2) {
         // Creates `nodes` with today's columns, so v3's are included.
@@ -82,6 +103,35 @@ class AppDatabase extends _$AppDatabase {
       // Before v2 the nodes table is created whole, with this column.
       if (from >= 2 && from < 7) {
         await m.addColumn(nodes, nodes.sharedWithChildren);
+      }
+      if (from < 8) {
+        await m.createTable(coreValues);
+        await m.createTable(nodeValues);
+        await m.createIndex(nodeValuesNode);
+        await m.createIndex(nodeValuesValue);
+        await m.createTable(tags);
+        await m.createTable(nodeTags);
+        await m.createIndex(nodeTagsNode);
+        await m.createIndex(nodeTagsTag);
+        await m.createTable(nodeSearch);
+        await m.createTrigger(nodesSearchInsert);
+        await m.createTrigger(nodesSearchDelete);
+        await m.createTrigger(nodesSearchUpdate);
+        await customStatement(
+          "INSERT INTO node_search(node_search) VALUES ('rebuild')",
+        );
+      }
+      // v8 creates `tags` whole, with these columns.
+      if (from == 8) {
+        await m.addColumn(tags, tags.favorite);
+        await m.addColumn(tags, tags.kept);
+      }
+      if (from < 10) {
+        await m.createTable(attachments);
+        await m.createIndex(attachmentsNode);
+        await m.createTable(annotations);
+        await m.createIndex(annotationsAttachment);
+        await m.createTable(attachmentSearch);
       }
     },
   );

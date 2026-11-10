@@ -7,6 +7,7 @@ import '../domain/node_repository.dart';
 import '../l10n/app_localizations.dart';
 import '../providers.dart';
 import 'labels.dart';
+import 'peek.dart';
 import 'tree_pane.dart';
 import 'tree_providers.dart';
 
@@ -78,7 +79,7 @@ class _ChildrenSectionState extends ConsumerState<ChildrenSection> {
     final nextStep = view == ChildView.steps
         ? children.indexWhere((c) => !isFinished(c.node.status))
         : -1;
-    Widget row(int i, NodeWithChildCount entry) {
+    Widget rowContent(int i, NodeWithChildCount entry) {
       void open() {
         ref
             .read(openedViaProvider.notifier)
@@ -125,6 +126,15 @@ class _ChildrenSectionState extends ConsumerState<ChildrenSection> {
         ),
       };
     }
+
+    Widget row(int i, NodeWithChildCount entry) => KeyedSubtree(
+      key: ValueKey(entry.key),
+      child: PeekTarget(
+        nodeId: entry.node.id,
+        onOpen: widget.onOpen,
+        child: rowContent(i, entry),
+      ),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

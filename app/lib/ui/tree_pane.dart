@@ -9,6 +9,7 @@ import '../data/database.dart';
 import 'done_button.dart';
 import 'removal.dart';
 import 'labels.dart';
+import 'search_pane.dart';
 import 'tree_providers.dart';
 
 typedef OpenNode = void Function(String id);
@@ -20,10 +21,14 @@ class TreePane extends ConsumerWidget {
     super.key,
     required this.onOpen,
     required this.onOpenRemoved,
+    required this.onOpenPage,
     this.selectedId,
   });
 
   final OpenNode onOpen;
+
+  /// Opens the Values or Tags page.
+  final void Function(SidePage page) onOpenPage;
 
   /// Opens the Archive or Trash list.
   final void Function(Lifecycle which) onOpenRemoved;
@@ -34,55 +39,80 @@ class TreePane extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final topLevel = ref.watch(childrenProvider(null));
+    final zoom = ref.watch(treeZoomProvider);
+    final topLevel = ref.watch(childrenProvider(zoom));
+    final searching = ref.watch(searchingProvider);
+    final rootPlace = TreePlace(
+      parentId: zoom,
+      path: [?zoom],
+      siblings: [for (final s in topLevel.value ?? const []) s.key],
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
-          child: FilledButton.tonalIcon(
-            icon: const Icon(Icons.add),
-            label: Text(l10n.newItem),
-            onPressed: () async {
-              final repo = await ref.read(nodeRepositoryProvider.future);
-              onOpen(await repo.create(title: ''));
-            },
-          ),
+        const Padding(
+          padding: EdgeInsets.fromLTRB(12, 12, 12, 0),
+          child: SearchBox(),
         ),
+        if (!searching)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+            child: FilledButton.tonalIcon(
+              icon: const Icon(Icons.add),
+              label: Text(l10n.newItem),
+              onPressed: () async {
+                final repo = await ref.read(nodeRepositoryProvider.future);
+                onOpen(await repo.create(title: '', parentId: zoom));
+              },
+            ),
+          ),
+        if (!searching && zoom != null)
+          _ZoomHeader(zoomId: zoom, onOpen: onOpen),
         Expanded(
-          child: switch (topLevel) {
-            AsyncData(value: final nodes) when nodes.isEmpty => Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(l10n.treeEmpty, textAlign: TextAlign.center),
-              ),
-            ),
-            AsyncData(value: final nodes) => SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (final n in nodes)
-                    _TreeBranch(
-                      entry: n,
-                      depth: 0,
-                      onOpen: onOpen,
-                      selectedId: selectedId,
-                      place: TreePlace(
-                        parentId: null,
-                        path: const [],
-                        siblings: [for (final s in nodes) s.key],
-                      ),
+          child: searching
+              ? SearchResults(onOpen: onOpen, selectedId: selectedId)
+              : switch (topLevel) {
+                  AsyncData(value: final nodes) when nodes.isEmpty => Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text(l10n.treeEmpty, textAlign: TextAlign.center),
                     ),
-                  // Drop below everything: last at the top level.
-                  _EndDropTarget(siblings: [for (final s in nodes) s.key]),
-                ],
-              ),
-            ),
-            AsyncError(:final error) => Center(child: Text('$error')),
-            _ => const Center(child: CircularProgressIndicator()),
-          },
+                  ),
+                  AsyncData(value: final nodes) => SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        for (final n in nodes)
+                          _TreeBranch(
+                            entry: n,
+                            depth: 0,
+                            onOpen: onOpen,
+                            selectedId: selectedId,
+                            place: rootPlace,
+                          ),
+                        // Drop below everything: last at the top level.
+                        _EndDropTarget(place: rootPlace),
+                      ],
+                    ),
+                  ),
+                  AsyncError(:final error) => Center(child: Text('$error')),
+                  _ => const Center(child: CircularProgressIndicator()),
+                },
+        ),
+        const Divider(height: 1),
+        ListTile(
+          dense: true,
+          leading: const Icon(Icons.favorite_border, size: 20),
+          title: Text(l10n.valuesView),
+          onTap: () => onOpenPage(SidePage.valuesPage),
+        ),
+        ListTile(
+          dense: true,
+          leading: const Icon(Icons.sell_outlined, size: 20),
+          title: Text(l10n.tagsView),
+          onTap: () => onOpenPage(SidePage.tagsPage),
         ),
         RemovedEntries(onOpen: onOpenRemoved),
       ],
@@ -394,6 +424,14 @@ class _TreeRowState extends ConsumerState<_TreeRow> {
       controller: _menu,
       menuChildren: [
         if (hasStatus) ...statusMenuItems(context, ref, node),
+        if (entry.childCount > 0) ...[
+          const Divider(height: 1),
+          MenuItemButton(
+            leadingIcon: const Icon(Icons.zoom_in),
+            onPressed: () => ref.read(treeZoomProvider.notifier).zoom(node.id),
+            child: Text(l10n.zoomIn),
+          ),
+        ],
         if (entry.isShortcut) ...[
           const Divider(height: 1),
           MenuItemButton(
@@ -413,7 +451,7 @@ class _TreeRowState extends ConsumerState<_TreeRow> {
             : Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          onSecondaryTapUp: hasStatus
+          onSecondaryTapUp: hasStatus || entry.isShortcut
               ? (d) => _menu.open(position: d.localPosition)
               : null,
           onLongPress: hasStatus && !touchFirst ? () => _menu.open() : null,
@@ -499,14 +537,13 @@ class _TreeRowState extends ConsumerState<_TreeRow> {
 /// Space under the last top-level row: dropping there moves the item to the
 /// end of the top level.
 class _EndDropTarget extends ConsumerWidget {
-  const _EndDropTarget({required this.siblings});
+  const _EndDropTarget({required this.place});
 
-  final List<String> siblings;
+  final TreePlace place;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final place = TreePlace(parentId: null, path: const [], siblings: siblings);
     return DragTarget<TreeDrag>(
       onAcceptWithDetails: (d) => moveDropped(
         context,
@@ -546,6 +583,57 @@ class ShortcutMarker extends StatelessWidget {
           Icons.north_east,
           size: 14,
           color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+}
+
+/// Above a zoomed tree: the item it is zoomed into, a step out, and back to
+/// the whole tree.
+class _ZoomHeader extends ConsumerWidget {
+  const _ZoomHeader({required this.zoomId, required this.onOpen});
+
+  final String zoomId;
+  final OpenNode onOpen;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final node = ref.watch(nodeProvider(zoomId)).value;
+    final zoom = ref.read(treeZoomProvider.notifier);
+    return Material(
+      color: theme.colorScheme.surfaceContainerHigh,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: Row(
+          children: [
+            IconButton(
+              tooltip: l10n.zoomOut,
+              icon: const Icon(Icons.arrow_upward),
+              onPressed: () => zoom.zoom(node?.parentId),
+            ),
+            Expanded(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(4),
+                onTap: () => onOpen(zoomId),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Text(
+                    l10n.titleOrUntitled(node?.title ?? ''),
+                    style: theme.textTheme.titleSmall,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+            ),
+            IconButton(
+              tooltip: l10n.zoomReset,
+              icon: const Icon(Icons.close),
+              onPressed: () => zoom.zoom(null),
+            ),
+          ],
         ),
       ),
     );

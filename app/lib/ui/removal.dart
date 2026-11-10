@@ -249,6 +249,11 @@ class NodeMenu extends ConsumerWidget {
               ),
             ),
           ),
+        MenuItemButton(
+          leadingIcon: const Icon(Icons.zoom_in),
+          onPressed: () => ref.read(treeZoomProvider.notifier).zoom(node.id),
+          child: Text(l10n.zoomTreeHere),
+        ),
         const Divider(height: 1),
       ],
       if (live) ...[

@@ -197,7 +197,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String notesToggle(int count) {
-    return 'Notes ($count)';
+    return 'Notes & files ($count)';
   }
 
   @override
@@ -624,10 +624,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get linkFromAbove => 'Link from above…';
 
   @override
-  String get linkPickerTitle => 'Link notes from above';
+  String get linkPickerTitle => 'Link from above';
 
   @override
-  String get linkPickerEmpty => 'The items above this one have no notes yet.';
+  String get linkPickerEmpty =>
+      'The items above this one have no notes or files yet.';
 
   @override
   String linkGroupParent(String title) {
@@ -709,4 +710,443 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get valuesView => 'Values';
+
+  @override
+  String get valuesIntro =>
+      'What matters to you, and why. Tie values to goals and projects; everything inside them inherits the value.';
+
+  @override
+  String get valuesEmpty => 'No values yet.';
+
+  @override
+  String get valueNew => 'New value…';
+
+  @override
+  String get valueEdit => 'Edit value';
+
+  @override
+  String get valueDelete => 'Delete value';
+
+  @override
+  String valueDeleteTitle(String name) {
+    return 'Delete “$name”?';
+  }
+
+  @override
+  String valueDeleteBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'It will be untied from $count items.',
+      one: 'It will be untied from 1 item.',
+      zero: 'It isn\'t tied to anything.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get valueName => 'Name';
+
+  @override
+  String get valueStatement => 'Why it matters';
+
+  @override
+  String get valueStatementHint =>
+      'e.g. I want the energy to keep up with my kids.';
+
+  @override
+  String get valueIcon => 'Icon';
+
+  @override
+  String get valueColor => 'Color';
+
+  @override
+  String get valueAdd => 'Value';
+
+  @override
+  String get valueRemove => 'Untie this value';
+
+  @override
+  String valueFrom(String name, String title) {
+    return '$name · from $title';
+  }
+
+  @override
+  String get valueInherited =>
+      'Inherited from an item above. Open it to change.';
+
+  @override
+  String get valueNothingTied =>
+      'Not tied to anything yet. Add it from an item\'s “+ Value”.';
+
+  @override
+  String get save => 'Save';
+
+  @override
+  String get tagAdd => 'Tag';
+
+  @override
+  String get tagRemove => 'Remove tag';
+
+  @override
+  String get tagFromText => 'From the text. Edit the text to remove it.';
+
+  @override
+  String get tagSearch => 'Search for this tag';
+
+  @override
+  String get tagPickerTitle => 'Tags';
+
+  @override
+  String get tagPickerHint => 'Type a tag and press Enter';
+
+  @override
+  String get tagsEmpty => 'No tags yet.';
+
+  @override
+  String get searchHint => 'Search  (#tag, value:, type:, in:)';
+
+  @override
+  String get searchFilters => 'Filters';
+
+  @override
+  String get searchClear => 'Clear search';
+
+  @override
+  String get searchNoResults => 'Nothing found.';
+
+  @override
+  String searchCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count results',
+      one: '1 result',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String searchLinkedIn(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'linked in $count places',
+      one: 'linked in 1 place',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get searchArchived => 'archived';
+
+  @override
+  String get filterValue => 'Value';
+
+  @override
+  String get filterTag => 'Tag';
+
+  @override
+  String get filterIncludeChildren => 'Include items under tagged ones';
+
+  @override
+  String get filterType => 'Type';
+
+  @override
+  String get filterStatus => 'Status';
+
+  @override
+  String get filterProject => 'Project';
+
+  @override
+  String get filterAnyProject => 'Anywhere';
+
+  @override
+  String get filterDue => 'Due';
+
+  @override
+  String filterDueRange(String from, String to) {
+    return '$from – $to';
+  }
+
+  @override
+  String get filterArchived => 'Include archived';
+
+  @override
+  String get zoomIn => 'Zoom in';
+
+  @override
+  String get zoomTreeHere => 'Zoom tree here';
+
+  @override
+  String get zoomOut => 'Zoom out one level';
+
+  @override
+  String get zoomReset => 'Show the whole tree';
+
+  @override
+  String get breadcrumbsShowAll => 'Show the full path';
+
+  @override
+  String get peekOpen => 'Open';
+
+  @override
+  String get peekPin => 'Pin beside';
+
+  @override
+  String get peekUnpin => 'Close';
+
+  @override
+  String peekItems(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      one: '1 item',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tagsView => 'Tags';
+
+  @override
+  String get tagsIntro =>
+      'Star the tags you use most, such as #work or #home: they become one-tap choices when tagging an item. Click a count to see those items.';
+
+  @override
+  String get tagsFavorites => 'Favorites';
+
+  @override
+  String get tagsOthers => 'Other tags';
+
+  @override
+  String get tagsAll => 'All tags';
+
+  @override
+  String get tagNew => 'Create tag';
+
+  @override
+  String get tagNewHint => 'New tag, then Enter';
+
+  @override
+  String get tagNameInvalid =>
+      'Start with a letter; use letters, numbers, - and _.';
+
+  @override
+  String get tagFavorite => 'Add to favorites';
+
+  @override
+  String get tagUnfavorite => 'Remove from favorites';
+
+  @override
+  String get tagColor => 'Colour';
+
+  @override
+  String get tagNoColor => 'No colour';
+
+  @override
+  String tagUses(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      one: '1 item',
+      zero: 'Not used',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tagRename => 'Rename';
+
+  @override
+  String get tagMerge => 'Merge';
+
+  @override
+  String tagRenameTitle(String name) {
+    return 'Rename #$name';
+  }
+
+  @override
+  String get tagRenameNote =>
+      'Where it is written in a title or text, that is rewritten too.';
+
+  @override
+  String tagMergeNote(String from, String into) {
+    return '#$from will be merged into #$into: every item with #$from gets #$into, and the text is rewritten.';
+  }
+
+  @override
+  String get tagDelete => 'Delete tag';
+
+  @override
+  String tagDeleteTitle(String name) {
+    return 'Delete #$name?';
+  }
+
+  @override
+  String tagDeleteBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'It will be removed from $count items.',
+      one: 'It will be removed from 1 item.',
+      zero: 'It isn\'t on any item.',
+    );
+    return '$_temp0 Where it is written in text, the # is removed so it stays plain text.';
+  }
+
+  @override
+  String get tagPickerOnItem => 'On this item';
+
+  @override
+  String filesHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Files ($count)',
+      zero: 'Files',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get fileAdd => 'Add';
+
+  @override
+  String get fileChoose => 'Choose files…';
+
+  @override
+  String get fileTakePhoto => 'Take photo';
+
+  @override
+  String get filePasteImage => 'Paste image';
+
+  @override
+  String get fileNoImageToPaste => 'There\'s no image on the clipboard.';
+
+  @override
+  String get filesEmpty => 'No files yet.';
+
+  @override
+  String get filesEmptyDesktop =>
+      'No files yet. Drop files on this item, or paste a screenshot with Ctrl+V.';
+
+  @override
+  String get fileDropHere => 'Drop to attach';
+
+  @override
+  String get fileTooBigTitle => 'Large file';
+
+  @override
+  String fileTooBigBody(String name, String size) {
+    return '$name is $size. Files over 20 MB fill up your devices quickly. Attach it anyway?';
+  }
+
+  @override
+  String get fileSkip => 'Skip';
+
+  @override
+  String get fileAttachAnyway => 'Attach anyway';
+
+  @override
+  String fileAttached(String name) {
+    return 'Attached $name';
+  }
+
+  @override
+  String filesAttached(int count) {
+    return 'Attached $count files';
+  }
+
+  @override
+  String get fileNoApp => 'No app on this device can open this file.';
+
+  @override
+  String get fileOpenIn => 'Open in…';
+
+  @override
+  String get fileOpenInNote =>
+      'Opens a copy in your default app. Changes made there aren\'t saved here; use Replace file to bring in a new version.';
+
+  @override
+  String get fileReplace => 'Replace file…';
+
+  @override
+  String get fileExportMarkup => 'Export with markup…';
+
+  @override
+  String get fileRename => 'Rename';
+
+  @override
+  String get fileRemove => 'Remove file';
+
+  @override
+  String fileRemoved(String name) {
+    return 'Removed $name';
+  }
+
+  @override
+  String get fileSaved => 'Saved';
+
+  @override
+  String fileOwnedBy(String title) {
+    return 'from $title';
+  }
+
+  @override
+  String get markup => 'Mark up';
+
+  @override
+  String get markupDone => 'Done';
+
+  @override
+  String get markupShow => 'Show markup';
+
+  @override
+  String get markupHide => 'Hide markup';
+
+  @override
+  String get markupPen => 'Pen';
+
+  @override
+  String get markupHighlighter => 'Highlighter';
+
+  @override
+  String get markupText => 'Text label';
+
+  @override
+  String get markupEraser => 'Eraser';
+
+  @override
+  String get markupUndo => 'Undo last mark';
+
+  @override
+  String get markupLabelTitle => 'Label';
+
+  @override
+  String get markupHighlight => 'Highlight';
+
+  @override
+  String get markupClear => 'Clear';
+
+  @override
+  String get markupSelectHint => 'Select text, then Highlight.';
+
+  @override
+  String get linkedFilesHeading => 'Files';
+
+  @override
+  String get searchFile => 'file';
+
+  @override
+  String get filterHasFiles => 'Has files';
+
+  @override
+  String get fileTooBigToShow =>
+      'This file is too big to show here. Use Open in… to read it.';
 }

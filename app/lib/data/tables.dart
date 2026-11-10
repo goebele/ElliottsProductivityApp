@@ -198,6 +198,116 @@ class Links extends Table with SyncColumns {
   )();
 }
 
+/// Personal (§5.2, §6.2): one of your core values, with a statement of why
+/// it matters. Two people can tie the same shared item to different values.
+class CoreValues extends Table with SyncColumns {
+  TextColumn get name => text()();
+
+  /// Markdown.
+  TextColumn get statement => text().withDefault(const Constant(''))();
+
+  /// ARGB; null = the theme's default.
+  IntColumn get color => integer().nullable()();
+
+  /// A short icon name (see `ui/values.dart`); null = the default.
+  TextColumn get icon => text().nullable()();
+  TextColumn get sortKey => text()();
+}
+
+/// Personal: a value you tied to a node. Its descendants inherit it (D6).
+/// Removing it sets [deleted].
+@TableIndex(name: 'node_values_node', columns: {#nodeId})
+@TableIndex(name: 'node_values_value', columns: {#valueId})
+class NodeValues extends Table with SyncColumns {
+  TextColumn get nodeId => text()();
+  TextColumn get valueId => text()();
+}
+
+enum TagKind { normal, place }
+
+/// A tag (§6.14). A tag in a shared space is shared; one in your personal
+/// space is private. In v1 every tag is personal. A tag lasts while
+/// something uses it, unless it is [kept]: removing its last use sets
+/// [deleted], and using the name again brings the same row back.
+class Tags extends Table with SyncColumns {
+  /// Without the `#`. Matched case-insensitively; shown as first written.
+  TextColumn get name => text()();
+
+  /// ARGB; null = no colour.
+  IntColumn get color => integer().nullable()();
+  TextColumn get kind =>
+      text().map(const TolerantEnumConverter(TagKind.values, TagKind.normal))();
+
+  /// One tap in the tag picker: a common category such as #work. In v1
+  /// tags are personal; with sharing, favourites move to a personal table
+  /// so members can have their own.
+  BoolColumn get favorite => boolean().withDefault(const Constant(false))();
+
+  /// Made or edited on the Tags page: stays when nothing uses it.
+  BoolColumn get kept => boolean().withDefault(const Constant(false))();
+}
+
+/// A tag on a node, in the tag's space. [origin] `inline` means it comes
+/// from `#name` in the node's title or text, and is kept in step with it;
+/// `attached` means it was added from the tag picker.
+@TableIndex(name: 'node_tags_node', columns: {#nodeId})
+@TableIndex(name: 'node_tags_tag', columns: {#tagId})
+class NodeTags extends Table with SyncColumns {
+  TextColumn get nodeId => text()();
+  TextColumn get tagId => text()();
+  TextColumn get origin => text().map(
+    const TolerantEnumConverter(LinkOrigin.values, LinkOrigin.attached),
+  )();
+}
+
+enum AttachmentKind { image, text, pdf, other }
+
+/// Shared (§5.2, §6.4): a file attached to a node, stored in the blob store
+/// under its content hash. [nodeId] is its single owner; other items show it
+/// through `links` rows (`target_kind = attachment`). Removing it sets
+/// [deleted]; the file is freed once nothing live uses its hash.
+@TableIndex(name: 'attachments_node', columns: {#nodeId})
+class Attachments extends Table with SyncColumns {
+  TextColumn get nodeId => text()();
+
+  /// SHA-256, hex.
+  TextColumn get contentHash => text()();
+  TextColumn get filename => text()();
+  TextColumn get mime => text()();
+  IntColumn get sizeBytes => integer()();
+  TextColumn get kind => text().map(
+    const TolerantEnumConverter(AttachmentKind.values, AttachmentKind.other),
+  )();
+
+  /// Images only, in pixels.
+  IntColumn get width => integer().nullable()();
+  IntColumn get height => integer().nullable()();
+}
+
+enum AnnotationKind { stroke, highlight, textLabel }
+
+/// Shared (§5.2, §6.4): markup on an attachment, one row per stroke,
+/// highlight or label, so two devices marking up the same file merge
+/// cleanly. Erasing sets [deleted].
+@TableIndex(name: 'annotations_attachment', columns: {#attachmentId})
+class Annotations extends Table with SyncColumns {
+  TextColumn get attachmentId => text()();
+  TextColumn get kind => text().map(
+    const TolerantEnumConverter(AnnotationKind.values, AnnotationKind.stroke),
+  )();
+
+  /// stroke: `{"points": [x0, y0, x1, y1, …], "width": w, "pen": "pen" |
+  /// "highlighter"}`, coordinates 0–1 of the image; textLabel: `{"x", "y",
+  /// "text"}`; highlight: `{"start", "end"}` character offsets.
+  TextColumn get dataJson => text()();
+
+  /// ARGB.
+  IntColumn get color => integer()();
+
+  /// Drawing order.
+  IntColumn get z => integer()();
+}
+
 /// Completions of repeating items and their descendants (§5.2, D11, D24).
 /// Shared. "Undo" sets [deleted] rather than removing the row.
 @TableIndex(

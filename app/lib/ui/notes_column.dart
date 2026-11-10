@@ -5,15 +5,18 @@ import '../domain/markdown_format.dart';
 import '../data/database.dart';
 import '../l10n/app_localizations.dart';
 import '../providers.dart';
+import 'files.dart';
 import 'labels.dart';
 import 'linked_notes.dart';
 import 'tree_pane.dart';
 import 'tree_providers.dart';
 
-/// The item's own notes plus the ones from above.
+/// The item's own notes and files, plus the ones from above.
 int _noteCount(WidgetRef ref, String parentId) =>
     (ref.watch(notesProvider(parentId)).value?.length ?? 0) +
-    (ref.watch(linkedNotesProvider(parentId)).value?.length ?? 0);
+    (ref.watch(filesProvider(parentId)).value?.length ?? 0) +
+    (ref.watch(linkedNotesProvider(parentId)).value?.length ?? 0) +
+    (ref.watch(linkedFilesProvider(parentId)).value?.length ?? 0);
 
 /// "Notes (n)" button that opens or closes the notes column (wide layout).
 class NotesToggle extends ConsumerWidget {
@@ -36,7 +39,7 @@ class NotesToggle extends ConsumerWidget {
 
 /// The column beside an item listing its notes (DESIGN.md §6.1, v0.5).
 /// Below them, notes from above: linked or shared down by ancestors (§6.10).
-/// Documents (M3) will join it.
+/// Its files (§6.4) sit between the two.
 class NotesColumn extends StatelessWidget {
   const NotesColumn({super.key, required this.parentId, required this.onOpen});
 
@@ -52,6 +55,7 @@ class NotesColumn extends StatelessWidget {
         Text(l10n.notesHeading, style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
         NotesList(parentId: parentId, onOpen: onOpen),
+        FilesList(nodeId: parentId),
         LinkedNotesList(childId: parentId, onOpen: onOpen),
       ],
     );
@@ -76,6 +80,7 @@ class NotesSection extends ConsumerWidget {
       title: Text(l10n.notesToggle(count)),
       children: [
         NotesList(parentId: parentId, onOpen: onOpen),
+        FilesList(nodeId: parentId),
         LinkedNotesList(childId: parentId, onOpen: onOpen),
       ],
     );

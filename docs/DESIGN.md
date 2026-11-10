@@ -1,6 +1,33 @@
 # Elliott's Productivity App — Design Doc
 
-**Status:** Draft v0.8 · **Last updated:** 2026-11-09 · **Owners:** Elliott, Claude
+**Status:** Draft v0.12 · **Last updated:** 2026-11-09 · **Owners:** Elliott, Claude
+
+> **v0.12 (M3):** **Attachments**: a Files list in the notes column
+> (thumbnails for images), added by file picker, drag and drop or Ctrl+V
+> on Windows, or the camera on phones. Each file has its own page (images
+> zoom and pan, `.md` renders, others get a file card) with **Open in…**,
+> **Replace file**, **Rename**, **Remove** (Undo) and, for images,
+> **Export with markup**. **Markup**: pen, highlighter, text labels and
+> eraser on images; highlights on text files. Ancestors' files can be
+> **linked** into a child, and search finds files by name and text (§6.4,
+> §6.6, §6.10).
+
+> **v0.11:** **Sharing an item with another person never shares tags or
+> values**: both are always personal (§5.0, D28, §6.14, §11.2). Device sync
+> still carries them between your own devices. Open: whether `#tags` typed
+> in shared text become tags for the others (Q-M).
+
+> **v0.10:** A **Tags page** (create, star as favourite, colour, rename or
+> merge, delete, usage counts) and **favourite tags** as one-tap chips at
+> the top of the tag picker (§6.14).
+
+> **v0.9 (M2):** **Values** (a Values page under the tree; chips on each
+> item, inherited ones faded with "from Trip"), **tags** (a picker, plus
+> `#name` typed in a title or text), and **search** (a box above the tree,
+> FTS5, filter chips, shortcuts like `#tag/*` and `value:`). Carried over
+> from M1: **collapsing breadcrumbs** on narrow screens, **zooming** the
+> tree into an item, and **Peek** (hover card on Windows, long-press sheet
+> on phones, pinnable as a side panel). See §6.1.1, §6.2, §6.6, §6.14.
 
 > **v0.8:** **LAN sync moves to M7**, after the single-device features
 > (attachments, calendar, time, Today view), so the UI is fully usable on
@@ -129,7 +156,7 @@ data.
 | D25 | Send, then share more | ✅ **One canonical copy.** A sent node moves into its real place when the bigger tree is shared. Your old filing becomes a **placement** (shortcut). |
 | D26 | Multiple parents | ✅ **One real parent, plus personal placements** (not a true multi-parent graph) |
 | D27 | Child views v1 | ✅ **Detail panels (default), checklist, steps**, plus the tree pane. Board, table and gallery come later. |
-| D28 | Tags | ✅ **Explicit**, with optional "include children" in search. Tags are **shared** or **private**. |
+| D28 | Tags | ✅ **Explicit**, with optional "include children" in search. Tags are **always personal** (v0.11): sharing an item never shares its tags, just as it never shares values. |
 | D29 | Time | ✅ **Estimates, timers, time tracking**, rolled up the tree |
 | D30 | Reports | ✅ **"What I did this week"** at minimum, plus progress on goals and projects |
 | D31 | Location | ✅ **QR place tags only** in v1. No extra hardware. |
@@ -183,9 +210,11 @@ data.
 | Notifications | `flutter_local_notifications` |
 | Global hotkey (Windows) | `hotkey_manager` |
 | System tray (Windows) | `tray_manager` |
-| Share-sheet intake (Android) | `receive_sharing_intent` or equivalent |
-| Open file in another app | `open_filex` / `url_launcher` |
-| Image capture / pick | `image_picker` |
+| Share-sheet intake (Android) | `receive_sharing_intent` or equivalent (M6) |
+| Open file in another app | `open_filex` ✅ |
+| Image capture / pick | `image_picker` ✅ (camera); `file_picker` ✅ (files) |
+| Drag and drop / paste (Windows) | `desktop_drop` ✅ / `pasteboard` ✅ |
+| Hashing | `crypto` (SHA-256) ✅ |
 | QR generate / scan | `qr_flutter` / `mobile_scanner` |
 | Drawing overlay | `CustomPainter` (written in-house) |
 | Crypto (identity, pairing, end-to-end encryption) | `cryptography` / `sodium` |
@@ -207,12 +236,16 @@ creation time. Every synced table has these columns:
 ### 5.0 Shared vs personal (read this first)
 Every piece of data belongs to exactly one space:
 - **Shared data** lives in the **node's space**: the title, note, status,
-  children, shared tags, assignees and attachments. Once shared, every member
+  children, assignees and attachments. Once shared, every member
   sees it.
 - **Personal data** lives in **your personal space** and points at a node:
-  value links, private tags, Today entries, context resume, placements,
+  value links, tags, Today entries, context resume, placements,
   time entries, contact labels, child-view overrides and activity history. No
   one else ever receives it, even when the node it points at is shared.
+- **Sharing an item with another person (v0.11) never shares your tags or
+  values.** Each member organises a shared item with their own. (Syncing
+  your own devices is different: everything in your personal space syncs
+  between them.)
 
 In v1 everything is in your personal space, so this split costs nothing yet.
 It matters as soon as sharing arrives.
@@ -289,17 +322,27 @@ Used for (a) putting a node you received somewhere in your own tree, and
 (b) shortcuts, e.g. "Buy paint" also showing under your "Errands". See
 [§6.12](#612-placements-one-node-several-places).
 
-**`core_values`** *(personal)* — `name, statement (markdown), color, icon, sort_key`
+**`core_values`** *(personal)* — `name, statement (markdown), color, icon, sort_key`.
+Deleting a value tombstones it and every `node_values` row that uses it.
 
 **`node_values`** *(personal)* — explicit value links: `node_id, value_id`.
 A node's **effective values** are its own explicit values plus all of its
 ancestors' values. For you, that includes ancestors reached through your
-placements. They're computed with a recursive CTE and cached in a local
-index table.
+placements. In v0.9 they're computed on read (no cache table yet); a cache
+can come with the M8 performance pass if 10k+ nodes need it.
 
-**`tags`** — `name, color, kind (normal | place)`. A tag in a shared space is
-shared; a tag in your personal space is private.
-**`node_tags`** — `node_id, tag_id`. The row lives in the same space as the tag.
+**`tags`** *(personal)* — `name, color, kind (normal | place)`. Tags always
+live in your personal space; there are no shared tags (v0.11). Names
+match case-insensitively, and must be writable inline (a letter first, then
+letters, digits, `_`, `-`; spaces become `-`). **A tag lasts while something
+uses it** unless it is `kept` (made or edited on the Tags page) or a
+`favorite`: removing its last use tombstones it, and using the name again
+revives the same row. *(v0.10: `favorite` and `kept` columns, schema v9.
+Since tags are personal, these can stay on the tag row.)*
+**`node_tags`** *(personal)* — `node_id, tag_id, origin (inline | attached)`.
+Lives in your personal space, even when the node is shared. `inline` rows come from `#name` in the
+node's title or text and are kept in step with it on every save;
+`attached` rows come from the tag picker.
 
 **`links`** — any node → something.
 `from_node_id, target_kind (node | note | url | attachment), target_id, url, label, origin (inline | attached)`
@@ -323,7 +366,11 @@ and one file.
 Two devices marking up the same photo then merge cleanly, since there's
 nothing to conflict.
 `attachment_id, kind (stroke | highlight | text_label), data_json, color, z`
-- `stroke`: a list of points normalized to 0–1 of the image size, plus width.
+*(v0.12, schema v10: `attachments` and `annotations` built; erasing a mark
+sets `deleted`.)*
+- `stroke`: `{"points": [x0, y0, x1, y1, …], "width", "pen": "pen" |
+  "highlighter"}`, points normalized to 0–1 of the image size, width as a
+  fraction of its shorter side.
 - `highlight` (text docs): character range `{start, end}`.
 - `text_label`: position plus a short string.
 
@@ -375,7 +422,8 @@ change-log compaction and Trash purges.
 - `change_log`: outgoing and applied changes (see §7).
 - `pending_unknown_ops`: ops this app version doesn't understand yet, kept and
   passed along (see [§7.5](#75-versioning)).
-- `fts_index`: the FTS5 virtual table.
+- `node_search`: the FTS5 index over `nodes.title` and `body_md`
+  (external content, kept in step by triggers; `lib/data/search.drift`).
 - `ui_prefs`: window layout, theme, last tab, language.
 
 ## 6. Feature design
@@ -453,17 +501,27 @@ Example: working on *Test New Feature*, you can reach *Implement Feature*
 
 - **Ancestors:** full breadcrumbs from the top-level project down to the
   current node. Each one is clickable. On narrow Android screens, middle
-  levels collapse to "…" and tapping expands them. If you opened the node
+  levels collapse to "…" and tapping expands them (v0.9: below 600 px, with
+  more than two levels, it shows first › … › last). If you opened the node
   through a placement, the breadcrumb also shows "via Errands".
+- **Zoom (v0.9):** "Zoom in" on a tree row's right-click menu, or "Zoom
+  tree here" in an item's ⋮ menu, shows that item's children as the tree's
+  top level. A bar above the tree names it, with ↑ (zoom out one level) and
+  ✕ (whole tree). New items and drops at the end land inside it.
 - **Children:** shown in the node's child view, and you can expand a child to
   see its own children.
 - **Navigate:** clicking an ancestor or child opens it. **Back/forward
   history** works with mouse buttons and `Alt+←/→` on Windows, and the back
   gesture on Android.
 - **Peek:** look at another node's context without leaving the current one.
-  - Windows: hover for a peek card, or click a peek icon to pin a **side
-    panel**.
-  - Android: long-press for a bottom sheet.
+  - Windows: hover for a peek card (after ~0.7 s), and **Pin beside** on the
+    card keeps it as a **side panel** to the right of the detail pane.
+  - Android: long-press for a bottom sheet. *Not on tree rows*, where
+    long-press drags (v0.7); peek works on breadcrumbs, Items rows, search
+    results, "from:" tags, inherited value chips and the Values page.
+  - **v0.9 built:** the card shows path, type, status, item count, values,
+    tags, description and notes, with **Open**. Not yet: editing the note in
+    place, and "Link here".
   - The peek shows that node's note (editable in place), links, attachments,
     values and status. "Open" navigates to it; "Link here" links its
     note or doc into the current node (see [§6.10](#610-linked-ancestor-items)).
@@ -477,7 +535,17 @@ Example: working on *Test New Feature*, you can reach *Implement Feature*
 - Every node shows chips for its inherited values. The Today view uses them to
   answer "why does this matter?"
 - Values are **personal**. Two family members can tie the same shared task to
-  different values of their own.
+  different values of their own. Sharing an item never shares the values tied
+  to it or to the items above it (v0.11).
+- **UI (v0.9):** a **Values** entry under the tree (above Archive and Trash)
+  opens the Values page: each value as a card with its icon, colour,
+  statement and the items tied to it (goals first), with Edit, Delete
+  (confirmed, says how many items it's untied from) and a drag handle to
+  reorder; **New value…** adds one (name, "why it matters", icon, colour).
+- On an item, under the title: its own values as chips (✕ unties), then
+  inherited ones, faded, as "Family · from Trip" (click opens Trip), then
+  **+ Value**, a menu of values to tick plus **New value…**. Notes have no
+  values.
 
 ### 6.3 Notes, links and ideas
 - **Description vs notes (v0.5):** an item's description is its own markdown
@@ -525,6 +593,35 @@ Example: working on *Test New Feature*, you can reach *Implement Feature*
   sharing outside the app.
 - **Size limit:** a soft cap of **20 MB per file**; photos are optionally
   downscaled on import.
+- **Built (v0.12):**
+  - **Where:** a **Files** list in the notes column, below the item's own
+    notes (the button reads "Notes & files (n)"): image thumbnails, then a
+    row per other file. **+ Add** offers Choose files…, Take photo (phones;
+    downscaled to 2560 px, quality 85) and Paste image (Windows).
+  - **Windows:** drop files anywhere on an item's page; **Ctrl+V** attaches
+    a clipboard image when no text field has focus. Larger than 20 MB asks
+    first ("Attach anyway" / Skip). Every add offers Undo.
+  - **Page:** clicking a file opens its page in the detail pane (pushed on
+    phones), with **Back to {item}** (or to the item it was linked into),
+    size and dimensions, and "Linked into N items" chips. Images zoom and
+    pan; `.md` renders formatted; `.txt`, `.csv` and `.log` show as text
+    (over 2 MB: use Open in…); PDFs and others show a file card. No PDF
+    rendering in the app (decided v0.12).
+  - **⋮:** Open in… (a temporary copy, by `open_filex`), Replace file…
+    (markup stays), Export with markup… (images; a PNG at full size via
+    the Save dialog), Rename, Remove file (Undo).
+  - **Markup (images):** **Mark up** switches to drawing: pen, highlighter
+    (translucent, multiply), text label (asks for the text), eraser (whole
+    marks the swipe touches), six colours, Undo for this session's marks;
+    **Done** returns to viewing. "Show/Hide markup" toggles the layer. The
+    page doesn't scroll while marking up, so vertical strokes draw.
+  - **Markup (text):** in Mark up, `.md` shows its raw text; select and
+    **Highlight** (five colours), **Clear** removes highlights in the
+    selection. Highlights are character ranges of the raw text, shown
+    whenever the raw text is.
+  - **Files on disk:** `<app support>/blobs/ab/cd/<sha256>`. At startup,
+    after the Trash purge, files no attachment of a non-deleted item uses
+    are deleted (removed files are kept until then, so Undo works).
 
 ### 6.5 Calendar, deadlines and routines
 - **Calendar view:** day, week and month, showing events, deadlines and time
@@ -592,6 +689,24 @@ on the list every day, but only one exercise is suggested.
 - Search syntax shortcuts: `#tag`, `#tag/*` (include children), `@user`,
   `value:Health`, `type:task`, `in:"Project"`.
 - Saved searches (later).
+- **UI (v0.9):** the box sits at the top of the tree pane (**Ctrl+F**
+  focuses it). While it has text or a filter, results replace the tree,
+  one row per item with its path ("Trip › Europe", "linked in 2 places",
+  "archived"); **Esc** or ✕ clears it and the tree returns. The ⚙ (tune)
+  button shows the filter chips: **Value, Tag** (with "Include items under
+  tagged ones"), **Type, Status, Project** (a top-level item), **Due** (a
+  date range) and **Include archived**. Chips and typed shortcuts combine.
+  Values and tags must all match; types and statuses match any. Words match
+  as prefixes, titles rank above text, `"quotes"` match a phrase, and
+  `status:`/`is:` filter by status. Clicking a tag chip on an item searches
+  for it.
+- **Files (v0.12):** filenames and the text of `.txt`/`.md` files (up to
+  1 MB) are in a second FTS5 index, `attachment_search`; matching files are
+  listed after items as "name · Owner › path · file" and open their page.
+  Filters judge a file by its owner and the items linking it (D19); a Type
+  filter leaves files out. A **Has files** chip keeps items with files.
+- **Not yet:** link labels (no labelled links exist yet), the assignee
+  filter (sharing).
 
 ### 6.7 Today view (motivation)
 - Pick tasks into today's list from anywhere ("Add to Today"), or from
@@ -695,6 +810,10 @@ child links is an **ancestor's note item** (`target_kind = note`,
 - Owner archived or trashed: the card is greyed ("Source archived" / "Source
   in Trash") with **Restore source**. Purged: "Source deleted" with
   **Clear**.
+- **Files (v0.12):** the same "Link from above…" picker lists the
+  ancestors' files under **Files**; linked files appear in "From above"
+  with "from: Owner" and Unlink, and open their page with Back to the
+  child. Pinning to all sub-items is for notes only.
 - Links are offered from the child's notes column, not when creating it:
   children are added by a one-line field under Items, so there is no form
   to put a picker in (v0.8).
@@ -823,11 +942,36 @@ is drawn, and you can always drill into a child.
 
 ### 6.14 Tags
 - Create tags anywhere with `#name` in a title or note, or from the tag picker.
-- **Shared tags** live in the node's space. **Private tags** live in your
-  personal space, so you can tag a shared task `#annoying` without anyone
-  seeing it.
+- **Tags are personal (v0.11).** Sharing an item with someone never shares
+  your tags: you can tag a shared task `#annoying` and no one else sees it,
+  and they tag it with their own. There are no shared tags.
+- **Inline `#tags` in shared text:** the title and text are shared, so the
+  words are visible to every member; whether they also become tags for the
+  others is open question Q-M.
 - Tags are **explicit** (shown only where you put them). Search can add
   "include children".
+- **Inline rules (v0.9):** `#` then a letter starts a tag (letters, digits,
+  `_`, `-`), so `#1` and `# Heading` aren't tags. Code spans and blocks are
+  skipped, and so is a `#` right after a letter, digit, `/`, `(` or `&`
+  (URL fragments, `[x](#anchor)`). Deleting the text removes the tag.
+- **UI (v0.9):** under the title, chips for the item's tags, then **+ Tag**
+  (type a name, existing tags are suggested, Enter adds). Picker tags have
+  ✕; tags from the text don't (their tooltip says to edit the text).
+  Clicking a tag searches for it.
+- **Favourites (v0.10):** starred tags are the common categories (#work,
+  #home). They show as one-tap toggle chips at the top of the **+ Tag**
+  picker, before the search field, and first in the search Tag filter. They
+  are ordinary tags otherwise: they don't pass down to children (searching
+  a tagged top-level item with "include children" already covers its tree).
+- **Tags page (v0.10):** a **Tags** entry under the tree, below Values.
+  Create a tag (kept even while unused); favourites first, then the rest.
+  Each row has a star, a colour (dot shown on chips everywhere), how many
+  items use it (click to search), **Rename** and **Delete**.
+  - **Rename** rewrites `#old` to `#new` in every title and text. Renaming
+    to an existing name **merges**: every item gets the other tag (once),
+    the text is rewritten, and star and colour carry over.
+  - **Delete** (confirmed, with the count) removes it from every item and
+    turns `#name` in text into plain `name`, so it doesn't come back.
 - **Place tags** (`kind = place`) are tags that can be printed as QR codes
   (see [§6.17](#617-qr-place-tags)).
 
@@ -1022,6 +1166,8 @@ Not in v1, but the v1 schema fully supports it (D13, D21–D26, D34).
 ### 11.2 Sending a node
 - "Send to…" a node (a single task or a whole subtree) creates a shared space
   rooted at it, with you and the recipient as members.
+- **Not sent:** your tags, values, placements and other personal data
+  (§5.0). The recipient sees the item untagged and adds their own.
 - You can attach an **alias** for yourself. It travels encrypted and becomes
   the recipient's suggested label for you.
 - The recipient gets it in their **Inbox** and files it with a placement.
@@ -1076,12 +1222,12 @@ The UI is made fully usable on one device first (M1–M6); sync comes after
 |---|-----------|------------|
 | M0 | Project skeleton | The Flutter app builds and runs on Windows and an Android phone; Drift is set up; gen-l10n is wired up; the user identity key is created on first run; CI runs tests |
 | M1 | Tree + notes | Create, nest, reorder and move nodes; markdown notes; child views (panels, checklist, steps); placements; linking ancestor notes; Archive and Trash; works offline on one device |
-| M2 | Values, tags + search | Values with statements and inheritance; shared and private tags; FTS5 search with every filter |
-| M3 | Attachments + markup | Capture or import, hash store, viewer, drawing overlay, open-in; linking ancestor attachments |
+| M2 | Values, tags + search | Values with statements and inheritance; personal tags with inline `#tags`; FTS5 search with the filters that exist so far. **Carried over from M1:** collapsing breadcrumbs, zooming the tree, Peek |
+| M3 | Attachments + markup | Capture or import (picker, drag and drop, paste, camera), hash store, viewer, drawing overlay, text highlights, open-in, export with markup; linking ancestor attachments; file search. *Android share-sheet intake moves to M6 with quick capture.* |
 | M4 | Calendar + routines | RRULE expansion, recurring subtrees, calendar views, occurrence completions, reminders, .ics export |
 | M5 | Time + reports | Estimates, timers, manual entries, roll-ups, progress bars, weekly review |
 | M6 | Motivation + friction | Today view, quick-capture (hotkey, widget, share sheet), context resume, QR place tags |
-| M7 | LAN sync | Pairing (code confirmed on both devices + optional PIN); mDNS; HLC change log; field-level merge; version handshake and passing along unknown ops; attachment blob sync; running timers sync; phone ⇄ PC sync verified with a two-instance test harness |
+| M7 | LAN sync | Pairing (code confirmed on both devices + optional PIN); mDNS; HLC change log; field-level merge; version handshake and passing along unknown ops; attachment blob sync; running timers sync; phone ⇄ PC sync verified with a two-instance test harness. **Rules to settle first:** two moves on different devices that together form a cycle (A under B, B under A); the same pair added twice in a set-like table (`node_tags`, `node_values`, `links`, whose unique index would reject the second row on apply) |
 | M8 | Polish + accessibility | Backups, conflict-copy UI, performance with 10k+ nodes. **Accessibility pass:** keyboard tree controls (§6.1); screen-reader move actions on tree and Items rows; labels, focus order and traversal checked with Narrator and TalkBack; text scaling to 200% without clipping; contrast to WCAG 2.1 AA in light and dark; touch targets of at least 48 dp |
 | Next | Sharing | Encrypted relay, send / share / merge, assignees in the UI, contact labels |
 | After | iOS, push | Plus streaks, board/table/gallery views, geofence/Wi-Fi/Bluetooth triggers, Google Calendar, SQLCipher |
@@ -1101,6 +1247,7 @@ The UI is made fully usable on one device first (M1–M6); sync comes after
 | Q-J | Offer an offline recovery phrase for the user identity key? | Yes, optional, in the sharing release |
 | Q-K | Merge rules when a sent node's space and the larger shared space have different members | Merge only if the larger space includes all members; otherwise keep a nested space |
 | Q-L | Should a recurring parent auto-complete when all children are done for that occurrence? | Yes (as specified in §6.5); for an exclusive set, when its one pick is done. Confirm in M4 |
+| Q-M | When a shared item's title or text contains `#work`, does it become a tag for the other members too? | Yes, each member's app reads it into **their own** personal tag (they see the word anyway, and `#` in text is a deliberate act); picker tags stay private. Removing the word removes it for everyone. Decide with sharing |
 
 *Resolved: Q-D (goal progress comes from children, with a manual override;
 see §6.16).*

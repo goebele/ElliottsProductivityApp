@@ -1,7 +1,11 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
+import 'data/blob_store.dart';
 import 'data/database.dart';
 import 'domain/node_repository.dart';
 import 'identity/identity_service.dart';
@@ -37,6 +41,12 @@ final changeWriterProvider = FutureProvider<ChangeWriter>((ref) async {
   );
 });
 
+/// Attachment files, in `<app support>/blobs` (§6.4).
+final blobStoreProvider = FutureProvider<BlobStore>((ref) async {
+  final dir = await getApplicationSupportDirectory();
+  return BlobStore(Directory(p.join(dir.path, 'blobs')));
+});
+
 final nodeRepositoryProvider = FutureProvider<NodeRepository>((ref) async {
   final identity = await ref.watch(identityProvider.future);
   final repo = NodeRepository(
@@ -44,8 +54,10 @@ final nodeRepositoryProvider = FutureProvider<NodeRepository>((ref) async {
     await ref.watch(changeWriterProvider.future),
     personalSpaceId: identity.personalSpaceId,
     userId: identity.userId,
+    blobStore: await ref.watch(blobStoreProvider.future),
   );
-  // Trash older than 30 days is purged at startup (§6.11).
-  unawaited(repo.purgeExpiredTrash());
+  // Trash older than 30 days is purged at startup (§6.11), then files
+  // nothing uses any more are freed.
+  unawaited(repo.purgeExpiredTrash().then((_) => repo.files.collectGarbage()));
   return repo;
 });
