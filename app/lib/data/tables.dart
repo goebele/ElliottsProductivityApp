@@ -308,6 +308,26 @@ class Annotations extends Table with SyncColumns {
   IntColumn get z => integer()();
 }
 
+/// Personal (§6.5): a reminder on a node, as minutes before its anchor:
+/// the start of a time slot (or each timed occurrence), or for all-day
+/// items 00:00 on the day (so -540 is 09:00 that day, 900 is 09:00 the day
+/// before). Removing it sets [deleted].
+@TableIndex(name: 'reminders_node', columns: {#nodeId})
+class Reminders extends Table with SyncColumns {
+  TextColumn get nodeId => text()();
+  IntColumn get minutesBefore => integer()();
+}
+
+/// Personal per-node settings (§5.0): one row per node you've changed
+/// something on. Child-view overrides will join it.
+@TableIndex(name: 'node_user_prefs_node', columns: {#nodeId})
+class NodeUserPrefs extends Table with SyncColumns {
+  TextColumn get nodeId => text()();
+
+  /// Included in "Export calendar" (.ics). Off by default (v0.13).
+  BoolColumn get icsExport => boolean().withDefault(const Constant(false))();
+}
+
 /// Completions of repeating items and their descendants (§5.2, D11, D24).
 /// Shared. "Undo" sets [deleted] rather than removing the row.
 @TableIndex(

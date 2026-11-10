@@ -6,6 +6,7 @@ import '../data/blob_store.dart';
 import '../data/database.dart';
 import '../sync/change_writer.dart';
 import 'attachment_repository.dart';
+import 'calendar.dart';
 import 'exclusive_picker.dart';
 import 'ids.dart';
 import 'repeat_rule.dart';
@@ -129,13 +130,23 @@ class ExclusiveStatus {
 bool isFinished(NodeStatus status) =>
     status == NodeStatus.done || status == NodeStatus.dropped;
 
-/// A repeating item's current occurrence. [period] is null before the
-/// series starts on [seriesStart].
+/// A repeating item's current occurrence, or that of the repeating item an
+/// item sits inside (D24). [period] is null before the series starts on
+/// [seriesStart].
 class OccurrenceStatus {
-  const OccurrenceStatus(this.period, this.done, this.seriesStart);
+  const OccurrenceStatus(
+    this.period,
+    this.done,
+    this.seriesStart, {
+    this.repeatsWith,
+  });
   final DateTime? period;
   final bool done;
   final DateTime seriesStart;
+
+  /// The repeating item above whose occurrences this one follows; null if
+  /// it repeats itself.
+  final Node? repeatsWith;
 }
 
 /// A group in the Archive or Trash: the node that was removed, how many
@@ -230,6 +241,20 @@ class NodeRepository {
 
   /// Search (§6.6).
   late final search = SearchService(_db);
+
+  /// Calendar entries (§6.5).
+  late final calendar = CalendarService(_db, this);
+
+  /// Reminders (§6.5), personal.
+  late final reminders = ReminderRepository(
+    _db,
+    _writer,
+    calendar,
+    spaceId: personalSpaceId,
+  );
+
+  /// Personal per-item settings (§5.0).
+  late final prefs = PrefsRepository(_db, _writer, spaceId: personalSpaceId);
 
   /// Attachments and markup (§6.4). Needs the blob store.
   late final files = AttachmentRepository(
@@ -465,7 +490,9 @@ class NodeRepository {
       NodesCompanion(
         startAt: Value(start?.toUtc()),
         endAt: Value(end?.toUtc()),
-        // TODO(M4): store the device's IANA zone so repeats survive DST.
+        // The zone it was set in, so a repeat keeps its wall-clock time
+        // across daylight-saving changes (§6.5).
+        timeZone: Value(start == null ? null : deviceTimeZone),
       ),
     );
   }
@@ -492,6 +519,7 @@ class NodeRepository {
         dueDate: Value(s.dueDate == null ? null : dateKey(s.dueDate!)),
         startAt: Value(s.start?.toUtc()),
         endAt: Value(s.end?.toUtc()),
+        timeZone: Value(s.start == null ? null : deviceTimeZone),
         rrule: Value(s.rrule),
         repeatStart: Value(
           s.rrule == null || s.repeatStart == null
@@ -1136,17 +1164,86 @@ class NodeRepository {
   /// For a repeating item: its current occurrence (the latest one on or
   /// before [today]) and whether that was done. Null if the item doesn't
   /// repeat (or its rule isn't one this version understands).
+  ///
+  /// Items inside a repeating item repeat with it (D24): their status is
+  /// per occurrence of the nearest repeating item above. A parent's
+  /// occurrence is also done once all its items are done for it (Q-L), or,
+  /// for a one-at-a-time set, once its pick is (D36). Children of a
+  /// one-at-a-time set don't follow the parent's occurrences.
   Future<OccurrenceStatus?> occurrenceStatus(
     String id, {
     required DateTime today,
   }) async {
     final node = await get(id);
-    final rule = node?.rrule == null ? null : RepeatRule.parse(node!.rrule!);
-    if (node == null || rule == null) return null;
-    final period = rule.lastOnOrBefore(today, seriesStart(node));
-    if (period == null) return OccurrenceStatus(null, false, seriesStart(node));
-    final done = await _completion(id, dateKey(period)) != null;
-    return OccurrenceStatus(period, done, seriesStart(node));
+    if (node == null || node.type == NodeType.note) return null;
+    final source = await repeatSource(node);
+    if (source == null) return null;
+    final rule = RepeatRule.parse(source.rrule!)!;
+    final start = seriesStart(source);
+    final inherited = source.id == id ? null : source;
+    final period = rule.lastOnOrBefore(today, start);
+    if (period == null) {
+      return OccurrenceStatus(null, false, start, repeatsWith: inherited);
+    }
+    final done = await occurrenceDone(node, dateKey(period));
+    return OccurrenceStatus(period, done, start, repeatsWith: inherited);
+  }
+
+  /// The item whose repeat [node] follows: itself if it has a rule this
+  /// version understands, else the nearest repeating item above. Null if
+  /// none, or if the way up passes from a child of a one-at-a-time set
+  /// (D36), whose children have their own cadence.
+  Future<Node?> repeatSource(Node node) async {
+    if (node.rrule != null && RepeatRule.parse(node.rrule!) != null) {
+      return node;
+    }
+    var cur = node;
+    for (var i = 0; i < _maxDepth && cur.parentId != null; i++) {
+      final parent = await get(cur.parentId!);
+      if (parent == null || parent.deleted) return null;
+      if (parent.rrule != null && RepeatRule.parse(parent.rrule!) != null) {
+        return parent.exclusiveChildren ? null : parent;
+      }
+      cur = parent;
+    }
+    return null;
+  }
+
+  /// Whether [node] is done for the occurrence [key]: completed for it,
+  /// dropped, or (with items under it) all of them done for it.
+  Future<bool> occurrenceDone(Node node, String key, [int depth = 0]) async {
+    if (node.status == NodeStatus.dropped) return true;
+    if (await _completion(node.id, key) != null) return true;
+    if (depth > 50) return false;
+    final kids = [
+      for (final c in await children(node.id))
+        if (c.type.isItem) c,
+    ];
+    if (kids.isEmpty) return false;
+    if (node.exclusiveChildren) {
+      for (final c in kids) {
+        if (await _completion(c.id, key) != null) return true;
+      }
+      return false;
+    }
+    for (final c in kids) {
+      if (!await occurrenceDone(c, key, depth + 1)) return false;
+    }
+    return true;
+  }
+
+  /// Ticks [id] done or not: for its current occurrence if it repeats or
+  /// sits in a repeating item (D24), otherwise for good.
+  Future<void> setDone(String id, bool done, {DateTime? today}) async {
+    final occ = await occurrenceStatus(id, today: today ?? DateTime.now());
+    final period = occ?.period;
+    if (occ != null && period != null) {
+      done
+          ? await completeOccurrence(id, period)
+          : await uncompleteOccurrence(id, period);
+    } else {
+      await setStatus(id, done ? NodeStatus.done : NodeStatus.open);
+    }
   }
 
   /// [occurrenceStatus], live; [today] is read on each emission.

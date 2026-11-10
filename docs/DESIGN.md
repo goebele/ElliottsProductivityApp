@@ -1,6 +1,24 @@
 # Elliott's Productivity App — Design Doc
 
-**Status:** Draft v0.12 · **Last updated:** 2026-11-09 · **Owners:** Elliott, Claude
+**Status:** Draft v0.15 · **Last updated:** 2026-11-09 · **Owners:** Elliott, Claude
+
+> **v0.15:** **Show in calendar** on an item (⋮, or the chip by its dates)
+> opens the calendar filtered to it and everything under it, replacing the
+> calendar's "Under an item…" picker (§6.5).
+
+> **v0.14:** The calendar copes with busy days: cells cap at three entries
+> plus **+n more**; clicking a day lists everything on it; right-click (or
+> long-press) asks before adding; and a filter bar (kind, hide done, tag,
+> value, under any item) (§6.5).
+
+> **v0.13 (M4):** A **Calendar** entry under the tree (day / week / month;
+> clicking empty time adds an item there). **Repeating subtrees** (D24):
+> items inside a repeating item are done per occurrence, and the parent is
+> done for the day when they all are (Q-L). Time slots store their **time
+> zone**, so a repeat at 18:00 stays at 18:00 across DST. **Reminders** per
+> item in the date dialog (Windows toasts, Android notifications).
+> **.ics export** is opt-in per item ("Include in calendar export"), plus
+> ⋮ → Export to calendar for one item (§6.5).
 
 > **v0.12 (M3):** **Attachments**: a Files list in the notes column
 > (thumbnails for images), added by file picker, drag and drop or Ctrl+V
@@ -207,7 +225,7 @@ data.
 | mDNS | `bonsoir` |
 | RRULE | `rrule` |
 | Markdown rendering / editing | `flutter_markdown_plus` (the maintained fork of the discontinued `flutter_markdown`; GitHub-flavoured, custom syntax for `[[node links]]`), plus a plain `TextField` with a formatting toolbar |
-| Notifications | `flutter_local_notifications` |
+| Notifications | `flutter_local_notifications` ✅ (+ `timezone`, `flutter_timezone`) |
 | Global hotkey (Windows) | `hotkey_manager` |
 | System tray (Windows) | `tray_manager` |
 | Share-sheet intake (Android) | `receive_sharing_intent` or equivalent (M6) |
@@ -639,7 +657,67 @@ Example: working on *Test New Feature*, you can reach *Implement Feature*
     all four reappear unticked, and the parent completes when the last one is
     done.
 - **Exceptions** (skip or move one occurrence): stored as EXDATE/RDATE in the
-  RRULE set.
+  RRULE set. *Not built in M4 (left out by choice, v0.13).*
+- **Built (v0.13):**
+  - **Calendar page:** a **Calendar** entry under the tree, above Values,
+    opens it in the detail pane (a full page on phones). **Day / Week /
+    Month**, ‹ Today ›, and Export. Day and week: an all-day row (deadlines
+    🏳, routines 🔁), then hours, opened at 07:00; overlapping events share
+    the width. Month: six weeks, three entries a day then "+n more". Done
+    entries are struck through. Entries peek on hover and open on click.
+  - **Crowded days (v0.14):** a month cell, and the all-day row of each
+    day in week/day view, shows at most three entries (fewer if the cell is
+    short), then **+n more**. Overlapping timed events share the column
+    width down to about 44 px each; any that don't fit become a "+n" at
+    their time.
+  - **Day list (v0.14):** clicking a day (its header, empty time, a month
+    cell or "+n more") lists everything on it, all-day first then by time,
+    with kind, time and done; it sits beside the calendar when there's room
+    (860 px), else in a bottom sheet. "Add on this day…" at the end.
+  - **Adding (v0.14):** right-click empty space (long-press on phones) for
+    a small dialog: "New event · Tue 10 · 9:00–10:00" (week/day, on the
+    half hour) or "New item · due Tue 10" (month cell or day header), with
+    a title field. **Nothing is created until Add**; the snack bar offers
+    Open. No dragging, ticking or skipping from the calendar (decided
+    v0.13).
+  - **Filters (v0.14):** a bar under the header: **Events / Deadlines /
+    Repeats** (shown kinds), **Hide done**, **Tag** and **Value** (any of
+    those picked; values count when inherited). **Clear filters** resets.
+    Kept while the app is open.
+  - **Show in calendar (v0.15):** on an item, ⋮ → **Show in calendar**, or
+    the chip by its dates, opens the calendar filtered to that item and
+    everything under it (any level), at its next date (today if none is
+    ahead). The bar shows "Only Trip ✕"; ✕ shows everything again. This
+    replaces picking an item from the calendar.
+  - **What's shown:** time slots (repeating ones on each occurrence),
+    all-day and timed deadlines, and repeats without a time slot as all-day
+    entries. Items inside a repeating item aren't listed; it stands for
+    them.
+  - **Repeating subtrees:** an item's status follows the nearest repeating
+    item above it (its own rule first). Done, the checklist, steps and
+    panels all tick per occurrence; nothing is ticked for good. A parent's
+    occurrence is done when all its items are (recursively), or, for a
+    one-at-a-time set, when its pick is. Children of a one-at-a-time set
+    keep their own cadence (D36). Dropped items count as done.
+  - **Time zones:** saving a time slot stores the device's IANA zone; each
+    occurrence is placed at the same wall-clock time in that zone, then
+    shown in local time.
+  - **Reminders:** a **Remind me** row in the date & time dialog. With a
+    time slot: at the time, 10 min, 1 hour or 1 day before; all-day: on the
+    day or the day before, at 09:00. Several allowed; off by default.
+    Stored per person (`reminders`: node, minutes before the start, or
+    before 00:00 for all-day items). The next 14 days (up to 60) are
+    scheduled at startup and two seconds after any change; done
+    occurrences and items are skipped. Tapping one opens the item. Android
+    asks for notification and exact-alarm permission with the first
+    reminder, and falls back to inexact alarms without it.
+  - **.ics:** "Include in calendar export" in the date dialog (personal,
+    `node_user_prefs.ics_export`, off by default) chooses what Calendar →
+    Export puts in the file; ⋮ → **Export to calendar (.ics)…** saves one
+    item. Events keep their zone (TZID) and rule; repeats without a slot
+    are all-day repeating events; deadlines are all-day "Due: …" events.
+    Nothing is ever sent anywhere: syncing everything to Google or Outlook
+    stays out of scope.
 
 #### 6.5.1 Exclusive sets: children that take turns (D36)
 *Example:* goal **Workout** repeats daily; its children **Arms** (every 3
@@ -668,7 +746,8 @@ on the list every day, but only one exercise is suggested.
   rescheduled when the app opens or a sync finishes. Android needs the
   exact-alarm permission. No push in v1.
 - **.ics export:** export a file, and optionally publish a read-only feed from
-  the PC on the LAN.
+  the PC on the LAN. *(v0.13: file only, per item opt-in; a LAN feed could
+  come with LAN sync in M7.)*
 - **Time zones:** store UTC plus an IANA zone ID. All-day items store a plain
   date.
 
@@ -1224,7 +1303,7 @@ The UI is made fully usable on one device first (M1–M6); sync comes after
 | M1 | Tree + notes | Create, nest, reorder and move nodes; markdown notes; child views (panels, checklist, steps); placements; linking ancestor notes; Archive and Trash; works offline on one device |
 | M2 | Values, tags + search | Values with statements and inheritance; personal tags with inline `#tags`; FTS5 search with the filters that exist so far. **Carried over from M1:** collapsing breadcrumbs, zooming the tree, Peek |
 | M3 | Attachments + markup | Capture or import (picker, drag and drop, paste, camera), hash store, viewer, drawing overlay, text highlights, open-in, export with markup; linking ancestor attachments; file search. *Android share-sheet intake moves to M6 with quick capture.* |
-| M4 | Calendar + routines | RRULE expansion, recurring subtrees, calendar views, occurrence completions, reminders, .ics export |
+| M4 | Calendar + routines | RRULE expansion, recurring subtrees, calendar views (day/week/month, click to add), occurrence completions, time zones on repeats, reminders, opt-in .ics export. *Skip/move one occurrence: not built.* |
 | M5 | Time + reports | Estimates, timers, manual entries, roll-ups, progress bars, weekly review |
 | M6 | Motivation + friction | Today view, quick-capture (hotkey, widget, share sheet), context resume, QR place tags |
 | M7 | LAN sync | Pairing (code confirmed on both devices + optional PIN); mDNS; HLC change log; field-level merge; version handshake and passing along unknown ops; attachment blob sync; running timers sync; phone ⇄ PC sync verified with a two-instance test harness. **Rules to settle first:** two moves on different devices that together form a cycle (A under B, B under A); the same pair added twice in a set-like table (`node_tags`, `node_values`, `links`, whose unique index would reject the second row on apply) |
@@ -1246,7 +1325,7 @@ The UI is made fully usable on one device first (M1–M6); sync comes after
 | Q-I | Should time tracked on a **shared** task be visible to the other members? | No by default; opt in per space |
 | Q-J | Offer an offline recovery phrase for the user identity key? | Yes, optional, in the sharing release |
 | Q-K | Merge rules when a sent node's space and the larger shared space have different members | Merge only if the larger space includes all members; otherwise keep a nested space |
-| Q-L | Should a recurring parent auto-complete when all children are done for that occurrence? | Yes (as specified in §6.5); for an exclusive set, when its one pick is done. Confirm in M4 |
+| Q-L | Should a recurring parent auto-complete when all children are done for that occurrence? | ✅ Yes (v0.13); for an exclusive set, when its one pick is done |
 | Q-M | When a shared item's title or text contains `#work`, does it become a tag for the other members too? | Yes, each member's app reads it into **their own** personal tag (they see the word anyway, and `#` in text is a deliberate act); picker tags stay private. Removing the word removes it for everyone. Decide with sharing |
 
 *Resolved: Q-D (goal progress comes from children, with a manual override;

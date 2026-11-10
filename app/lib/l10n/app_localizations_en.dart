@@ -1149,4 +1149,160 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get fileTooBigToShow =>
       'This file is too big to show here. Use Open in… to read it.';
+
+  @override
+  String get calendarView => 'Calendar';
+
+  @override
+  String get calendarDay => 'Day';
+
+  @override
+  String get calendarWeek => 'Week';
+
+  @override
+  String get calendarMonth => 'Month';
+
+  @override
+  String get calendarToday => 'Today';
+
+  @override
+  String get calendarPrevious => 'Previous';
+
+  @override
+  String get calendarNext => 'Next';
+
+  @override
+  String calendarMore(int count) {
+    return '+$count more';
+  }
+
+  @override
+  String get icsExport => 'Export calendar (.ics)…';
+
+  @override
+  String get icsExportItem => 'Export to calendar (.ics)…';
+
+  @override
+  String get icsNoneChosen =>
+      'No items are chosen for export yet. In an item\'s date & time, turn on \"Include in calendar export\".';
+
+  @override
+  String get icsInclude => 'Include in calendar export';
+
+  @override
+  String get icsIncludeHelp =>
+      'Adds it to the .ics file from Calendar → Export, for Google, Outlook or Apple calendars.';
+
+  @override
+  String get remindMe => 'Remind me';
+
+  @override
+  String get remindAtTime => 'At the time';
+
+  @override
+  String remindMinutesBefore(int count) {
+    return '$count min before';
+  }
+
+  @override
+  String remindHoursBefore(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count hours before',
+      one: '1 hour before',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String remindDaysBefore(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count days before',
+      one: '1 day before',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get remindOnDay => 'On the day, 09:00';
+
+  @override
+  String get remindDayBefore => 'Day before, 09:00';
+
+  @override
+  String get calendarEvents => 'Events';
+
+  @override
+  String get calendarDeadlines => 'Deadlines';
+
+  @override
+  String get calendarRepeats => 'Repeats';
+
+  @override
+  String get calendarHideDone => 'Hide done';
+
+  @override
+  String calendarUnderItem(String title) {
+    return 'Only $title';
+  }
+
+  @override
+  String get calendarClearFilters => 'Clear filters';
+
+  @override
+  String calendarAdded(String title) {
+    return 'Added $title';
+  }
+
+  @override
+  String get calendarQuickAdd => 'Add';
+
+  @override
+  String calendarQuickAddDue(String day) {
+    return 'New item · due $day';
+  }
+
+  @override
+  String calendarQuickAddAt(String day, String start, String end) {
+    return 'New event · $day · $start–$end';
+  }
+
+  @override
+  String get calendarCloseDay => 'Close';
+
+  @override
+  String calendarDayCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count entries',
+      one: '1 entry',
+      zero: 'Nothing on this day.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get calendarAllDay => 'All day';
+
+  @override
+  String get calendarDeadline => 'Deadline';
+
+  @override
+  String get calendarRepeat => 'Repeat';
+
+  @override
+  String get calendarEvent => 'Event';
+
+  @override
+  String get calendarAddOnDay => 'Add on this day…';
+
+  @override
+  String get calendarListDay => 'Show everything on this day';
+
+  @override
+  String get showInCalendar => 'Show in calendar';
 }

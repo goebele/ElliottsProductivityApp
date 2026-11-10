@@ -76,8 +76,10 @@ class _ChildrenSectionState extends ConsumerState<ChildrenSection> {
 
     // In a one-at-a-time set, rows show their cadence instead of being
     // ticked: completing happens per occurrence, on the card (D36).
+    // Inside a repeating item, "done" is per occurrence (D24).
+    bool done(Node n) => _isDone(ref, n);
     final nextStep = view == ChildView.steps
-        ? children.indexWhere((c) => !isFinished(c.node.status))
+        ? children.indexWhere((c) => !done(c.node))
         : -1;
     Widget rowContent(int i, NodeWithChildCount entry) {
       void open() {
@@ -118,7 +120,7 @@ class _ChildrenSectionState extends ConsumerState<ChildrenSection> {
           number: i + 1,
           state: i == nextStep
               ? _StepState.next
-              : isFinished(entry.node.status)
+              : done(entry.node)
               ? _StepState.finished
               : _StepState.later,
           handle: handle(i),
@@ -213,8 +215,8 @@ class _ChildrenSectionState extends ConsumerState<ChildrenSection> {
   }
 }
 
-TextStyle? _finishedStyle(Node node, TextStyle? base, ThemeData theme) =>
-    isFinished(node.status)
+TextStyle? _finishedStyle(bool finished, TextStyle? base, ThemeData theme) =>
+    finished
     ? base?.copyWith(
             decoration: TextDecoration.lineThrough,
             color: theme.colorScheme.onSurfaceVariant,
@@ -226,8 +228,14 @@ TextStyle? _finishedStyle(Node node, TextStyle? base, ThemeData theme) =>
     : base;
 
 Future<void> _setDone(WidgetRef ref, Node node, bool done) async =>
-    (await ref.read(nodeRepositoryProvider.future))
-        .setStatus(node.id, done ? NodeStatus.done : NodeStatus.open);
+    (await ref.read(nodeRepositoryProvider.future)).setDone(node.id, done);
+
+/// Done for good, or for this occurrence when it repeats or sits inside a
+/// repeating item (D24).
+bool _isDone(WidgetRef ref, Node node) {
+  final occ = ref.watch(occurrenceProvider(node.id)).value;
+  return occ != null ? occ.done : isFinished(node.status);
+}
 
 /// One card per child: status, dates, progress, a description preview and
 /// how many items it has.
@@ -250,7 +258,7 @@ class _Panel extends ConsumerWidget {
     final material = MaterialLocalizations.of(context);
     final locale = Localizations.localeOf(context).toString();
     final node = entry.node;
-    final finished = isFinished(node.status);
+    final finished = _isDone(ref, node);
 
     final meta = [
       if (node.status != NodeStatus.open) l10n.nodeStatus(node.status),
@@ -288,7 +296,7 @@ class _Panel extends ConsumerWidget {
                         child: Text(
                           l10n.titleOrUntitled(node.title),
                           style: _finishedStyle(
-                            node,
+                            finished,
                             theme.textTheme.titleMedium,
                             theme,
                           ),
@@ -384,12 +392,12 @@ class _ChecklistRow extends ConsumerWidget {
       contentPadding: EdgeInsets.zero,
       dense: true,
       leading: Checkbox(
-        value: node.status == NodeStatus.done,
+        value: _isDone(ref, node),
         onChanged: (checked) => _setDone(ref, node, checked == true),
       ),
       title: Text(
         l10n.titleOrUntitled(node.title),
-        style: _finishedStyle(node, null, theme),
+        style: _finishedStyle(_isDone(ref, node), null, theme),
       ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
@@ -463,7 +471,7 @@ class _StepRow extends ConsumerWidget {
       title: Text(
         l10n.titleOrUntitled(node.title),
         style: _finishedStyle(
-          node,
+          state == _StepState.finished,
           state == _StepState.next ? theme.textTheme.titleMedium : null,
           theme,
         ),

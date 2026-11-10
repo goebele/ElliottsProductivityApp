@@ -230,6 +230,7 @@ void main() {
       'due_date',
       'start_at',
       'end_at',
+      'time_zone',
       'rrule',
       'repeat_start',
       'exclusive_children',

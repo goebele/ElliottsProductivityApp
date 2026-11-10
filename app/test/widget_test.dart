@@ -3,9 +3,13 @@ import 'dart:convert';
 import 'package:elliotts_productivity_app/data/blob_store.dart';
 import 'package:elliotts_productivity_app/data/database.dart';
 import 'package:elliotts_productivity_app/domain/node_repository.dart';
+import 'package:elliotts_productivity_app/domain/repeat_rule.dart';
+import 'package:elliotts_productivity_app/platform/reminder_notifier.dart';
 import 'package:elliotts_productivity_app/providers.dart';
 import 'package:elliotts_productivity_app/ui/app.dart';
+import 'package:elliotts_productivity_app/ui/calendar_page.dart';
 import 'package:elliotts_productivity_app/ui/files.dart';
+import 'package:elliotts_productivity_app/ui/markup.dart';
 import 'package:elliotts_productivity_app/ui/tree_pane.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -38,6 +42,7 @@ void main() {
     required Size size,
     Future<void> Function(TestEnv env)? seed,
   }) async {
+    ReminderNotifier.enabled = false;
     env = (await tester.runAsync(() async {
       final env = await TestEnv.create();
       await seed?.call(env);
@@ -461,8 +466,18 @@ void main() {
     await settle(tester);
     expect(find.text('Done: Arms'), findsOneWidget);
     expect(find.textContaining('Every 3 days · last done'), findsOneWidget);
+    // The parent is done for today too, once its pick is (Q-L).
+    expect(find.text('Completed for today'), findsOneWidget);
 
-    await tester.tap(find.text('Undo'));
+    await tester.tap(
+      find.descendant(
+        of: find.ancestor(
+          of: find.text('Done: Arms'),
+          matching: find.byType(Card),
+        ),
+        matching: find.text('Undo'),
+      ),
+    );
     await settle(tester);
     expect(find.text('Next up: Arms'), findsOneWidget);
 
@@ -1896,6 +1911,279 @@ void main() {
     await settle(tester);
     await letFilesLoad(tester);
     expect(find.textContaining('passport renewal'), findsOneWidget);
+    await stopApp(tester);
+  });
+
+  // ------------------------------------------------------------------ M4
+
+  DateTime todayAt(int hour) {
+    final n = DateTime.now();
+    return DateTime(n.year, n.month, n.day, hour);
+  }
+
+  testWidgets('calendar: week shows events, deadlines and repeats; open one', (
+    tester,
+  ) async {
+    await startApp(
+      tester,
+      size: const Size(1600, 1000),
+      seed: (env) async {
+        final dentist = await env.nodes.create(title: 'Dentist');
+        await env.nodes.setDates(
+          dentist,
+          NodeDates(start: todayAt(10), end: todayAt(11)),
+        );
+        final taxes = await env.nodes.create(title: 'Taxes');
+        await env.nodes.setDates(taxes, NodeDates(dueDate: todayAt(0)));
+        final plants = await env.nodes.create(title: 'Water plants');
+        await env.nodes.setDates(
+          plants,
+          NodeDates(
+            rrule: const RepeatRule.daily().toRrule(),
+            repeatStart: todayAt(0),
+          ),
+        );
+      },
+    );
+    await tester.tap(find.widgetWithText(ListTile, 'Calendar'));
+    await settle(tester);
+    Finder inCalendar(String text) => find.descendant(
+      of: find.byType(CalendarPage),
+      matching: find.textContaining(text),
+    );
+    expect(inCalendar('Dentist'), findsOneWidget);
+    expect(inCalendar('Taxes'), findsOneWidget);
+    // Daily from today to the end of this (Monday-first) week.
+    expect(
+      inCalendar('Water plants'),
+      findsNWidgets(8 - DateTime.now().weekday),
+    );
+
+    await tester.tap(find.text('Month'));
+    await settle(tester);
+    expect(inCalendar('Taxes'), findsOneWidget);
+
+    await tester.tap(inCalendar('Taxes'));
+    await settle(tester);
+    expect(titleField('Taxes'), findsOneWidget);
+    await stopApp(tester);
+  });
+
+  testWidgets(
+    'calendar: left click lists the day; right click asks, then adds',
+    (tester) async {
+      await startApp(
+        tester,
+        size: const Size(1600, 1000),
+        seed: (env) async {
+          for (var i = 0; i < 5; i++) {
+            final r = await env.nodes.create(title: 'Routine $i');
+            await env.nodes.setDates(
+              r,
+              NodeDates(
+                rrule: const RepeatRule.daily().toRrule(),
+                repeatStart: todayAt(0),
+              ),
+            );
+          }
+        },
+      );
+      await tester.tap(find.widgetWithText(ListTile, 'Calendar'));
+      await settle(tester);
+      Finder inCalendar(String text) => find.descendant(
+        of: find.byType(CalendarPage),
+        matching: find.textContaining(text),
+      );
+      // Five repeats on a day: two shown, then "+3 more".
+      expect(inCalendar('+3 more'), findsWidgets);
+
+      // Clicking "+3 more" lists all five beside the calendar.
+      await tester.tap(inCalendar('+3 more').first);
+      await settle(tester);
+      expect(find.text('5 entries'), findsOneWidget);
+      expect(find.widgetWithText(ListTile, 'Routine 4'), findsOneWidget);
+
+      // Hide repeats with the filter.
+      await tester.tap(find.widgetWithText(FilterChip, 'Repeats'));
+      await settle(tester);
+      expect(inCalendar('Routine'), findsNothing);
+      await tester.tap(find.text('Clear filters'));
+      await settle(tester);
+      await tester.tap(find.byTooltip('Close'));
+      await settle(tester);
+
+      // Right-click empty time: a dialog first; Cancel adds nothing.
+      await tester.tap(find.text('Day'));
+      await settle(tester);
+      final grid = find.byType(SingleChildScrollView).last;
+      final spot = tester.getTopLeft(grid) + const Offset(300, 60);
+      await tester.tapAt(spot, buttons: kSecondaryButton);
+      await settle(tester);
+      expect(find.textContaining('New event'), findsOneWidget);
+      await tester.tap(find.text('Cancel'));
+      await settle(tester);
+      var rows = await tester.runAsync(() => env.db.select(env.db.nodes).get());
+      expect(rows, hasLength(5));
+
+      await tester.tapAt(spot, buttons: kSecondaryButton);
+      await settle(tester);
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.byType(TextField),
+        ),
+        'Dentist',
+      );
+      await tester.tap(find.widgetWithText(FilledButton, 'Add'));
+      await settle(tester);
+      rows = await tester.runAsync(() => env.db.select(env.db.nodes).get());
+      final added = rows!.singleWhere((n) => n.title == 'Dentist');
+      expect(added.endAt!.difference(added.startAt!).inHours, 1);
+      expect(inCalendar('Dentist'), findsOneWidget);
+      await stopApp(tester);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.windows),
+  );
+
+  testWidgets(
+    'repeating checklist: ticks are for today; parent done when all are',
+    (tester) async {
+      late String dishes;
+      await startApp(
+        tester,
+        size: wide,
+        seed: (env) async {
+          final chores = await env.nodes.create(title: 'Chores');
+          await env.nodes.setDates(
+            chores,
+            NodeDates(
+              rrule: const RepeatRule.daily().toRrule(),
+              repeatStart: todayAt(0),
+            ),
+          );
+          await env.nodes.setChildView(chores, ChildView.checklist);
+          dishes = await env.nodes.create(title: 'Dishes', parentId: chores);
+          await env.nodes.create(title: 'Floor', parentId: chores);
+        },
+      );
+      await tester.tap(inTree('Chores'));
+      await settle(tester);
+      expect(find.text('Done for today'), findsOneWidget);
+      final boxes = find.byType(Checkbox);
+      expect(boxes, findsNWidgets(2));
+      await tester.tap(boxes.first);
+      await settle(tester);
+      expect(
+        (await tester.runAsync(() => env.nodes.get(dishes)))!.status,
+        NodeStatus.open,
+      );
+      expect(find.text('Done for today'), findsOneWidget);
+      await tester.tap(boxes.last);
+      await settle(tester);
+      expect(find.text('Completed for today'), findsOneWidget);
+      await stopApp(tester);
+    },
+  );
+
+  testWidgets('dates dialog: reminders and calendar export are saved', (
+    tester,
+  ) async {
+    late String id;
+    await startApp(
+      tester,
+      size: wide,
+      seed: (env) async {
+        id = await env.nodes.create(title: 'Taxes');
+      },
+    );
+    await tester.tap(inTree('Taxes'));
+    await settle(tester);
+    await tester.tap(find.widgetWithText(ActionChip, 'Date & time'));
+    await settle(tester);
+    await tester.tap(find.widgetWithText(SwitchListTile, 'Deadline'));
+    await settle(tester);
+    expect(find.text('Remind me'), findsOneWidget);
+    await tester.ensureVisible(
+      find.widgetWithText(FilterChip, 'Day before, 09:00'),
+    );
+    await tester.tap(find.widgetWithText(FilterChip, 'Day before, 09:00'));
+    await settle(tester);
+    await tester.ensureVisible(
+      find.widgetWithText(SwitchListTile, 'Include in calendar export'),
+    );
+    await tester.tap(
+      find.widgetWithText(SwitchListTile, 'Include in calendar export'),
+    );
+    await settle(tester);
+    await tester.tap(find.text('OK'));
+    await settle(tester);
+    expect(await tester.runAsync(() => env.nodes.reminders.of(id)), {900});
+    expect(await tester.runAsync(() => env.nodes.prefs.icsExport(id)), isTrue);
+
+    // ⋮ → Export to calendar saves this item's .ics.
+    String? saved;
+    final realSave = saveFileDialog;
+    addTearDown(() => saveFileDialog = realSave);
+    saveFileDialog = (name, bytes, mime) async {
+      saved = '$name|${String.fromCharCodes(bytes)}';
+      return name;
+    };
+    await tester.tap(find.byTooltip('More actions'));
+    await settle(tester);
+    await tester.tap(
+      find.widgetWithText(MenuItemButton, 'Export to calendar (.ics)…'),
+    );
+    await settle(tester);
+    expect(saved, startsWith('Taxes.ics|BEGIN:VCALENDAR'));
+    expect(saved, contains('SUMMARY:Due: Taxes'));
+    await stopApp(tester);
+  });
+
+  testWidgets('show in calendar: from an item, filtered to it and below', (
+    tester,
+  ) async {
+    await startApp(
+      tester,
+      size: const Size(1600, 1000),
+      seed: (env) async {
+        final trip = await env.nodes.create(title: 'Trip');
+        final flight = await env.nodes.create(title: 'Flight', parentId: trip);
+        await env.nodes.setDates(flight, NodeDates(dueDate: todayAt(0)));
+        final other = await env.nodes.create(title: 'Dentist');
+        await env.nodes.setDates(other, NodeDates(dueDate: todayAt(0)));
+      },
+    );
+    await tester.tap(inTree('Trip'));
+    await settle(tester);
+    await tester.tap(find.byTooltip('More actions'));
+    await settle(tester);
+    await tester.tap(find.widgetWithText(MenuItemButton, 'Show in calendar'));
+    await settle(tester);
+    Finder inCalendar(String text) => find.descendant(
+      of: find.byType(CalendarPage),
+      matching: find.textContaining(text),
+    );
+    expect(find.text('Only Trip'), findsOneWidget);
+    expect(inCalendar('Flight'), findsOneWidget);
+    expect(inCalendar('Dentist'), findsNothing);
+
+    // ✕ on the chip shows everything again.
+    await tester.tap(
+      find.descendant(
+        of: find.widgetWithText(InputChip, 'Only Trip'),
+        matching: find.byTooltip('Delete'),
+      ),
+    );
+    await settle(tester);
+    expect(inCalendar('Dentist'), findsOneWidget);
+
+    // The chip by an item's dates jumps too.
+    await tester.tap(inTree('Dentist'));
+    await settle(tester);
+    await tester.tap(find.widgetWithText(ActionChip, 'Show in calendar'));
+    await settle(tester);
+    expect(find.text('Only Dentist'), findsOneWidget);
+    expect(inCalendar('Flight'), findsNothing);
     await stopApp(tester);
   });
 }

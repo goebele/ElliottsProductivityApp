@@ -936,5 +936,113 @@
   "linkedFilesHeading": "Files",
   "searchFile": "file",
   "filterHasFiles": "Has files",
-  "fileTooBigToShow": "This file is too big to show here. Use Open in… to read it."
+  "fileTooBigToShow": "This file is too big to show here. Use Open in… to read it.",
+  "calendarView": "Calendar",
+  "calendarDay": "Day",
+  "calendarWeek": "Week",
+  "calendarMonth": "Month",
+  "calendarToday": "Today",
+  "calendarPrevious": "Previous",
+  "calendarNext": "Next",
+  "calendarMore": "+{count} more",
+  "@calendarMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "icsExport": "Export calendar (.ics)…",
+  "icsExportItem": "Export to calendar (.ics)…",
+  "icsNoneChosen": "No items are chosen for export yet. In an item's date & time, turn on \"Include in calendar export\".",
+  "icsInclude": "Include in calendar export",
+  "icsIncludeHelp": "Adds it to the .ics file from Calendar → Export, for Google, Outlook or Apple calendars.",
+  "remindMe": "Remind me",
+  "remindAtTime": "At the time",
+  "remindMinutesBefore": "{count} min before",
+  "@remindMinutesBefore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "remindHoursBefore": "{count, plural, =1{1 hour before} other{{count} hours before}}",
+  "@remindHoursBefore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "remindDaysBefore": "{count, plural, =1{1 day before} other{{count} days before}}",
+  "@remindDaysBefore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "remindOnDay": "On the day, 09:00",
+  "remindDayBefore": "Day before, 09:00",
+  "calendarEvents": "Events",
+  "calendarDeadlines": "Deadlines",
+  "calendarRepeats": "Repeats",
+  "calendarHideDone": "Hide done",
+  "calendarUnderItem": "Only {title}",
+  "@calendarUnderItem": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "calendarClearFilters": "Clear filters",
+  "calendarAdded": "Added {title}",
+  "@calendarAdded": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "calendarQuickAdd": "Add",
+  "calendarQuickAddDue": "New item · due {day}",
+  "@calendarQuickAddDue": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "calendarQuickAddAt": "New event · {day} · {start}–{end}",
+  "@calendarQuickAddAt": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
+  "calendarCloseDay": "Close",
+  "calendarDayCount": "{count, plural, =0{Nothing on this day.} =1{1 entry} other{{count} entries}}",
+  "@calendarDayCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "calendarAllDay": "All day",
+  "calendarDeadline": "Deadline",
+  "calendarRepeat": "Repeat",
+  "calendarEvent": "Event",
+  "calendarAddOnDay": "Add on this day…",
+  "calendarListDay": "Show everything on this day",
+  "showInCalendar": "Show in calendar"
 }

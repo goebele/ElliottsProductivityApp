@@ -104,6 +104,12 @@ class TreePane extends ConsumerWidget {
         const Divider(height: 1),
         ListTile(
           dense: true,
+          leading: const Icon(Icons.calendar_month_outlined, size: 20),
+          title: Text(l10n.calendarView),
+          onTap: () => onOpenPage(SidePage.calendarPage),
+        ),
+        ListTile(
+          dense: true,
           leading: const Icon(Icons.favorite_border, size: 20),
           title: Text(l10n.valuesView),
           onTap: () => onOpenPage(SidePage.valuesPage),

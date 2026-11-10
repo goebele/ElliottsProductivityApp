@@ -1779,6 +1779,240 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This file is too big to show here. Use Open in… to read it.'**
   String get fileTooBigToShow;
+
+  /// No description provided for @calendarView.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar'**
+  String get calendarView;
+
+  /// No description provided for @calendarDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Day'**
+  String get calendarDay;
+
+  /// No description provided for @calendarWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Week'**
+  String get calendarWeek;
+
+  /// No description provided for @calendarMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get calendarMonth;
+
+  /// No description provided for @calendarToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get calendarToday;
+
+  /// No description provided for @calendarPrevious.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous'**
+  String get calendarPrevious;
+
+  /// No description provided for @calendarNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get calendarNext;
+
+  /// No description provided for @calendarMore.
+  ///
+  /// In en, this message translates to:
+  /// **'+{count} more'**
+  String calendarMore(int count);
+
+  /// No description provided for @icsExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Export calendar (.ics)…'**
+  String get icsExport;
+
+  /// No description provided for @icsExportItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Export to calendar (.ics)…'**
+  String get icsExportItem;
+
+  /// No description provided for @icsNoneChosen.
+  ///
+  /// In en, this message translates to:
+  /// **'No items are chosen for export yet. In an item\'s date & time, turn on \"Include in calendar export\".'**
+  String get icsNoneChosen;
+
+  /// No description provided for @icsInclude.
+  ///
+  /// In en, this message translates to:
+  /// **'Include in calendar export'**
+  String get icsInclude;
+
+  /// No description provided for @icsIncludeHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Adds it to the .ics file from Calendar → Export, for Google, Outlook or Apple calendars.'**
+  String get icsIncludeHelp;
+
+  /// No description provided for @remindMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Remind me'**
+  String get remindMe;
+
+  /// No description provided for @remindAtTime.
+  ///
+  /// In en, this message translates to:
+  /// **'At the time'**
+  String get remindAtTime;
+
+  /// No description provided for @remindMinutesBefore.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} min before'**
+  String remindMinutesBefore(int count);
+
+  /// No description provided for @remindHoursBefore.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 hour before} other{{count} hours before}}'**
+  String remindHoursBefore(int count);
+
+  /// No description provided for @remindDaysBefore.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 day before} other{{count} days before}}'**
+  String remindDaysBefore(int count);
+
+  /// No description provided for @remindOnDay.
+  ///
+  /// In en, this message translates to:
+  /// **'On the day, 09:00'**
+  String get remindOnDay;
+
+  /// No description provided for @remindDayBefore.
+  ///
+  /// In en, this message translates to:
+  /// **'Day before, 09:00'**
+  String get remindDayBefore;
+
+  /// No description provided for @calendarEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'Events'**
+  String get calendarEvents;
+
+  /// No description provided for @calendarDeadlines.
+  ///
+  /// In en, this message translates to:
+  /// **'Deadlines'**
+  String get calendarDeadlines;
+
+  /// No description provided for @calendarRepeats.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeats'**
+  String get calendarRepeats;
+
+  /// No description provided for @calendarHideDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide done'**
+  String get calendarHideDone;
+
+  /// No description provided for @calendarUnderItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Only {title}'**
+  String calendarUnderItem(String title);
+
+  /// No description provided for @calendarClearFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filters'**
+  String get calendarClearFilters;
+
+  /// No description provided for @calendarAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Added {title}'**
+  String calendarAdded(String title);
+
+  /// No description provided for @calendarQuickAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get calendarQuickAdd;
+
+  /// No description provided for @calendarQuickAddDue.
+  ///
+  /// In en, this message translates to:
+  /// **'New item · due {day}'**
+  String calendarQuickAddDue(String day);
+
+  /// No description provided for @calendarQuickAddAt.
+  ///
+  /// In en, this message translates to:
+  /// **'New event · {day} · {start}–{end}'**
+  String calendarQuickAddAt(String day, String start, String end);
+
+  /// No description provided for @calendarCloseDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get calendarCloseDay;
+
+  /// No description provided for @calendarDayCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Nothing on this day.} =1{1 entry} other{{count} entries}}'**
+  String calendarDayCount(int count);
+
+  /// No description provided for @calendarAllDay.
+  ///
+  /// In en, this message translates to:
+  /// **'All day'**
+  String get calendarAllDay;
+
+  /// No description provided for @calendarDeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Deadline'**
+  String get calendarDeadline;
+
+  /// No description provided for @calendarRepeat.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat'**
+  String get calendarRepeat;
+
+  /// No description provided for @calendarEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Event'**
+  String get calendarEvent;
+
+  /// No description provided for @calendarAddOnDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Add on this day…'**
+  String get calendarAddOnDay;
+
+  /// No description provided for @calendarListDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Show everything on this day'**
+  String get calendarListDay;
+
+  /// No description provided for @showInCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Show in calendar'**
+  String get showInCalendar;
 }
 
 class _AppLocalizationsDelegate

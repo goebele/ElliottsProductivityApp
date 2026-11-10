@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/database.dart';
 import '../domain/node_repository.dart';
 import '../domain/repeat_rule.dart';
+import '../platform/reminder_notifier.dart';
 import '../l10n/app_localizations.dart';
 import '../providers.dart';
+import 'calendar_page.dart';
 import 'labels.dart';
 
 /// The optional things an item can have (DESIGN.md D5, rev. v0.5): a
@@ -82,6 +84,12 @@ class NodeAddOns extends ConsumerWidget {
             onPressed: openDates,
             onDeleted: () async => (await _repo(ref)).setRepeat(node.id, null),
           ),
+        if (hasDates)
+          ActionChip(
+            avatar: const Icon(Icons.calendar_month_outlined),
+            label: Text(l10n.showInCalendar),
+            onPressed: () => showInCalendar(context, ref, node),
+          ),
         if (!descriptionShown)
           ActionChip(
             avatar: const Icon(Icons.subject),
@@ -99,21 +107,55 @@ class NodeAddOns extends ConsumerWidget {
   }
 
   Future<void> _editDates(BuildContext context, WidgetRef ref) async {
-    final result = await showDialog<NodeDates>(
+    final repo = await _repo(ref);
+    final reminders = await repo.reminders.of(node.id);
+    final ics = await repo.prefs.icsExport(node.id);
+    if (!context.mounted) return;
+    final result = await showDialog<DatesResult>(
       context: context,
-      builder: (_) => DatesDialog(node: node),
+      builder: (_) =>
+          DatesDialog(node: node, reminders: reminders, icsExport: ics),
     );
-    if (result != null) await (await _repo(ref)).setDates(node.id, result);
+    if (result == null) return;
+    await repo.setDates(node.id, result.dates);
+    await repo.reminders.set(node.id, result.reminders);
+    if (result.icsExport != ics) {
+      await repo.prefs.setIcsExport(node.id, result.icsExport);
+    }
+    if (result.reminders.isNotEmpty && reminders.isEmpty) {
+      // First reminder: ask for permission to notify (phones).
+      await ReminderNotifier.instance.requestPermission();
+    }
   }
 }
+
+/// What the date & time dialog returns.
+typedef DatesResult = ({NodeDates dates, Set<int> reminders, bool icsExport});
+
+/// Reminder choices for timed items, in minutes before the start.
+const timedReminderChoices = [0, 10, 60, 1440];
+
+/// Reminder choices for all-day items, in minutes before 00:00 that day.
+const allDayReminderChoices = [-540, 900];
 
 /// One dialog for everything date-related: a deadline, a time slot (making
 /// the item an event) and a repeat (making it a routine). Each part has its
 /// own switch. Returns null if cancelled.
 class DatesDialog extends StatefulWidget {
-  const DatesDialog({super.key, required this.node});
+  const DatesDialog({
+    super.key,
+    required this.node,
+    this.reminders = const {},
+    this.icsExport = false,
+  });
 
   final Node node;
+
+  /// The item's reminders, minutes before its start (§6.5).
+  final Set<int> reminders;
+
+  /// Whether it's included in "Export calendar".
+  final bool icsExport;
 
   @override
   State<DatesDialog> createState() => _DatesDialogState();
@@ -137,6 +179,8 @@ class _DatesDialogState extends State<DatesDialog> {
   late int _monthDay;
   late DateTime _repeatStart;
   late bool _exclusive;
+  late final Set<int> _reminders = {...widget.reminders};
+  late bool _ics = widget.icsExport;
 
   @override
   void initState() {
@@ -208,6 +252,20 @@ class _DatesDialogState extends State<DatesDialog> {
   }
 
   bool get _valid => !_repeatOn || _rrule != null;
+
+  /// Reminders make sense for whatever the item has: times before a time
+  /// slot, or 09:00 on or before the day for all-day items.
+  List<int> get _reminderChoices => _slotOn
+      ? timedReminderChoices
+      : (_deadlineOn || _repeatOn)
+      ? allDayReminderChoices
+      : const [];
+
+  DatesResult _fullResult() => (
+    dates: _result(),
+    reminders: _reminders.intersection(_reminderChoices.toSet()),
+    icsExport: _ics,
+  );
 
   NodeDates _result() {
     DateTime? start;
@@ -475,6 +533,40 @@ class _DatesDialogState extends State<DatesDialog> {
                   ],
                 ),
               ),
+              if (_reminderChoices.isNotEmpty) ...[
+                const Divider(),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.notifications_outlined),
+                  title: Text(l10n.remindMe),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(left: 40, bottom: 8),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final m in _reminderChoices)
+                        FilterChip(
+                          label: Text(reminderLabel(l10n, m)),
+                          selected: _reminders.contains(m),
+                          onSelected: (on) => setState(
+                            () => on ? _reminders.add(m) : _reminders.remove(m),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+              if (_slotOn || _deadlineOn || _repeatOn)
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  secondary: const Icon(Icons.ios_share),
+                  title: Text(l10n.icsInclude),
+                  subtitle: Text(l10n.icsIncludeHelp),
+                  value: _ics,
+                  onChanged: (on) => setState(() => _ics = on),
+                ),
             ],
           ),
         ),
@@ -485,7 +577,9 @@ class _DatesDialogState extends State<DatesDialog> {
           child: Text(material.cancelButtonLabel),
         ),
         FilledButton(
-          onPressed: _valid ? () => Navigator.pop(context, _result()) : null,
+          onPressed: _valid
+              ? () => Navigator.pop(context, _fullResult())
+              : null,
           child: Text(material.okButtonLabel),
         ),
       ],
@@ -535,3 +629,13 @@ class _IntervalStepper extends StatelessWidget {
     );
   }
 }
+
+/// "At the time", "10 min before", "On the day, 09:00", …
+String reminderLabel(AppLocalizations l10n, int minutes) => switch (minutes) {
+  0 => l10n.remindAtTime,
+  -540 => l10n.remindOnDay,
+  900 => l10n.remindDayBefore,
+  1440 => l10n.remindDaysBefore(1),
+  >= 60 when minutes % 60 == 0 => l10n.remindHoursBefore(minutes ~/ 60),
+  _ => l10n.remindMinutesBefore(minutes),
+};

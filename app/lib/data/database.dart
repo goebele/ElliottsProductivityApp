@@ -24,6 +24,8 @@ part 'database.g.dart';
     NodeTags,
     Attachments,
     Annotations,
+    Reminders,
+    NodeUserPrefs,
     ChangeLog,
     Devices,
   ],
@@ -47,7 +49,7 @@ class AppDatabase extends _$AppDatabase {
   /// `dart run drift_dev schema dump lib/data/database.dart drift_schemas/`
   /// and `dart run drift_dev schema generate drift_schemas/ test/generated_migrations/`.
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -132,6 +134,12 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(annotations);
         await m.createIndex(annotationsAttachment);
         await m.createTable(attachmentSearch);
+      }
+      if (from < 11) {
+        await m.createTable(reminders);
+        await m.createIndex(remindersNode);
+        await m.createTable(nodeUserPrefs);
+        await m.createIndex(nodeUserPrefsNode);
       }
     },
   );

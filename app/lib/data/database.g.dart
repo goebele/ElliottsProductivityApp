@@ -10330,6 +10330,1150 @@ class AnnotationsCompanion extends UpdateCompanion<Annotation> {
   }
 }
 
+class $RemindersTable extends Reminders
+    with TableInfo<$RemindersTable, Reminder> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RemindersTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _spaceIdMeta = const VerificationMeta(
+    'spaceId',
+  );
+  @override
+  late final GeneratedColumn<String> spaceId = GeneratedColumn<String>(
+    'space_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdByMeta = const VerificationMeta(
+    'createdBy',
+  );
+  @override
+  late final GeneratedColumn<String> createdBy = GeneratedColumn<String>(
+    'created_by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedByMeta = const VerificationMeta(
+    'updatedBy',
+  );
+  @override
+  late final GeneratedColumn<String> updatedBy = GeneratedColumn<String>(
+    'updated_by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _hlcMeta = const VerificationMeta('hlc');
+  @override
+  late final GeneratedColumn<String> hlc = GeneratedColumn<String>(
+    'hlc',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
+  @override
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _nodeIdMeta = const VerificationMeta('nodeId');
+  @override
+  late final GeneratedColumn<String> nodeId = GeneratedColumn<String>(
+    'node_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _minutesBeforeMeta = const VerificationMeta(
+    'minutesBefore',
+  );
+  @override
+  late final GeneratedColumn<int> minutesBefore = GeneratedColumn<int>(
+    'minutes_before',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    spaceId,
+    createdAt,
+    createdBy,
+    updatedBy,
+    hlc,
+    deleted,
+    nodeId,
+    minutesBefore,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'reminders';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Reminder> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('space_id')) {
+      context.handle(
+        _spaceIdMeta,
+        spaceId.isAcceptableOrUnknown(data['space_id']!, _spaceIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_spaceIdMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('created_by')) {
+      context.handle(
+        _createdByMeta,
+        createdBy.isAcceptableOrUnknown(data['created_by']!, _createdByMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdByMeta);
+    }
+    if (data.containsKey('updated_by')) {
+      context.handle(
+        _updatedByMeta,
+        updatedBy.isAcceptableOrUnknown(data['updated_by']!, _updatedByMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedByMeta);
+    }
+    if (data.containsKey('hlc')) {
+      context.handle(
+        _hlcMeta,
+        hlc.isAcceptableOrUnknown(data['hlc']!, _hlcMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_hlcMeta);
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
+    }
+    if (data.containsKey('node_id')) {
+      context.handle(
+        _nodeIdMeta,
+        nodeId.isAcceptableOrUnknown(data['node_id']!, _nodeIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nodeIdMeta);
+    }
+    if (data.containsKey('minutes_before')) {
+      context.handle(
+        _minutesBeforeMeta,
+        minutesBefore.isAcceptableOrUnknown(
+          data['minutes_before']!,
+          _minutesBeforeMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_minutesBeforeMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Reminder map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Reminder(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      spaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}space_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      createdBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_by'],
+      )!,
+      updatedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_by'],
+      )!,
+      hlc: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}hlc'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
+      nodeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}node_id'],
+      )!,
+      minutesBefore: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}minutes_before'],
+      )!,
+    );
+  }
+
+  @override
+  $RemindersTable createAlias(String alias) {
+    return $RemindersTable(attachedDatabase, alias);
+  }
+}
+
+class Reminder extends DataClass implements Insertable<Reminder> {
+  /// UUIDv7.
+  final String id;
+
+  /// The space this row belongs to (§5.0, D13).
+  final String spaceId;
+  final DateTime createdAt;
+
+  /// User ID of the creator.
+  final String createdBy;
+
+  /// User ID of whoever made the latest change.
+  final String updatedBy;
+
+  /// Hybrid logical clock stamp of the latest change (see `sync/hlc.dart`).
+  final String hlc;
+
+  /// Tombstone flag. Rows are never hard-deleted until compaction.
+  final bool deleted;
+  final String nodeId;
+  final int minutesBefore;
+  const Reminder({
+    required this.id,
+    required this.spaceId,
+    required this.createdAt,
+    required this.createdBy,
+    required this.updatedBy,
+    required this.hlc,
+    required this.deleted,
+    required this.nodeId,
+    required this.minutesBefore,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['space_id'] = Variable<String>(spaceId);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['created_by'] = Variable<String>(createdBy);
+    map['updated_by'] = Variable<String>(updatedBy);
+    map['hlc'] = Variable<String>(hlc);
+    map['deleted'] = Variable<bool>(deleted);
+    map['node_id'] = Variable<String>(nodeId);
+    map['minutes_before'] = Variable<int>(minutesBefore);
+    return map;
+  }
+
+  RemindersCompanion toCompanion(bool nullToAbsent) {
+    return RemindersCompanion(
+      id: Value(id),
+      spaceId: Value(spaceId),
+      createdAt: Value(createdAt),
+      createdBy: Value(createdBy),
+      updatedBy: Value(updatedBy),
+      hlc: Value(hlc),
+      deleted: Value(deleted),
+      nodeId: Value(nodeId),
+      minutesBefore: Value(minutesBefore),
+    );
+  }
+
+  factory Reminder.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Reminder(
+      id: serializer.fromJson<String>(json['id']),
+      spaceId: serializer.fromJson<String>(json['spaceId']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      createdBy: serializer.fromJson<String>(json['createdBy']),
+      updatedBy: serializer.fromJson<String>(json['updatedBy']),
+      hlc: serializer.fromJson<String>(json['hlc']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
+      nodeId: serializer.fromJson<String>(json['nodeId']),
+      minutesBefore: serializer.fromJson<int>(json['minutesBefore']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'spaceId': serializer.toJson<String>(spaceId),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'createdBy': serializer.toJson<String>(createdBy),
+      'updatedBy': serializer.toJson<String>(updatedBy),
+      'hlc': serializer.toJson<String>(hlc),
+      'deleted': serializer.toJson<bool>(deleted),
+      'nodeId': serializer.toJson<String>(nodeId),
+      'minutesBefore': serializer.toJson<int>(minutesBefore),
+    };
+  }
+
+  Reminder copyWith({
+    String? id,
+    String? spaceId,
+    DateTime? createdAt,
+    String? createdBy,
+    String? updatedBy,
+    String? hlc,
+    bool? deleted,
+    String? nodeId,
+    int? minutesBefore,
+  }) => Reminder(
+    id: id ?? this.id,
+    spaceId: spaceId ?? this.spaceId,
+    createdAt: createdAt ?? this.createdAt,
+    createdBy: createdBy ?? this.createdBy,
+    updatedBy: updatedBy ?? this.updatedBy,
+    hlc: hlc ?? this.hlc,
+    deleted: deleted ?? this.deleted,
+    nodeId: nodeId ?? this.nodeId,
+    minutesBefore: minutesBefore ?? this.minutesBefore,
+  );
+  Reminder copyWithCompanion(RemindersCompanion data) {
+    return Reminder(
+      id: data.id.present ? data.id.value : this.id,
+      spaceId: data.spaceId.present ? data.spaceId.value : this.spaceId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
+      updatedBy: data.updatedBy.present ? data.updatedBy.value : this.updatedBy,
+      hlc: data.hlc.present ? data.hlc.value : this.hlc,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+      nodeId: data.nodeId.present ? data.nodeId.value : this.nodeId,
+      minutesBefore: data.minutesBefore.present
+          ? data.minutesBefore.value
+          : this.minutesBefore,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Reminder(')
+          ..write('id: $id, ')
+          ..write('spaceId: $spaceId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedBy: $updatedBy, ')
+          ..write('hlc: $hlc, ')
+          ..write('deleted: $deleted, ')
+          ..write('nodeId: $nodeId, ')
+          ..write('minutesBefore: $minutesBefore')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    spaceId,
+    createdAt,
+    createdBy,
+    updatedBy,
+    hlc,
+    deleted,
+    nodeId,
+    minutesBefore,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Reminder &&
+          other.id == this.id &&
+          other.spaceId == this.spaceId &&
+          other.createdAt == this.createdAt &&
+          other.createdBy == this.createdBy &&
+          other.updatedBy == this.updatedBy &&
+          other.hlc == this.hlc &&
+          other.deleted == this.deleted &&
+          other.nodeId == this.nodeId &&
+          other.minutesBefore == this.minutesBefore);
+}
+
+class RemindersCompanion extends UpdateCompanion<Reminder> {
+  final Value<String> id;
+  final Value<String> spaceId;
+  final Value<DateTime> createdAt;
+  final Value<String> createdBy;
+  final Value<String> updatedBy;
+  final Value<String> hlc;
+  final Value<bool> deleted;
+  final Value<String> nodeId;
+  final Value<int> minutesBefore;
+  final Value<int> rowid;
+  const RemindersCompanion({
+    this.id = const Value.absent(),
+    this.spaceId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.updatedBy = const Value.absent(),
+    this.hlc = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.nodeId = const Value.absent(),
+    this.minutesBefore = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  RemindersCompanion.insert({
+    required String id,
+    required String spaceId,
+    required DateTime createdAt,
+    required String createdBy,
+    required String updatedBy,
+    required String hlc,
+    this.deleted = const Value.absent(),
+    required String nodeId,
+    required int minutesBefore,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       spaceId = Value(spaceId),
+       createdAt = Value(createdAt),
+       createdBy = Value(createdBy),
+       updatedBy = Value(updatedBy),
+       hlc = Value(hlc),
+       nodeId = Value(nodeId),
+       minutesBefore = Value(minutesBefore);
+  static Insertable<Reminder> custom({
+    Expression<String>? id,
+    Expression<String>? spaceId,
+    Expression<DateTime>? createdAt,
+    Expression<String>? createdBy,
+    Expression<String>? updatedBy,
+    Expression<String>? hlc,
+    Expression<bool>? deleted,
+    Expression<String>? nodeId,
+    Expression<int>? minutesBefore,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (spaceId != null) 'space_id': spaceId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (createdBy != null) 'created_by': createdBy,
+      if (updatedBy != null) 'updated_by': updatedBy,
+      if (hlc != null) 'hlc': hlc,
+      if (deleted != null) 'deleted': deleted,
+      if (nodeId != null) 'node_id': nodeId,
+      if (minutesBefore != null) 'minutes_before': minutesBefore,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  RemindersCompanion copyWith({
+    Value<String>? id,
+    Value<String>? spaceId,
+    Value<DateTime>? createdAt,
+    Value<String>? createdBy,
+    Value<String>? updatedBy,
+    Value<String>? hlc,
+    Value<bool>? deleted,
+    Value<String>? nodeId,
+    Value<int>? minutesBefore,
+    Value<int>? rowid,
+  }) {
+    return RemindersCompanion(
+      id: id ?? this.id,
+      spaceId: spaceId ?? this.spaceId,
+      createdAt: createdAt ?? this.createdAt,
+      createdBy: createdBy ?? this.createdBy,
+      updatedBy: updatedBy ?? this.updatedBy,
+      hlc: hlc ?? this.hlc,
+      deleted: deleted ?? this.deleted,
+      nodeId: nodeId ?? this.nodeId,
+      minutesBefore: minutesBefore ?? this.minutesBefore,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (spaceId.present) {
+      map['space_id'] = Variable<String>(spaceId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (createdBy.present) {
+      map['created_by'] = Variable<String>(createdBy.value);
+    }
+    if (updatedBy.present) {
+      map['updated_by'] = Variable<String>(updatedBy.value);
+    }
+    if (hlc.present) {
+      map['hlc'] = Variable<String>(hlc.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
+    if (nodeId.present) {
+      map['node_id'] = Variable<String>(nodeId.value);
+    }
+    if (minutesBefore.present) {
+      map['minutes_before'] = Variable<int>(minutesBefore.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RemindersCompanion(')
+          ..write('id: $id, ')
+          ..write('spaceId: $spaceId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedBy: $updatedBy, ')
+          ..write('hlc: $hlc, ')
+          ..write('deleted: $deleted, ')
+          ..write('nodeId: $nodeId, ')
+          ..write('minutesBefore: $minutesBefore, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NodeUserPrefsTable extends NodeUserPrefs
+    with TableInfo<$NodeUserPrefsTable, NodeUserPref> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NodeUserPrefsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _spaceIdMeta = const VerificationMeta(
+    'spaceId',
+  );
+  @override
+  late final GeneratedColumn<String> spaceId = GeneratedColumn<String>(
+    'space_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdByMeta = const VerificationMeta(
+    'createdBy',
+  );
+  @override
+  late final GeneratedColumn<String> createdBy = GeneratedColumn<String>(
+    'created_by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedByMeta = const VerificationMeta(
+    'updatedBy',
+  );
+  @override
+  late final GeneratedColumn<String> updatedBy = GeneratedColumn<String>(
+    'updated_by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _hlcMeta = const VerificationMeta('hlc');
+  @override
+  late final GeneratedColumn<String> hlc = GeneratedColumn<String>(
+    'hlc',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
+  @override
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _nodeIdMeta = const VerificationMeta('nodeId');
+  @override
+  late final GeneratedColumn<String> nodeId = GeneratedColumn<String>(
+    'node_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _icsExportMeta = const VerificationMeta(
+    'icsExport',
+  );
+  @override
+  late final GeneratedColumn<bool> icsExport = GeneratedColumn<bool>(
+    'ics_export',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("ics_export" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    spaceId,
+    createdAt,
+    createdBy,
+    updatedBy,
+    hlc,
+    deleted,
+    nodeId,
+    icsExport,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'node_user_prefs';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NodeUserPref> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('space_id')) {
+      context.handle(
+        _spaceIdMeta,
+        spaceId.isAcceptableOrUnknown(data['space_id']!, _spaceIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_spaceIdMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('created_by')) {
+      context.handle(
+        _createdByMeta,
+        createdBy.isAcceptableOrUnknown(data['created_by']!, _createdByMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdByMeta);
+    }
+    if (data.containsKey('updated_by')) {
+      context.handle(
+        _updatedByMeta,
+        updatedBy.isAcceptableOrUnknown(data['updated_by']!, _updatedByMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedByMeta);
+    }
+    if (data.containsKey('hlc')) {
+      context.handle(
+        _hlcMeta,
+        hlc.isAcceptableOrUnknown(data['hlc']!, _hlcMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_hlcMeta);
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
+    }
+    if (data.containsKey('node_id')) {
+      context.handle(
+        _nodeIdMeta,
+        nodeId.isAcceptableOrUnknown(data['node_id']!, _nodeIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nodeIdMeta);
+    }
+    if (data.containsKey('ics_export')) {
+      context.handle(
+        _icsExportMeta,
+        icsExport.isAcceptableOrUnknown(data['ics_export']!, _icsExportMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  NodeUserPref map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NodeUserPref(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      spaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}space_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      createdBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_by'],
+      )!,
+      updatedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_by'],
+      )!,
+      hlc: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}hlc'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
+      nodeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}node_id'],
+      )!,
+      icsExport: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}ics_export'],
+      )!,
+    );
+  }
+
+  @override
+  $NodeUserPrefsTable createAlias(String alias) {
+    return $NodeUserPrefsTable(attachedDatabase, alias);
+  }
+}
+
+class NodeUserPref extends DataClass implements Insertable<NodeUserPref> {
+  /// UUIDv7.
+  final String id;
+
+  /// The space this row belongs to (§5.0, D13).
+  final String spaceId;
+  final DateTime createdAt;
+
+  /// User ID of the creator.
+  final String createdBy;
+
+  /// User ID of whoever made the latest change.
+  final String updatedBy;
+
+  /// Hybrid logical clock stamp of the latest change (see `sync/hlc.dart`).
+  final String hlc;
+
+  /// Tombstone flag. Rows are never hard-deleted until compaction.
+  final bool deleted;
+  final String nodeId;
+
+  /// Included in "Export calendar" (.ics). Off by default (v0.13).
+  final bool icsExport;
+  const NodeUserPref({
+    required this.id,
+    required this.spaceId,
+    required this.createdAt,
+    required this.createdBy,
+    required this.updatedBy,
+    required this.hlc,
+    required this.deleted,
+    required this.nodeId,
+    required this.icsExport,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['space_id'] = Variable<String>(spaceId);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['created_by'] = Variable<String>(createdBy);
+    map['updated_by'] = Variable<String>(updatedBy);
+    map['hlc'] = Variable<String>(hlc);
+    map['deleted'] = Variable<bool>(deleted);
+    map['node_id'] = Variable<String>(nodeId);
+    map['ics_export'] = Variable<bool>(icsExport);
+    return map;
+  }
+
+  NodeUserPrefsCompanion toCompanion(bool nullToAbsent) {
+    return NodeUserPrefsCompanion(
+      id: Value(id),
+      spaceId: Value(spaceId),
+      createdAt: Value(createdAt),
+      createdBy: Value(createdBy),
+      updatedBy: Value(updatedBy),
+      hlc: Value(hlc),
+      deleted: Value(deleted),
+      nodeId: Value(nodeId),
+      icsExport: Value(icsExport),
+    );
+  }
+
+  factory NodeUserPref.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NodeUserPref(
+      id: serializer.fromJson<String>(json['id']),
+      spaceId: serializer.fromJson<String>(json['spaceId']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      createdBy: serializer.fromJson<String>(json['createdBy']),
+      updatedBy: serializer.fromJson<String>(json['updatedBy']),
+      hlc: serializer.fromJson<String>(json['hlc']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
+      nodeId: serializer.fromJson<String>(json['nodeId']),
+      icsExport: serializer.fromJson<bool>(json['icsExport']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'spaceId': serializer.toJson<String>(spaceId),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'createdBy': serializer.toJson<String>(createdBy),
+      'updatedBy': serializer.toJson<String>(updatedBy),
+      'hlc': serializer.toJson<String>(hlc),
+      'deleted': serializer.toJson<bool>(deleted),
+      'nodeId': serializer.toJson<String>(nodeId),
+      'icsExport': serializer.toJson<bool>(icsExport),
+    };
+  }
+
+  NodeUserPref copyWith({
+    String? id,
+    String? spaceId,
+    DateTime? createdAt,
+    String? createdBy,
+    String? updatedBy,
+    String? hlc,
+    bool? deleted,
+    String? nodeId,
+    bool? icsExport,
+  }) => NodeUserPref(
+    id: id ?? this.id,
+    spaceId: spaceId ?? this.spaceId,
+    createdAt: createdAt ?? this.createdAt,
+    createdBy: createdBy ?? this.createdBy,
+    updatedBy: updatedBy ?? this.updatedBy,
+    hlc: hlc ?? this.hlc,
+    deleted: deleted ?? this.deleted,
+    nodeId: nodeId ?? this.nodeId,
+    icsExport: icsExport ?? this.icsExport,
+  );
+  NodeUserPref copyWithCompanion(NodeUserPrefsCompanion data) {
+    return NodeUserPref(
+      id: data.id.present ? data.id.value : this.id,
+      spaceId: data.spaceId.present ? data.spaceId.value : this.spaceId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
+      updatedBy: data.updatedBy.present ? data.updatedBy.value : this.updatedBy,
+      hlc: data.hlc.present ? data.hlc.value : this.hlc,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+      nodeId: data.nodeId.present ? data.nodeId.value : this.nodeId,
+      icsExport: data.icsExport.present ? data.icsExport.value : this.icsExport,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NodeUserPref(')
+          ..write('id: $id, ')
+          ..write('spaceId: $spaceId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedBy: $updatedBy, ')
+          ..write('hlc: $hlc, ')
+          ..write('deleted: $deleted, ')
+          ..write('nodeId: $nodeId, ')
+          ..write('icsExport: $icsExport')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    spaceId,
+    createdAt,
+    createdBy,
+    updatedBy,
+    hlc,
+    deleted,
+    nodeId,
+    icsExport,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NodeUserPref &&
+          other.id == this.id &&
+          other.spaceId == this.spaceId &&
+          other.createdAt == this.createdAt &&
+          other.createdBy == this.createdBy &&
+          other.updatedBy == this.updatedBy &&
+          other.hlc == this.hlc &&
+          other.deleted == this.deleted &&
+          other.nodeId == this.nodeId &&
+          other.icsExport == this.icsExport);
+}
+
+class NodeUserPrefsCompanion extends UpdateCompanion<NodeUserPref> {
+  final Value<String> id;
+  final Value<String> spaceId;
+  final Value<DateTime> createdAt;
+  final Value<String> createdBy;
+  final Value<String> updatedBy;
+  final Value<String> hlc;
+  final Value<bool> deleted;
+  final Value<String> nodeId;
+  final Value<bool> icsExport;
+  final Value<int> rowid;
+  const NodeUserPrefsCompanion({
+    this.id = const Value.absent(),
+    this.spaceId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.updatedBy = const Value.absent(),
+    this.hlc = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.nodeId = const Value.absent(),
+    this.icsExport = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NodeUserPrefsCompanion.insert({
+    required String id,
+    required String spaceId,
+    required DateTime createdAt,
+    required String createdBy,
+    required String updatedBy,
+    required String hlc,
+    this.deleted = const Value.absent(),
+    required String nodeId,
+    this.icsExport = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       spaceId = Value(spaceId),
+       createdAt = Value(createdAt),
+       createdBy = Value(createdBy),
+       updatedBy = Value(updatedBy),
+       hlc = Value(hlc),
+       nodeId = Value(nodeId);
+  static Insertable<NodeUserPref> custom({
+    Expression<String>? id,
+    Expression<String>? spaceId,
+    Expression<DateTime>? createdAt,
+    Expression<String>? createdBy,
+    Expression<String>? updatedBy,
+    Expression<String>? hlc,
+    Expression<bool>? deleted,
+    Expression<String>? nodeId,
+    Expression<bool>? icsExport,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (spaceId != null) 'space_id': spaceId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (createdBy != null) 'created_by': createdBy,
+      if (updatedBy != null) 'updated_by': updatedBy,
+      if (hlc != null) 'hlc': hlc,
+      if (deleted != null) 'deleted': deleted,
+      if (nodeId != null) 'node_id': nodeId,
+      if (icsExport != null) 'ics_export': icsExport,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NodeUserPrefsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? spaceId,
+    Value<DateTime>? createdAt,
+    Value<String>? createdBy,
+    Value<String>? updatedBy,
+    Value<String>? hlc,
+    Value<bool>? deleted,
+    Value<String>? nodeId,
+    Value<bool>? icsExport,
+    Value<int>? rowid,
+  }) {
+    return NodeUserPrefsCompanion(
+      id: id ?? this.id,
+      spaceId: spaceId ?? this.spaceId,
+      createdAt: createdAt ?? this.createdAt,
+      createdBy: createdBy ?? this.createdBy,
+      updatedBy: updatedBy ?? this.updatedBy,
+      hlc: hlc ?? this.hlc,
+      deleted: deleted ?? this.deleted,
+      nodeId: nodeId ?? this.nodeId,
+      icsExport: icsExport ?? this.icsExport,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (spaceId.present) {
+      map['space_id'] = Variable<String>(spaceId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (createdBy.present) {
+      map['created_by'] = Variable<String>(createdBy.value);
+    }
+    if (updatedBy.present) {
+      map['updated_by'] = Variable<String>(updatedBy.value);
+    }
+    if (hlc.present) {
+      map['hlc'] = Variable<String>(hlc.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
+    if (nodeId.present) {
+      map['node_id'] = Variable<String>(nodeId.value);
+    }
+    if (icsExport.present) {
+      map['ics_export'] = Variable<bool>(icsExport.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NodeUserPrefsCompanion(')
+          ..write('id: $id, ')
+          ..write('spaceId: $spaceId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedBy: $updatedBy, ')
+          ..write('hlc: $hlc, ')
+          ..write('deleted: $deleted, ')
+          ..write('nodeId: $nodeId, ')
+          ..write('icsExport: $icsExport, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $ChangeLogTable extends ChangeLog
     with TableInfo<$ChangeLogTable, ChangeOp> {
   @override
@@ -11426,6 +12570,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $NodeTagsTable nodeTags = $NodeTagsTable(this);
   late final $AttachmentsTable attachments = $AttachmentsTable(this);
   late final $AnnotationsTable annotations = $AnnotationsTable(this);
+  late final $RemindersTable reminders = $RemindersTable(this);
+  late final $NodeUserPrefsTable nodeUserPrefs = $NodeUserPrefsTable(this);
   late final $ChangeLogTable changeLog = $ChangeLogTable(this);
   late final $DevicesTable devices = $DevicesTable(this);
   late final Index nodesParentSort = Index(
@@ -11472,6 +12618,14 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'annotations_attachment',
     'CREATE INDEX annotations_attachment ON annotations (attachment_id)',
   );
+  late final Index remindersNode = Index(
+    'reminders_node',
+    'CREATE INDEX reminders_node ON reminders (node_id)',
+  );
+  late final Index nodeUserPrefsNode = Index(
+    'node_user_prefs_node',
+    'CREATE INDEX node_user_prefs_node ON node_user_prefs (node_id)',
+  );
   late final Index occurrenceCompletionsNode = Index(
     'occurrence_completions_node',
     'CREATE INDEX occurrence_completions_node ON occurrence_completions (node_id, occurrence_date)',
@@ -11507,6 +12661,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     nodeTags,
     attachments,
     annotations,
+    reminders,
+    nodeUserPrefs,
     changeLog,
     devices,
     nodesParentSort,
@@ -11520,6 +12676,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     nodeTagsTag,
     attachmentsNode,
     annotationsAttachment,
+    remindersNode,
+    nodeUserPrefsNode,
     occurrenceCompletionsNode,
     changeLogHlc,
     changeLogField,
@@ -16474,6 +17632,570 @@ typedef $$AnnotationsTableProcessedTableManager =
       Annotation,
       PrefetchHooks Function()
     >;
+typedef $$RemindersTableCreateCompanionBuilder = RemindersCompanion Function({
+  required String id,
+  required String spaceId,
+  required DateTime createdAt,
+  required String createdBy,
+  required String updatedBy,
+  required String hlc,
+  Value<bool> deleted,
+  required String nodeId,
+  required int minutesBefore,
+  Value<int> rowid,
+});
+typedef $$RemindersTableUpdateCompanionBuilder = RemindersCompanion Function({
+  Value<String> id,
+  Value<String> spaceId,
+  Value<DateTime> createdAt,
+  Value<String> createdBy,
+  Value<String> updatedBy,
+  Value<String> hlc,
+  Value<bool> deleted,
+  Value<String> nodeId,
+  Value<int> minutesBefore,
+  Value<int> rowid,
+});
+
+class $$RemindersTableFilterComposer
+    extends Composer<_$AppDatabase, $RemindersTable> {
+  $$RemindersTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get spaceId => $composableBuilder(
+    column: $table.spaceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedBy => $composableBuilder(
+    column: $table.updatedBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get hlc => $composableBuilder(
+    column: $table.hlc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nodeId => $composableBuilder(
+    column: $table.nodeId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get minutesBefore => $composableBuilder(
+    column: $table.minutesBefore,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$RemindersTableOrderingComposer
+    extends Composer<_$AppDatabase, $RemindersTable> {
+  $$RemindersTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get spaceId => $composableBuilder(
+    column: $table.spaceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedBy => $composableBuilder(
+    column: $table.updatedBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get hlc => $composableBuilder(
+    column: $table.hlc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nodeId => $composableBuilder(
+    column: $table.nodeId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get minutesBefore => $composableBuilder(
+    column: $table.minutesBefore,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$RemindersTableAnnotationComposer
+    extends Composer<_$AppDatabase, $RemindersTable> {
+  $$RemindersTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get spaceId =>
+      $composableBuilder(column: $table.spaceId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get createdBy =>
+      $composableBuilder(column: $table.createdBy, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedBy =>
+      $composableBuilder(column: $table.updatedBy, builder: (column) => column);
+
+  GeneratedColumn<String> get hlc =>
+      $composableBuilder(column: $table.hlc, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+
+  GeneratedColumn<String> get nodeId =>
+      $composableBuilder(column: $table.nodeId, builder: (column) => column);
+
+  GeneratedColumn<int> get minutesBefore => $composableBuilder(
+    column: $table.minutesBefore,
+    builder: (column) => column,
+  );
+}
+
+class $$RemindersTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $RemindersTable,
+          Reminder,
+          $$RemindersTableFilterComposer,
+          $$RemindersTableOrderingComposer,
+          $$RemindersTableAnnotationComposer,
+          $$RemindersTableCreateCompanionBuilder,
+          $$RemindersTableUpdateCompanionBuilder,
+          (Reminder, BaseReferences<_$AppDatabase, $RemindersTable, Reminder>),
+          Reminder,
+          PrefetchHooks Function()
+        > {
+  $$RemindersTableTableManager(_$AppDatabase db, $RemindersTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$RemindersTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$RemindersTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$RemindersTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> spaceId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<String> createdBy = const Value.absent(),
+                Value<String> updatedBy = const Value.absent(),
+                Value<String> hlc = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<String> nodeId = const Value.absent(),
+                Value<int> minutesBefore = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => RemindersCompanion(
+                id: id,
+                spaceId: spaceId,
+                createdAt: createdAt,
+                createdBy: createdBy,
+                updatedBy: updatedBy,
+                hlc: hlc,
+                deleted: deleted,
+                nodeId: nodeId,
+                minutesBefore: minutesBefore,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String spaceId,
+                required DateTime createdAt,
+                required String createdBy,
+                required String updatedBy,
+                required String hlc,
+                Value<bool> deleted = const Value.absent(),
+                required String nodeId,
+                required int minutesBefore,
+                Value<int> rowid = const Value.absent(),
+              }) => RemindersCompanion.insert(
+                id: id,
+                spaceId: spaceId,
+                createdAt: createdAt,
+                createdBy: createdBy,
+                updatedBy: updatedBy,
+                hlc: hlc,
+                deleted: deleted,
+                nodeId: nodeId,
+                minutesBefore: minutesBefore,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$RemindersTable, Reminder>(table),
+                  BaseReferences<_$AppDatabase, $RemindersTable, Reminder>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$RemindersTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $RemindersTable,
+      Reminder,
+      $$RemindersTableFilterComposer,
+      $$RemindersTableOrderingComposer,
+      $$RemindersTableAnnotationComposer,
+      $$RemindersTableCreateCompanionBuilder,
+      $$RemindersTableUpdateCompanionBuilder,
+      (Reminder, BaseReferences<_$AppDatabase, $RemindersTable, Reminder>),
+      Reminder,
+      PrefetchHooks Function()
+    >;
+typedef $$NodeUserPrefsTableCreateCompanionBuilder =
+    NodeUserPrefsCompanion Function({
+      required String id,
+      required String spaceId,
+      required DateTime createdAt,
+      required String createdBy,
+      required String updatedBy,
+      required String hlc,
+      Value<bool> deleted,
+      required String nodeId,
+      Value<bool> icsExport,
+      Value<int> rowid,
+    });
+typedef $$NodeUserPrefsTableUpdateCompanionBuilder =
+    NodeUserPrefsCompanion Function({
+      Value<String> id,
+      Value<String> spaceId,
+      Value<DateTime> createdAt,
+      Value<String> createdBy,
+      Value<String> updatedBy,
+      Value<String> hlc,
+      Value<bool> deleted,
+      Value<String> nodeId,
+      Value<bool> icsExport,
+      Value<int> rowid,
+    });
+
+class $$NodeUserPrefsTableFilterComposer
+    extends Composer<_$AppDatabase, $NodeUserPrefsTable> {
+  $$NodeUserPrefsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get spaceId => $composableBuilder(
+    column: $table.spaceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedBy => $composableBuilder(
+    column: $table.updatedBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get hlc => $composableBuilder(
+    column: $table.hlc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nodeId => $composableBuilder(
+    column: $table.nodeId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get icsExport => $composableBuilder(
+    column: $table.icsExport,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$NodeUserPrefsTableOrderingComposer
+    extends Composer<_$AppDatabase, $NodeUserPrefsTable> {
+  $$NodeUserPrefsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get spaceId => $composableBuilder(
+    column: $table.spaceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedBy => $composableBuilder(
+    column: $table.updatedBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get hlc => $composableBuilder(
+    column: $table.hlc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nodeId => $composableBuilder(
+    column: $table.nodeId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get icsExport => $composableBuilder(
+    column: $table.icsExport,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$NodeUserPrefsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $NodeUserPrefsTable> {
+  $$NodeUserPrefsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get spaceId =>
+      $composableBuilder(column: $table.spaceId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get createdBy =>
+      $composableBuilder(column: $table.createdBy, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedBy =>
+      $composableBuilder(column: $table.updatedBy, builder: (column) => column);
+
+  GeneratedColumn<String> get hlc =>
+      $composableBuilder(column: $table.hlc, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+
+  GeneratedColumn<String> get nodeId =>
+      $composableBuilder(column: $table.nodeId, builder: (column) => column);
+
+  GeneratedColumn<bool> get icsExport =>
+      $composableBuilder(column: $table.icsExport, builder: (column) => column);
+}
+
+class $$NodeUserPrefsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NodeUserPrefsTable,
+          NodeUserPref,
+          $$NodeUserPrefsTableFilterComposer,
+          $$NodeUserPrefsTableOrderingComposer,
+          $$NodeUserPrefsTableAnnotationComposer,
+          $$NodeUserPrefsTableCreateCompanionBuilder,
+          $$NodeUserPrefsTableUpdateCompanionBuilder,
+          (
+            NodeUserPref,
+            BaseReferences<_$AppDatabase, $NodeUserPrefsTable, NodeUserPref>,
+          ),
+          NodeUserPref,
+          PrefetchHooks Function()
+        > {
+  $$NodeUserPrefsTableTableManager(_$AppDatabase db, $NodeUserPrefsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$NodeUserPrefsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$NodeUserPrefsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$NodeUserPrefsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> spaceId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<String> createdBy = const Value.absent(),
+                Value<String> updatedBy = const Value.absent(),
+                Value<String> hlc = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<String> nodeId = const Value.absent(),
+                Value<bool> icsExport = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NodeUserPrefsCompanion(
+                id: id,
+                spaceId: spaceId,
+                createdAt: createdAt,
+                createdBy: createdBy,
+                updatedBy: updatedBy,
+                hlc: hlc,
+                deleted: deleted,
+                nodeId: nodeId,
+                icsExport: icsExport,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String spaceId,
+                required DateTime createdAt,
+                required String createdBy,
+                required String updatedBy,
+                required String hlc,
+                Value<bool> deleted = const Value.absent(),
+                required String nodeId,
+                Value<bool> icsExport = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NodeUserPrefsCompanion.insert(
+                id: id,
+                spaceId: spaceId,
+                createdAt: createdAt,
+                createdBy: createdBy,
+                updatedBy: updatedBy,
+                hlc: hlc,
+                deleted: deleted,
+                nodeId: nodeId,
+                icsExport: icsExport,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$NodeUserPrefsTable, NodeUserPref>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $NodeUserPrefsTable,
+                    NodeUserPref
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$NodeUserPrefsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $NodeUserPrefsTable,
+      NodeUserPref,
+      $$NodeUserPrefsTableFilterComposer,
+      $$NodeUserPrefsTableOrderingComposer,
+      $$NodeUserPrefsTableAnnotationComposer,
+      $$NodeUserPrefsTableCreateCompanionBuilder,
+      $$NodeUserPrefsTableUpdateCompanionBuilder,
+      (
+        NodeUserPref,
+        BaseReferences<_$AppDatabase, $NodeUserPrefsTable, NodeUserPref>,
+      ),
+      NodeUserPref,
+      PrefetchHooks Function()
+    >;
 typedef $$ChangeLogTableCreateCompanionBuilder = ChangeLogCompanion Function({
   required String opId,
   required String spaceId,
@@ -17037,6 +18759,10 @@ class $AppDatabaseManager {
       $$AttachmentsTableTableManager(_db, _db.attachments);
   $$AnnotationsTableTableManager get annotations =>
       $$AnnotationsTableTableManager(_db, _db.annotations);
+  $$RemindersTableTableManager get reminders =>
+      $$RemindersTableTableManager(_db, _db.reminders);
+  $$NodeUserPrefsTableTableManager get nodeUserPrefs =>
+      $$NodeUserPrefsTableTableManager(_db, _db.nodeUserPrefs);
   $$ChangeLogTableTableManager get changeLog =>
       $$ChangeLogTableTableManager(_db, _db.changeLog);
   $$DevicesTableTableManager get devices =>

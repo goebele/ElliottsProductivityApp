@@ -1,11 +1,16 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/database.dart';
+import '../domain/ics.dart';
 import '../domain/node_repository.dart';
 import '../l10n/app_localizations.dart';
 import '../providers.dart';
+import 'calendar_page.dart';
 import 'labels.dart';
+import 'markup.dart' show saveBytesAs;
 import 'node_picker.dart';
 import 'tree_providers.dart';
 
@@ -248,6 +253,22 @@ class NodeMenu extends ConsumerWidget {
                     : l10n.titleOrUntitled(s.parentTitle ?? ''),
               ),
             ),
+          ),
+        MenuItemButton(
+          leadingIcon: const Icon(Icons.calendar_month_outlined),
+          onPressed: () => showInCalendar(context, ref, node),
+          child: Text(l10n.showInCalendar),
+        ),
+        if (node.startAt != null || node.dueDate != null || node.rrule != null)
+          MenuItemButton(
+            leadingIcon: const Icon(Icons.ios_share),
+            onPressed: () => saveBytesAs(
+              context,
+              '${l10n.titleOrUntitled(node.title)}.ics',
+              utf8.encode(buildIcs([node])),
+              'text/calendar',
+            ),
+            child: Text(l10n.icsExportItem),
           ),
         MenuItemButton(
           leadingIcon: const Icon(Icons.zoom_in),
