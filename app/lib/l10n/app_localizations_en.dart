@@ -1305,4 +1305,326 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get showInCalendar => 'Show in calendar';
+
+  @override
+  String get timerStart => 'Start timer';
+
+  @override
+  String get timerStartMenu => 'Timer or focus';
+
+  @override
+  String get timerStop => 'Stop timer';
+
+  @override
+  String get timerPause => 'Pause';
+
+  @override
+  String get timerResume => 'Resume';
+
+  @override
+  String timerPaused(String title) {
+    return 'Paused · $title';
+  }
+
+  @override
+  String get timerNow => 'now';
+
+  @override
+  String get timerMiniWindow => 'Mini window (stays on top)';
+
+  @override
+  String get timerExpand => 'Back to the full window';
+
+  @override
+  String focusFor(String length) {
+    return 'Focus for $length';
+  }
+
+  @override
+  String focusForEstimate(String length) {
+    return 'Focus for the estimate ($length)';
+  }
+
+  @override
+  String focusLeft(String title, String left) {
+    return '$title · $left left';
+  }
+
+  @override
+  String focusOver(String title, String elapsed) {
+    return '$title · $elapsed (focus time is up)';
+  }
+
+  @override
+  String get focusEndedTitle => 'Focus time is up';
+
+  @override
+  String focusEndedBody(String title) {
+    return 'How did $title go?';
+  }
+
+  @override
+  String get focusKeepGoing => 'Keep going';
+
+  @override
+  String get focusDone => 'Done';
+
+  @override
+  String get focusBreak => 'Take a break';
+
+  @override
+  String breakLeft(String left) {
+    return 'Break · $left left';
+  }
+
+  @override
+  String get breakOver => 'Break\'s over';
+
+  @override
+  String get breakEnd => 'End break';
+
+  @override
+  String get estimateAdd => 'Estimate';
+
+  @override
+  String estimateIs(String length) {
+    return 'Est. $length';
+  }
+
+  @override
+  String get estimateTitle => 'Estimate';
+
+  @override
+  String get estimateMinutes => 'Or minutes';
+
+  @override
+  String get trackedNone => 'Track time';
+
+  @override
+  String trackedIs(String tracked) {
+    return '$tracked tracked';
+  }
+
+  @override
+  String trackedOf(String tracked, String estimate) {
+    return '$tracked of $estimate';
+  }
+
+  @override
+  String get trackedTooltip => 'Time entries: add, edit or delete';
+
+  @override
+  String rollupItems(String tracked, String estimate) {
+    return 'Items: $tracked of $estimate';
+  }
+
+  @override
+  String get timeEntriesTitle => 'Time';
+
+  @override
+  String get timeEntriesEmpty =>
+      'No time tracked yet. Start a timer with ▶, or add time.';
+
+  @override
+  String get timeAdd => 'Add time…';
+
+  @override
+  String get timeEdit => 'Edit time';
+
+  @override
+  String get timeDelete => 'Delete';
+
+  @override
+  String get timeLength => 'Length';
+
+  @override
+  String get timeNote => 'Note';
+
+  @override
+  String get timePersonal => 'Only you see your time.';
+
+  @override
+  String progressItems(int done, int total, int percent) {
+    return '$done/$total · $percent%';
+  }
+
+  @override
+  String progressManual(int percent) {
+    return '$percent% (set by hand)';
+  }
+
+  @override
+  String get progressSet => 'Set progress manually…';
+
+  @override
+  String get progressSetTitle => 'Progress';
+
+  @override
+  String get progressUseItems => 'Count items again';
+
+  @override
+  String get reviewView => 'Review';
+
+  @override
+  String get reviewCustom => 'Dates…';
+
+  @override
+  String get reviewThis => 'This one';
+
+  @override
+  String get reviewCopy => 'Copy as Markdown';
+
+  @override
+  String get reviewCopied => 'Copied';
+
+  @override
+  String get reviewExport => 'Export (.md)…';
+
+  @override
+  String reviewTitleFor(String range) {
+    return 'Review: $range';
+  }
+
+  @override
+  String get reviewCompleted => 'completed';
+
+  @override
+  String get reviewCreated => 'created';
+
+  @override
+  String get reviewTracked => 'tracked';
+
+  @override
+  String get reviewOverdue => 'overdue';
+
+  @override
+  String get reviewEmpty =>
+      'Nothing done, tracked or created in these dates yet.';
+
+  @override
+  String get reviewCompletedByProject => 'Completed, by project';
+
+  @override
+  String get reviewCompletedByValue => 'Completed, by value';
+
+  @override
+  String get reviewTimeByProject => 'Time by project';
+
+  @override
+  String get reviewTimeByValue => 'Time by value';
+
+  @override
+  String get reviewTimeByTag => 'Time by tag';
+
+  @override
+  String get reviewRoutines => 'Routines';
+
+  @override
+  String get reviewOverdueTitle => 'Overdue';
+
+  @override
+  String reviewDue(String date) {
+    return 'Due $date';
+  }
+
+  @override
+  String get todayView => 'Today';
+
+  @override
+  String get treeView => 'Tree';
+
+  @override
+  String todayDoneCount(int done, int total) {
+    return '$done of $total done';
+  }
+
+  @override
+  String get todayEmpty =>
+      'Nothing on today yet. Add an item with ⋮ → Add to Today, or try Pick one for me.';
+
+  @override
+  String get todayPickOne => 'Pick one for me';
+
+  @override
+  String get todayPickAnother => 'Another';
+
+  @override
+  String get todayPickNone => 'Nothing open matches. Try fewer filters.';
+
+  @override
+  String get todayAdd => 'Add to Today';
+
+  @override
+  String get todayAddItem => 'Add to Today';
+
+  @override
+  String get todayRemoveItem => 'Remove from Today';
+
+  @override
+  String get todayRemove => 'Remove from today';
+
+  @override
+  String todayRemoved(String title) {
+    return 'Removed $title from today';
+  }
+
+  @override
+  String todayOverdue(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Overdue · $days days',
+      one: 'Overdue · 1 day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get todayDue => 'Due today';
+
+  @override
+  String todayAt(String time) {
+    return 'At $time';
+  }
+
+  @override
+  String get todayPicked => 'Added by you';
+
+  @override
+  String todayLeftOver(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items you added on earlier days aren\'t done',
+      one: '1 item you added on an earlier day isn\'t done',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get todayKeep => 'Keep on today';
+
+  @override
+  String get todayDrop => 'Drop';
+
+  @override
+  String get todaySettings => 'What Today adds by itself';
+
+  @override
+  String get todayAutoTitle => 'Add by itself:';
+
+  @override
+  String get todayAutoRoutines => 'Routines due today';
+
+  @override
+  String get todayAutoDue => 'Due today';
+
+  @override
+  String get todayAutoOverdue => 'Overdue';
+
+  @override
+  String get todayAutoEvents => 'Events today';
+
+  @override
+  String get todayAutoActive => 'In progress (Active)';
 }

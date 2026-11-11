@@ -9,6 +9,8 @@ import '../domain/node_repository.dart';
 import '../l10n/app_localizations.dart';
 import '../providers.dart';
 import 'calendar_page.dart';
+import 'time_ui.dart';
+import 'today_page.dart';
 import 'labels.dart';
 import 'markup.dart' show saveBytesAs;
 import 'node_picker.dart';
@@ -253,6 +255,20 @@ class NodeMenu extends ConsumerWidget {
                     : l10n.titleOrUntitled(s.parentTitle ?? ''),
               ),
             ),
+          ),
+        TodayMenuItem(node: node),
+        MenuItemButton(
+          leadingIcon: const Icon(Icons.percent),
+          onPressed: () => editProgress(context, ref, node),
+          child: Text(l10n.progressSet),
+        ),
+        if (node.progressOverride != null)
+          MenuItemButton(
+            leadingIcon: const Icon(Icons.checklist),
+            onPressed: () async =>
+                (await ref.read(nodeRepositoryProvider.future))
+                    .setProgressOverride(node.id, null),
+            child: Text(l10n.progressUseItems),
           ),
         MenuItemButton(
           leadingIcon: const Icon(Icons.calendar_month_outlined),

@@ -5,9 +5,11 @@ import 'package:elliotts_productivity_app/data/database.dart';
 import 'package:elliotts_productivity_app/domain/node_repository.dart';
 import 'package:elliotts_productivity_app/domain/repeat_rule.dart';
 import 'package:elliotts_productivity_app/platform/reminder_notifier.dart';
+import 'package:elliotts_productivity_app/platform/timer_platform.dart';
 import 'package:elliotts_productivity_app/providers.dart';
 import 'package:elliotts_productivity_app/ui/app.dart';
 import 'package:elliotts_productivity_app/ui/calendar_page.dart';
+import 'package:elliotts_productivity_app/ui/today_page.dart';
 import 'package:elliotts_productivity_app/ui/files.dart';
 import 'package:elliotts_productivity_app/ui/markup.dart';
 import 'package:elliotts_productivity_app/ui/tree_pane.dart';
@@ -41,8 +43,10 @@ void main() {
     WidgetTester tester, {
     required Size size,
     Future<void> Function(TestEnv env)? seed,
+    bool treeTab = true,
   }) async {
     ReminderNotifier.enabled = false;
+    TimerPlatform.enabled = false;
     env = (await tester.runAsync(() async {
       final env = await TestEnv.create();
       await seed?.call(env);
@@ -63,6 +67,11 @@ void main() {
       ),
     );
     await settle(tester);
+    // Phones open on Today; most tests start from the tree.
+    if (size.width < 720 && treeTab) {
+      await tester.tap(find.text('Tree'));
+      await settle(tester);
+    }
   }
 
   /// Unmounts, lets Drift's timer for dropping cancelled queries fire on the
@@ -97,7 +106,7 @@ void main() {
   ) async {
     await startApp(tester, size: wide);
     expect(find.textContaining('Nothing here yet'), findsOneWidget);
-    expect(find.text('Select an item to see its details.'), findsOneWidget);
+    expect(find.byType(TodayPage), findsOneWidget);
 
     await tester.tap(find.text('New item'));
     await settle(tester);
@@ -864,7 +873,7 @@ void main() {
     expect(inTree('Project'), findsNothing);
     expect((await env.nodes.get(task))!.lifecycle, Lifecycle.archived);
     expect(
-      find.text('Select an item to see its details.'),
+      find.byType(TodayPage),
       findsOneWidget,
       reason: 'the page moves away (to nothing at the top level)',
     );
@@ -1074,6 +1083,8 @@ void main() {
         // The notes column (wide) or notes section (phone).
         await tester.tap(find.text('Notes & files (1)'));
         await settle(tester);
+        await tester.ensureVisible(find.widgetWithText(Card, 'Packing ideas'));
+        await settle(tester);
         await tester.tap(find.widgetWithText(Card, 'Packing ideas'));
         await settle(tester);
 
@@ -1096,11 +1107,8 @@ void main() {
         await tester.tap(find.text('Back to Trip'));
         await settle(tester);
         expect(find.text('Back to Trip'), findsNothing);
-        expect(
-          find.widgetWithText(TextField, 'Trip'),
-          findsOneWidget,
-          reason: "the item's page",
-        );
+        // Back on the item's page (scrolled to where its notes are).
+        expect(find.text('Notes & files (1)'), findsOneWidget);
 
         await stopApp(tester);
       },
@@ -1259,6 +1267,7 @@ void main() {
 
       // Opening it opens the original note; Back returns to Pack bags.
       await tester.ensureVisible(find.text('Sunscreen'));
+      await settle(tester);
       await tester.tap(find.text('Sunscreen'));
       await settle(tester);
       expect(find.text('Linked into 1 item:'), findsOneWidget);
@@ -1272,6 +1281,7 @@ void main() {
       }
 
       await tester.ensureVisible(find.byTooltip('Unlink'));
+      await settle(tester);
       await tester.tap(find.byTooltip('Unlink'));
       await settle(tester);
       expect(card, findsNothing);
@@ -2184,6 +2194,321 @@ void main() {
     await settle(tester);
     expect(find.text('Only Dentist'), findsOneWidget);
     expect(inCalendar('Flight'), findsNothing);
+    await stopApp(tester);
+  });
+
+  // ------------------------------------------------------------------ M5
+
+  testWidgets('timer: start from an item, pause, resume, stop', (tester) async {
+    late String id;
+    await startApp(
+      tester,
+      size: wide,
+      seed: (env) async {
+        id = await env.nodes.create(title: 'Write report');
+      },
+    );
+    await tester.tap(inTree('Write report'));
+    await settle(tester);
+    await tester.tap(find.byTooltip('Timer or focus'));
+    await settle(tester);
+    await tester.tap(find.widgetWithText(MenuItemButton, 'Start timer'));
+    await settle(tester);
+    expect(find.textContaining('Write report · 00:0'), findsOneWidget);
+    expect(find.byTooltip('Stop timer'), findsWidgets);
+
+    await tester.tap(find.byTooltip('Pause'));
+    await settle(tester);
+    expect(find.text('Paused · Write report'), findsOneWidget);
+    await tester.tap(find.byTooltip('Resume'));
+    await settle(tester);
+    expect(find.textContaining('Write report · 00:0'), findsOneWidget);
+    await tester.tap(find.byTooltip('Stop timer').first);
+    await settle(tester);
+    expect(find.textContaining('Write report · 00:0'), findsNothing);
+    final entries = await tester.runAsync(() => env.nodes.time.of(id));
+    expect(entries, hasLength(2));
+    expect(entries!.every((e) => e.endedAt != null), isTrue);
+    await stopApp(tester);
+  });
+
+  testWidgets('focus: when the time is up, Done finishes the item', (
+    tester,
+  ) async {
+    late String id;
+    await startApp(
+      tester,
+      size: wide,
+      seed: (env) async {
+        id = await env.nodes.create(title: 'Read chapter');
+        await env.nodes.time.start(
+          id,
+          focusMinutes: 25,
+          now: DateTime.now().subtract(const Duration(minutes: 26)),
+        );
+      },
+    );
+    await settle(tester);
+    expect(find.text('Focus time is up'), findsOneWidget);
+    await tester.tap(find.widgetWithText(TextButton, 'Done'));
+    await settle(tester);
+    expect(await tester.runAsync(() => env.nodes.time.running()), isNull);
+    expect(
+      (await tester.runAsync(() => env.nodes.get(id)))!.status,
+      NodeStatus.done,
+    );
+    await stopApp(tester);
+  });
+
+  testWidgets('estimate, manual time, roll-up and progress', (tester) async {
+    late String trip, bags;
+    await startApp(
+      tester,
+      size: wide,
+      seed: (env) async {
+        trip = await env.nodes.create(title: 'Trip');
+        bags = await env.nodes.create(title: 'Pack bags', parentId: trip);
+        await env.nodes.create(title: 'Book flight', parentId: trip);
+        await env.nodes.setEstimate(bags, 45);
+        await env.nodes.setStatus(bags, NodeStatus.done);
+      },
+    );
+    await tester.tap(inTree('Trip'));
+    await settle(tester);
+    expect(find.text('1/2 · 50%'), findsOneWidget);
+    expect(find.text('Items: 0m of 45m'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(ActionChip, 'Estimate'));
+    await settle(tester);
+    await tester.tap(find.widgetWithText(ChoiceChip, '2h'));
+    await settle(tester);
+    expect(find.text('Est. 2h'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(ActionChip, 'Track time'));
+    await settle(tester);
+    await tester.tap(find.text('Add time…'));
+    await settle(tester);
+    await tester.enterText(find.widgetWithText(TextField, 'Length'), '40');
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await settle(tester);
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.widgetWithText(FilledButton, 'Done'),
+      ),
+    );
+    await settle(tester);
+    expect(find.text('40m of 2h'), findsOneWidget);
+
+    // Progress by hand.
+    await tester.tap(find.byTooltip('More actions'));
+    await settle(tester);
+    await tester.tap(
+      find.widgetWithText(MenuItemButton, 'Set progress manually…'),
+    );
+    await settle(tester);
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await settle(tester);
+    expect(find.text('0% (set by hand)'), findsOneWidget);
+    expect(trip, isNotEmpty);
+    await stopApp(tester);
+  });
+
+  testWidgets('review: lists what was done this week, copies Markdown', (
+    tester,
+  ) async {
+    await startApp(
+      tester,
+      size: const Size(1600, 1000),
+      seed: (env) async {
+        final gym = await env.nodes.create(title: 'Gym');
+        final run = await env.nodes.create(title: 'Run', parentId: gym);
+        await env.nodes.setStatus(run, NodeStatus.done);
+      },
+    );
+    await tester.tap(find.widgetWithText(ListTile, 'Review'));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await settle(tester);
+    expect(find.text('Completed, by project'), findsOneWidget);
+    expect(find.widgetWithText(ListTile, 'Run'), findsOneWidget);
+    expect(find.text('Gym'), findsWidgets);
+
+    String? copied;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copied = (call.arguments as Map)['text'] as String;
+        }
+        return null;
+      },
+    );
+    await tester.tap(find.byTooltip('Copy as Markdown'));
+    await settle(tester);
+    expect(copied, contains('## Completed'));
+    expect(copied, contains('- Run'));
+    await stopApp(tester);
+  });
+
+  // ------------------------------------------------------------------ M6
+
+  testWidgets('today: opens first, fills itself, remove/undo, add, settings', (
+    tester,
+  ) async {
+    await startApp(
+      tester,
+      size: const Size(1600, 1000),
+      seed: (env) async {
+        final taxes = await env.nodes.create(title: 'Taxes');
+        await env.nodes.setDates(
+          taxes,
+          NodeDates(dueDate: todayAt(0).subtract(const Duration(days: 2))),
+        );
+        final water = await env.nodes.create(title: 'Water plants');
+        await env.nodes.setDates(
+          water,
+          NodeDates(
+            rrule: const RepeatRule.daily().toRrule(),
+            repeatStart: todayAt(0),
+          ),
+        );
+        await env.nodes.create(title: 'Read book');
+      },
+    );
+    Finder onToday(String text) =>
+        find.descendant(of: find.byType(TodayPage), matching: find.text(text));
+    expect(find.byType(TodayPage), findsOneWidget);
+    expect(onToday('Taxes'), findsOneWidget);
+    expect(onToday('Water plants'), findsOneWidget);
+    expect(find.text('Overdue · 2 days'), findsOneWidget);
+    expect(onToday('Read book'), findsNothing);
+
+    // Remove one for today, then undo.
+    await tester.tap(
+      find.descendant(
+        of: find.widgetWithText(Card, 'Taxes'),
+        matching: find.byTooltip('Remove from today'),
+      ),
+    );
+    await settle(tester);
+    expect(onToday('Taxes'), findsNothing);
+    await tester.tap(find.text('Undo'));
+    await settle(tester);
+    expect(onToday('Taxes'), findsOneWidget);
+
+    // Add an item from its ⋮ menu.
+    await tester.tap(inTree('Read book'));
+    await settle(tester);
+    await tester.tap(find.byTooltip('More actions'));
+    await settle(tester);
+    await tester.tap(find.widgetWithText(MenuItemButton, 'Add to Today'));
+    await settle(tester);
+    await tester.tap(find.widgetWithText(ListTile, 'Today'));
+    await settle(tester);
+    expect(onToday('Read book'), findsOneWidget);
+    expect(find.text('Added by you'), findsOneWidget);
+
+    // Routines off: Water plants goes.
+    await tester.tap(find.byTooltip('What Today adds by itself'));
+    await settle(tester);
+    await tester.tap(
+      find.widgetWithText(CheckboxMenuButton, 'Routines due today'),
+    );
+    await settle(tester);
+    await tester.tapAt(const Offset(1500, 900));
+    await settle(tester);
+    expect(onToday('Water plants'), findsNothing);
+    await stopApp(tester);
+  });
+
+  testWidgets('today: earlier picks left undone are kept or dropped', (
+    tester,
+  ) async {
+    await startApp(
+      tester,
+      size: const Size(1600, 1000),
+      seed: (env) async {
+        final a = await env.nodes.create(title: 'Write letter');
+        await env.nodes.today.add(
+          a,
+          day: todayAt(0).subtract(const Duration(days: 1)),
+        );
+      },
+    );
+    expect(
+      find.text("1 item you added on an earlier day isn't done"),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Keep on today'));
+    await settle(tester);
+    expect(find.textContaining('earlier day'), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byType(TodayPage),
+        matching: find.text('Write letter'),
+      ),
+      findsOneWidget,
+    );
+    await stopApp(tester);
+  });
+
+  testWidgets('today: pick one for me adds a random open item', (tester) async {
+    await startApp(
+      tester,
+      size: const Size(1600, 1000),
+      seed: (env) async {
+        await env.nodes.create(title: 'Only task');
+      },
+    );
+    await tester.tap(find.byTooltip('Pick one for me'));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await settle(tester);
+    expect(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.text('Only task'),
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Add to Today'));
+    await settle(tester);
+    expect(
+      find.descendant(
+        of: find.byType(TodayPage),
+        matching: find.text('Only task'),
+      ),
+      findsOneWidget,
+    );
+    await stopApp(tester);
+  });
+
+  testWidgets('phone: opens on Today; bottom bar to Tree and Calendar', (
+    tester,
+  ) async {
+    await startApp(
+      tester,
+      size: phone,
+      treeTab: false,
+      seed: (env) async {
+        await env.nodes.create(title: 'Trip');
+      },
+    );
+    expect(find.byType(TodayPage), findsOneWidget);
+    await tester.tap(find.text('Tree'));
+    await settle(tester);
+    expect(find.text('Trip'), findsOneWidget);
+    await tester.tap(
+      find.descendant(
+        of: find.byType(NavigationBar),
+        matching: find.text('Calendar'),
+      ),
+    );
+    await settle(tester);
+    expect(find.byType(CalendarPage), findsOneWidget);
     await stopApp(tester);
   });
 }

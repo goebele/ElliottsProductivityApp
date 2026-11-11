@@ -1,6 +1,28 @@
 # Elliott's Productivity App — Design Doc
 
-**Status:** Draft v0.15 · **Last updated:** 2026-11-09 · **Owners:** Elliott, Claude
+**Status:** Draft v0.18 · **Last updated:** 2026-11-09 · **Owners:** Elliott, Claude
+
+> **v0.18:** A **review pass (M6.5)** comes before LAN sync: a UX
+> walk-through of every screen, a review of everything sync will lock in,
+> and a code-health pass. Findings and decisions are kept in §14.
+
+> **v0.17 (M6, Today):** **Today is the home screen** (what the detail
+> pane shows when nothing is open; phones open on a Today / Tree /
+> Calendar bar). It **fills itself** with routines due today, items due
+> today, overdue items and today's events (you choose which; In progress
+> is optional), plus anything you **Add to Today**. Any entry can be
+> removed for the day, and the list dragged into order. Picks left undone
+> are asked about the next day; routines and deadlines carry on by
+> themselves. **Pick one for me** offers a random open item, by value or
+> tag (§6.7).
+
+> **v0.16 (M5):** **Timers** (▶ on an item; one runs at a time; a bar
+> across the top with Pause / Stop; Windows tray icon and an always-on-top
+> mini window; Android ongoing notification), **focus mode** (25 min or
+> the estimate, then a chime and Keep going / Done / Take a break),
+> **estimates** and **time entries** with roll-ups, **progress** at every
+> level with a hand-set override, and a **Review** page (day / week /
+> month / dates) with Copy as Markdown and Export (§6.15, §6.16).
 
 > **v0.15:** **Show in calendar** on an item (⋮, or the chip by its dates)
 > opens the calendar filtered to it and everything under it, replacing the
@@ -227,7 +249,7 @@ data.
 | Markdown rendering / editing | `flutter_markdown_plus` (the maintained fork of the discontinued `flutter_markdown`; GitHub-flavoured, custom syntax for `[[node links]]`), plus a plain `TextField` with a formatting toolbar |
 | Notifications | `flutter_local_notifications` ✅ (+ `timezone`, `flutter_timezone`) |
 | Global hotkey (Windows) | `hotkey_manager` |
-| System tray (Windows) | `tray_manager` |
+| System tray (Windows) | `tray_manager` ✅ 0.5 (+ `window_manager` 0.5 for the mini window; 0.6/0.8 moved to a new API) |
 | Share-sheet intake (Android) | `receive_sharing_intent` or equivalent (M6) |
 | Open file in another app | `open_filex` ✅ |
 | Image capture / pick | `image_picker` ✅ (camera); `file_picker` ✅ (files) |
@@ -400,7 +422,9 @@ nearest recurring ancestor (or of the node itself).
 
 **`time_entries`** *(personal)* — `node_id, started_at, ended_at (NULL = timer running), source (timer | manual), note`
 
-**`today_entries`** *(personal)* — `date, node_id, sort_key`
+**`today_entries`** *(personal)* — `date, node_id, sort_key, hidden, resolved`
+(v0.17: `hidden` takes an automatic entry off that day; `resolved` marks a
+left-over pick as kept or dropped.)
 
 **`node_context`** *(personal)* — the context-resume state for each node.
 `node_id, last_opened_at, last_attachment_id, last_link_id, scratch_md, pinned_items_json`
@@ -797,6 +821,38 @@ on the list every day, but only one exercise is suggested.
   header shows planned vs. tracked time.
 - At the end of the day, unfinished entries can roll over to tomorrow with one
   tap.
+- **Built (v0.17), revised after review:**
+  - **Home:** a **Today** entry first under the tree; the detail pane
+    shows Today whenever nothing else is open (it replaces "Select an
+    item"). Phones open on a bottom bar: **Today / Tree / Calendar**.
+  - **Fills itself, unobtrusively:** routines due today (repeats with no
+    time slot, done per occurrence; their items come with them), items
+    due today, overdue items ("Overdue · 2 days"), events today, and
+    optionally items with status Active. ⚙ chooses which (routines, due,
+    overdue and events by default), saved as a personal setting
+    (`user_settings`, key `today.sources`).
+  - **Your picks:** ⋮ → **Add to Today** on any item (and Remove from
+    Today). ✕ on an entry takes it off today's list (with Undo); for an
+    automatic one this hides it for that day only.
+  - **Order:** drag handles; dragging stores the order for that day.
+    Unsorted automatic entries follow: overdue, due, events by time,
+    routines, active.
+  - **Entries:** an icon for why it's there, the title (struck through
+    when done today), the reason and its path; click opens it, hover
+    peeks. (Done, values and timers per entry: not on Today yet, decided
+    v0.17.)
+  - **Next day:** routines and deadlines need nothing; items you picked
+    and didn't finish get a card, "2 items you added on earlier days
+    aren't done", with **Keep on today** or **Drop**, asked once.
+  - **Pick one for me** (🎲): a random open task, project or goal not
+    already on Today, optionally narrowed by values and tags; Another, or
+    Add to Today.
+  - **Data (schema v13):** `today_entries` (personal: date, node, sort
+    key, hidden, resolved) and `user_settings` (personal key → JSON).
+- **Next (planned):** **time blocks**: dedicate a block of the day to a
+  tag, value or high-level item and have Today fill it with concrete
+  tasks from under it, up to the block's length by estimate; and saved
+  filters for Pick one for me.
 
 ### 6.8 Quick-capture inbox (low friction)
 - **Windows:** a global hotkey (default `Ctrl+Alt+Space`) opens a small
@@ -1068,6 +1124,35 @@ is drawn, and you can always drill into a child.
 - **Roll-ups:** tracked vs. estimated time for any subtree, value, tag or
   project.
 - Time entries are **personal** by default (see Q-I).
+- **Built (v0.16):**
+  - **Timer:** ▶ in an item's title row: Start timer, Focus for 25m, or
+    Focus for the estimate. While it runs a bar across the top of the app
+    shows "⏱ Pack bags · 23:41" with **Pause** and **Stop** (click the
+    name to open the item); ▶ on that item becomes ■. Pause ends the time
+    entry and the bar reads "Paused · …" with Resume (the paused state is
+    this device's only); resuming starts a new entry. Starting another
+    item stops the first.
+  - **Focus:** counts down with a progress line; at zero, a chime and
+    **Keep going** (keeps counting), **Done** (stops and marks the item
+    done) or **Take a break** (stops; a 5-minute break bar with End
+    break). The countdown length is stored on the entry so it shows on
+    every device.
+  - **Windows:** a tray icon while a timer runs or is paused (tooltip
+    "⏱ Pack bags · 0:23", menu Show / Pause or Resume / Stop; click shows
+    the app), and a **mini window** button on the bar that shrinks the app
+    to the bar alone, always on top; its expand button restores it.
+  - **Android:** an ongoing notification with a running clock and Pause /
+    Stop.
+  - **Estimates and time:** chips under the title: **Est. 1h** (presets
+    15m–8h or minutes; ✕ clears) and **25m of 1h** (or "Track time"),
+    which opens the item's time entries: newest first, edit or delete,
+    **Add time…** (day, start, length, note). When items under it have
+    estimates or time: "Items: 45m of 2h".
+  - **Data (schema v12):** `time_entries` (personal: node, start, end or
+    running, source timer/manual, focus minutes, note) and `activity`
+    (personal, add-only: created, completed, uncompleted, archived,
+    trashed, restored, time logged; with title, top-level project and
+    values as they were).
 
 ### 6.16 Progress, reports and summaries
 - **Progress bars** on goals and projects: done children ÷ all children
@@ -1082,6 +1167,19 @@ is drawn, and you can always drill into a child.
 - **Other ranges:** day, week, month, or custom dates.
 - Built from the `activity` table, `time_entries` and
   `occurrence_completions`, so it still works after archiving and purging.
+- **Built (v0.16):**
+  - **Progress:** under an item's title when it has items under it: a bar
+    and "4/12 · 33%", counting every level (repeats count today's
+    occurrence); panels show the same. ⋮ → **Set progress manually…** (a
+    slider) shows "80% (set by hand)"; **Count items again** clears it
+    (`nodes.progress_override`).
+  - **Review:** a **Review** entry under the tree (after Calendar). Day /
+    Week / Month / Dates…, ‹ This one ›. Totals (completed, created,
+    tracked, overdue); completed by project (as it was when completed) and
+    by value; time by project, value and tag against estimates; routines
+    "Gym 3/3"; overdue items. **Copy as Markdown** and **Export (.md)**.
+    Completing then un-completing within the range doesn't count. History
+    starts at v0.16: earlier completions aren't in it.
 
 ### 6.17 QR place tags
 Room-level "location" with no extra hardware: you just need paper.
@@ -1304,8 +1402,9 @@ The UI is made fully usable on one device first (M1–M6); sync comes after
 | M2 | Values, tags + search | Values with statements and inheritance; personal tags with inline `#tags`; FTS5 search with the filters that exist so far. **Carried over from M1:** collapsing breadcrumbs, zooming the tree, Peek |
 | M3 | Attachments + markup | Capture or import (picker, drag and drop, paste, camera), hash store, viewer, drawing overlay, text highlights, open-in, export with markup; linking ancestor attachments; file search. *Android share-sheet intake moves to M6 with quick capture.* |
 | M4 | Calendar + routines | RRULE expansion, recurring subtrees, calendar views (day/week/month, click to add), occurrence completions, time zones on repeats, reminders, opt-in .ics export. *Skip/move one occurrence: not built.* |
-| M5 | Time + reports | Estimates, timers, manual entries, roll-ups, progress bars, weekly review |
-| M6 | Motivation + friction | Today view, quick-capture (hotkey, widget, share sheet), context resume, QR place tags |
+| M5 | Time + reports | Estimates, timers (bar, tray, mini window, Android notification), focus mode, manual entries, roll-ups, recursive progress with override, review page with Markdown export |
+| M6 | Motivation + friction | **Today view (built v0.17: home screen, fills itself, picks, reorder, carry-over, pick one for me)**; next: time blocks; quick-capture (hotkey, widget, share sheet), context resume, QR place tags |
+| M6.5 | UI/UX + lock-in review | Every screen walked through on Windows and a phone, findings decided and fixed (§14.1); everything sync locks in reviewed and settled (§14.2); code-health items done or scheduled (§14.3). Screenshots of every screen once the direction is clear |
 | M7 | LAN sync | Pairing (code confirmed on both devices + optional PIN); mDNS; HLC change log; field-level merge; version handshake and passing along unknown ops; attachment blob sync; running timers sync; phone ⇄ PC sync verified with a two-instance test harness. **Rules to settle first:** two moves on different devices that together form a cycle (A under B, B under A); the same pair added twice in a set-like table (`node_tags`, `node_values`, `links`, whose unique index would reject the second row on apply) |
 | M8 | Polish + accessibility | Backups, conflict-copy UI, performance with 10k+ nodes. **Accessibility pass:** keyboard tree controls (§6.1); screen-reader move actions on tree and Items rows; labels, focus order and traversal checked with Narrator and TalkBack; text scaling to 200% without clipping; contrast to WCAG 2.1 AA in light and dark; touch targets of at least 48 dp |
 | Next | Sharing | Encrypted relay, send / share / merge, assignees in the UI, contact labels |
@@ -1332,6 +1431,67 @@ The UI is made fully usable on one device first (M1–M6); sync comes after
 see §6.16).*
 
 ---
+
+## 14. Review pass (M6.5)
+
+Before LAN sync (M7). Once two devices exchange changes, table and column
+names, enum values and what syncs become hard to change (additive-only,
+§7.5), and the UI's choices start to live in people's data. So everything
+gets one deliberate look first.
+
+**How it runs**
+1. **Elliott drives** the UX walk-through, using the app on Windows and a
+   phone, and reports what feels wrong or unclear. Claude logs each one in
+   §14.1, proposes a fix, and makes it once it's decided.
+2. **Claude drafts** the lock-in (§14.2) and code-health (§14.3) findings
+   from the code; each gets a decision before M7.
+3. **Screenshots later:** once opinions and intent are clearer, every
+   screen is rendered at phone and desktop sizes with sample data for a
+   final consistency check.
+
+Each finding has an id, the issue, a proposal, the decision and its state
+(open · decided · done · won't do).
+
+### 14.1 UX walk-through
+*Filled in as Elliott uses the app.* Screens to cover: Today, tree
+(search, filters, zoom, drag), item page (title row, chips, description,
+Items and child views, notes column, files, peek), note page, file page
+and markup, Calendar (day/week/month, day list, filters), Review, Values,
+Tags, Archive/Trash, date & time dialog, timer bar and mini window, phone
+navigation (bottom bar, pages, sheets).
+
+| ID | Screen | Issue | Proposal | Decision | State |
+|----|--------|-------|----------|----------|-------|
+| U1 | | | | | open |
+
+### 14.2 Lock-in review (draft)
+What M7 makes hard to change, and what needs a decision before it.
+
+| ID | Area | Issue | Proposal | State |
+|----|------|-------|----------|-------|
+| L1 | Set-like rows | Two devices adding the same pair create two rows with different ids: `links` has a unique index among live rows, so applying the second would fail; `node_tags`, `node_values`, `placements`, `reminders` would hold duplicates. | Derive the row id from its pair (e.g. a hash of node + target), so both devices write the *same* row and merging is field-level as usual; re-adding after removal flips `deleted`. Drop the unique index. | open |
+| L2 | One-per-node rows | `node_user_prefs` (one row per node) and `user_settings` (one row per key) can likewise get two rows if two devices create them before syncing. | Same: id derived from node id / key. | open |
+| L3 | Tags by name | Two devices can each create `#work` before syncing: two tags with one name. | Derive a tag's id from its normalised name within the space (then they're the same row), or merge same-named tags on apply (move uses, tombstone one). | open |
+| L4 | Moves | Two moves on different devices can form a cycle (A under B, B under A). | On apply, if a cycle appears, the move with the older HLC is undone (§5.3 already says so); a test harness case for it. | open |
+| L5 | Running timer | "One running timer per user" can break when two devices start one before syncing. | On apply, keep the newest running entry; end the other at the newer one's start. | open |
+| L6 | Today rows | Two devices ordering or hiding the same item on the same day write separate rows. | Id from date + node (as L1). | open |
+| L7 | Enum values | Stored by name; renaming one later breaks other devices. Current names include `textLabel`, `timeLogged`, `dueToday`-style camelCase. | Freeze the names as they are (or rename now, while data can still be wiped), and list them in §5 as fixed. | open |
+| L8 | Shared vs personal | Check each table and column against §5.0 once more: e.g. `progress_override` and `estimate_minutes` are shared (on the node), `reminders`, `time_entries`, `today_entries`, `activity`, `user_settings` personal; tag favourites/colour live on personal tags. | Confirm or move before M7. | open |
+| L9 | Activity | Add-only rows grow forever and sync to every device. | Keep, but exclude from compaction (as §7.4 says) and consider a per-row size check (title snapshots only). | open |
+| L10 | Local-only state | Paused timer, notes-column open, filters, zoom, peek pin are per device and never sync. | Confirm that's wanted (pause especially: pausing on the PC isn't seen on the phone). | open |
+| L11 | Migrations | Until now local data could be wiped; from the first real sync, every schema change needs a tested migration. | From M7 on, migrations are kept; the migration test already covers every version. | open |
+
+### 14.3 Code health (draft)
+
+| ID | Area | Issue | Proposal | State |
+|----|------|-------|----------|-------|
+| C1 | `node_repository.dart` | ~1,550 lines: nodes, moves, placements, links, archive/trash, occurrences, progress, plus wiring for the other repositories. | Split by concern (placements, links, lifecycle, occurrences) into part files or small classes behind the same `NodeRepository` API. | open |
+| C2 | `calendar_page.dart` | ~1,200 lines: page, filter bar, quick-add, day list, time grid, month grid. | One file per view; shared entry chip widget. | open |
+| C3 | `widget_test.dart` | ~2,500 lines, 51 tests in one file with shared helpers. | Move helpers to `test/support/app_harness.dart`; split tests by area (tree, item, calendar, time, today…). | open |
+| C4 | "Refresh" queries | Several live views re-run a whole computation on any change to broad tables (`SELECT 1 AS …` triggers). Fine now; slow with 10k+ items. | Note for the M8 performance pass; measure first. | open |
+| C5 | Repeated UI patterns | Confirm dialogs, colour pickers, "summary chip + menu" filters and item pickers are written several times. | Extract shared widgets (confirm dialog, colour row, filter-menu chip, item picker). | open |
+| C6 | Platform code in tests | Notifications, tray and window code are switched off in widget tests by flags. | Put them behind small interfaces with fakes, so tests can check that a timer shows in the tray or a reminder is scheduled. | open |
+| C7 | Android | Builds, but nothing has run on a phone (camera, notifications, permissions, layouts). | Run on a device early in the UX walk-through. | open |
 
 ## Appendix A: Sharing research notes
 - Peer-to-peer was considered for sharing and rejected for now. It still

@@ -1044,5 +1044,255 @@
   "calendarEvent": "Event",
   "calendarAddOnDay": "Add on this day…",
   "calendarListDay": "Show everything on this day",
-  "showInCalendar": "Show in calendar"
+  "showInCalendar": "Show in calendar",
+  "timerStart": "Start timer",
+  "timerStartMenu": "Timer or focus",
+  "timerStop": "Stop timer",
+  "timerPause": "Pause",
+  "timerResume": "Resume",
+  "timerPaused": "Paused · {title}",
+  "@timerPaused": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "timerNow": "now",
+  "timerMiniWindow": "Mini window (stays on top)",
+  "timerExpand": "Back to the full window",
+  "focusFor": "Focus for {length}",
+  "@focusFor": {
+    "placeholders": {
+      "length": {
+        "type": "String"
+      }
+    }
+  },
+  "focusForEstimate": "Focus for the estimate ({length})",
+  "@focusForEstimate": {
+    "placeholders": {
+      "length": {
+        "type": "String"
+      }
+    }
+  },
+  "focusLeft": "{title} · {left} left",
+  "@focusLeft": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "left": {
+        "type": "String"
+      }
+    }
+  },
+  "focusOver": "{title} · {elapsed} (focus time is up)",
+  "@focusOver": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "elapsed": {
+        "type": "String"
+      }
+    }
+  },
+  "focusEndedTitle": "Focus time is up",
+  "focusEndedBody": "How did {title} go?",
+  "@focusEndedBody": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "focusKeepGoing": "Keep going",
+  "focusDone": "Done",
+  "focusBreak": "Take a break",
+  "breakLeft": "Break · {left} left",
+  "@breakLeft": {
+    "placeholders": {
+      "left": {
+        "type": "String"
+      }
+    }
+  },
+  "breakOver": "Break's over",
+  "breakEnd": "End break",
+  "estimateAdd": "Estimate",
+  "estimateIs": "Est. {length}",
+  "@estimateIs": {
+    "placeholders": {
+      "length": {
+        "type": "String"
+      }
+    }
+  },
+  "estimateTitle": "Estimate",
+  "estimateMinutes": "Or minutes",
+  "trackedNone": "Track time",
+  "trackedIs": "{tracked} tracked",
+  "@trackedIs": {
+    "placeholders": {
+      "tracked": {
+        "type": "String"
+      }
+    }
+  },
+  "trackedOf": "{tracked} of {estimate}",
+  "@trackedOf": {
+    "placeholders": {
+      "tracked": {
+        "type": "String"
+      },
+      "estimate": {
+        "type": "String"
+      }
+    }
+  },
+  "trackedTooltip": "Time entries: add, edit or delete",
+  "rollupItems": "Items: {tracked} of {estimate}",
+  "@rollupItems": {
+    "placeholders": {
+      "tracked": {
+        "type": "String"
+      },
+      "estimate": {
+        "type": "String"
+      }
+    }
+  },
+  "timeEntriesTitle": "Time",
+  "timeEntriesEmpty": "No time tracked yet. Start a timer with ▶, or add time.",
+  "timeAdd": "Add time…",
+  "timeEdit": "Edit time",
+  "timeDelete": "Delete",
+  "timeLength": "Length",
+  "timeNote": "Note",
+  "timePersonal": "Only you see your time.",
+  "progressItems": "{done}/{total} · {percent}%",
+  "@progressItems": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "progressManual": "{percent}% (set by hand)",
+  "@progressManual": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "progressSet": "Set progress manually…",
+  "progressSetTitle": "Progress",
+  "progressUseItems": "Count items again",
+  "reviewView": "Review",
+  "reviewCustom": "Dates…",
+  "reviewThis": "This one",
+  "reviewCopy": "Copy as Markdown",
+  "reviewCopied": "Copied",
+  "reviewExport": "Export (.md)…",
+  "reviewTitleFor": "Review: {range}",
+  "@reviewTitleFor": {
+    "placeholders": {
+      "range": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewCompleted": "completed",
+  "reviewCreated": "created",
+  "reviewTracked": "tracked",
+  "reviewOverdue": "overdue",
+  "reviewEmpty": "Nothing done, tracked or created in these dates yet.",
+  "reviewCompletedByProject": "Completed, by project",
+  "reviewCompletedByValue": "Completed, by value",
+  "reviewTimeByProject": "Time by project",
+  "reviewTimeByValue": "Time by value",
+  "reviewTimeByTag": "Time by tag",
+  "reviewRoutines": "Routines",
+  "reviewOverdueTitle": "Overdue",
+  "reviewDue": "Due {date}",
+  "@reviewDue": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "todayView": "Today",
+  "treeView": "Tree",
+  "todayDoneCount": "{done} of {total} done",
+  "@todayDoneCount": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "todayEmpty": "Nothing on today yet. Add an item with ⋮ → Add to Today, or try Pick one for me.",
+  "todayPickOne": "Pick one for me",
+  "todayPickAnother": "Another",
+  "todayPickNone": "Nothing open matches. Try fewer filters.",
+  "todayAdd": "Add to Today",
+  "todayAddItem": "Add to Today",
+  "todayRemoveItem": "Remove from Today",
+  "todayRemove": "Remove from today",
+  "todayRemoved": "Removed {title} from today",
+  "@todayRemoved": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "todayOverdue": "{days, plural, =1{Overdue · 1 day} other{Overdue · {days} days}}",
+  "@todayOverdue": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "todayDue": "Due today",
+  "todayAt": "At {time}",
+  "@todayAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "todayPicked": "Added by you",
+  "todayLeftOver": "{count, plural, =1{1 item you added on an earlier day isn't done} other{{count} items you added on earlier days aren't done}}",
+  "@todayLeftOver": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "todayKeep": "Keep on today",
+  "todayDrop": "Drop",
+  "todaySettings": "What Today adds by itself",
+  "todayAutoTitle": "Add by itself:",
+  "todayAutoRoutines": "Routines due today",
+  "todayAutoDue": "Due today",
+  "todayAutoOverdue": "Overdue",
+  "todayAutoEvents": "Events today",
+  "todayAutoActive": "In progress (Active)"
 }

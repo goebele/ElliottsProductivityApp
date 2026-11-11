@@ -10,9 +10,12 @@ import 'calendar.dart';
 import 'exclusive_picker.dart';
 import 'ids.dart';
 import 'repeat_rule.dart';
+import 'review.dart';
 import 'search.dart';
 import 'sort_keys.dart';
 import 'tag_repository.dart';
+import 'time_tracking.dart';
+import 'today.dart';
 import 'value_repository.dart';
 
 export 'exclusive_picker.dart'
@@ -256,6 +259,29 @@ class NodeRepository {
   /// Personal per-item settings (§5.0).
   late final prefs = PrefsRepository(_db, _writer, spaceId: personalSpaceId);
 
+  /// History for reports (§6.16), personal.
+  late final activity = ActivityLog(
+    _db,
+    _writer,
+    this,
+    spaceId: personalSpaceId,
+  );
+
+  /// Timers and time entries (§6.15), personal.
+  late final time = TimeRepository(
+    _db,
+    _writer,
+    this,
+    activity,
+    spaceId: personalSpaceId,
+  );
+
+  /// Today (§6.7), personal.
+  late final today = TodayService(_db, _writer, this, spaceId: personalSpaceId);
+
+  /// The review report (§6.16).
+  late final review = ReviewService(this);
+
   /// Attachments and markup (§6.4). Needs the blob store.
   late final files = AttachmentRepository(
     _db,
@@ -439,6 +465,7 @@ class NodeRepository {
     if (title.contains('#') || bodyMd.contains('#')) {
       await tags.syncInline(id, title, bodyMd);
     }
+    if (type.isItem) await activity.record(id, ActivityAction.created);
     return id;
   }
 
@@ -462,9 +489,10 @@ class NodeRepository {
       update(id, NodesCompanion(type: Value(type)));
 
   /// Sets the status, and the completion fields along with it.
-  Future<void> setStatus(String id, NodeStatus status, {DateTime? now}) {
+  Future<void> setStatus(String id, NodeStatus status, {DateTime? now}) async {
     final done = status == NodeStatus.done;
-    return update(
+    final was = (await get(id))?.status;
+    await update(
       id,
       NodesCompanion(
         status: Value(status),
@@ -472,6 +500,11 @@ class NodeRepository {
         completedBy: Value(done ? userId : null),
       ),
     );
+    if (done && was != NodeStatus.done) {
+      await activity.record(id, ActivityAction.completed, at: now);
+    } else if (!done && was == NodeStatus.done) {
+      await activity.record(id, ActivityAction.uncompleted, at: now);
+    }
   }
 
   /// Sets or clears (null) an all-day deadline. Only the calendar date of
@@ -535,6 +568,73 @@ class NodeRepository {
 
   /// How long trashed items are kept before they are purged (§6.11).
   static const trashDays = 30;
+
+  /// Live repeating items.
+  Future<List<Node>> repeating() =>
+      (_db.select(_db.nodes)..where(
+            (n) =>
+                n.deleted.equals(false) &
+                n.lifecycle.equals(Lifecycle.live.name) &
+                n.rrule.isNotNull(),
+          ))
+          .get();
+
+  /// Live items with an all-day deadline.
+  Future<List<Node>> withDeadlines() =>
+      (_db.select(_db.nodes)..where(
+            (n) =>
+                n.deleted.equals(false) &
+                n.lifecycle.equals(Lifecycle.live.name) &
+                n.dueDate.isNotNull(),
+          ))
+          .get();
+
+  /// Live items (not notes) at every level under [id].
+  Future<List<String>> descendantIds(String id) async {
+    final ids = await _liveDescendants(id);
+    if (ids.isEmpty) return const [];
+    final rows = await (_db.select(
+      _db.nodes,
+    )..where((n) => n.id.isIn(ids))).get();
+    return [
+      for (final n in rows)
+        if (n.type.isItem) n.id,
+    ];
+  }
+
+  /// Done ÷ all items under [id] at every level (§6.16), or its hand-set
+  /// percentage. Items inside a repeat count today's occurrence.
+  Future<Progress> progress(String id, {DateTime? today}) async {
+    final node = await get(id);
+    if (node == null) return const Progress(0, 0);
+    final ids = await descendantIds(id);
+    var done = 0;
+    final day = today ?? DateTime.now();
+    for (final c in ids) {
+      final occ = await occurrenceStatus(c, today: day);
+      final n = await get(c);
+      if (n == null) continue;
+      if (occ != null ? occ.done : isFinished(n.status)) done++;
+    }
+    return Progress(done, ids.length, override: node.progressOverride);
+  }
+
+  Stream<Progress> watchProgress(String id) => _db
+      .customSelect(
+        'SELECT 1 AS progress',
+        readsFrom: {_db.nodes, _db.occurrenceCompletions},
+      )
+      .watch()
+      .asyncMap((_) => progress(id));
+
+  /// Sets progress by hand (0–100), or null to count items again.
+  Future<void> setProgressOverride(String id, int? percent) => update(
+    id,
+    NodesCompanion(progressOverride: Value(percent?.clamp(0, 100))),
+  );
+
+  Future<void> setEstimate(String id, int? minutes) =>
+      update(id, NodesCompanion(estimateMinutes: Value(minutes)));
 
   /// How many live items go along with [id] when it is archived or trashed
   /// (its descendants, notes included; not [id] itself).
@@ -603,13 +703,17 @@ class NodeRepository {
   }
 
   /// Hides [id] and its live descendants as one group, kept indefinitely.
-  Future<void> archive(String id, {DateTime? now}) =>
-      _remove(id, Lifecycle.archived, now);
+  Future<void> archive(String id, {DateTime? now}) async {
+    await _remove(id, Lifecycle.archived, now);
+    await activity.record(id, ActivityAction.archived, at: now);
+  }
 
   /// Moves [id] and its live descendants to Trash as one group, purged after
   /// [trashDays]. An archived group moves to Trash whole.
-  Future<void> trash(String id, {DateTime? now}) =>
-      _remove(id, Lifecycle.trashed, now);
+  Future<void> trash(String id, {DateTime? now}) async {
+    await _remove(id, Lifecycle.trashed, now);
+    await activity.record(id, ActivityAction.trashed, at: now);
+  }
 
   Future<void> _remove(String id, Lifecycle to, DateTime? now) async {
     final node = await _require(id);
@@ -667,6 +771,7 @@ class NodeRepository {
         );
       }
     });
+    await activity.record(rootId, ActivityAction.restored);
     return orphaned;
   }
 
@@ -1145,6 +1250,12 @@ class NodeRepository {
       ),
       now: at,
     );
+    await activity.record(
+      nodeId,
+      ActivityAction.completed,
+      occurrence: key,
+      at: at,
+    );
   }
 
   /// Undoes [completeOccurrence] (as a tombstone, so the undo syncs).
@@ -1158,6 +1269,11 @@ class NodeRepository {
       _db.occurrenceCompletions,
       row.id,
       const OccurrenceCompletionsCompanion(deleted: Value(true)),
+    );
+    await activity.record(
+      nodeId,
+      ActivityAction.uncompleted,
+      occurrence: dateKey(occurrenceDate),
     );
   }
 

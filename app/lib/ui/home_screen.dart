@@ -8,6 +8,10 @@ import '../providers.dart';
 import 'labels.dart';
 import 'attachment_page.dart';
 import 'calendar_page.dart';
+import 'review_page.dart';
+import 'timer.dart';
+import 'today_page.dart';
+import '../platform/timer_platform.dart';
 import 'files.dart';
 import 'node_detail.dart';
 import 'peek.dart';
@@ -25,10 +29,36 @@ class HomeScreen extends ConsumerWidget {
 
   static const wideBreakpoint = 720.0;
 
+  /// Opens the timer's item: in the detail pane, or as a page on phones.
+  static void _openFromBar(BuildContext context, WidgetRef ref, String id) {
+    if (MediaQuery.sizeOf(context).width >= wideBreakpoint) {
+      ref.read(sidePageProvider.notifier).show(null);
+      ref.read(removedViewProvider.notifier).show(null);
+      ref.read(openAttachmentProvider.notifier).open(null);
+      ref.read(selectedNodeProvider.notifier).select(id);
+    } else {
+      openNodePage(context, id);
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final ready = ref.watch(nodeRepositoryProvider);
+    // Tray menu and phone notification buttons control the timer.
+    TimerPlatform.instance.onAction = (action) {
+      final timer = ref.read(timerExtrasProvider.notifier);
+      switch (action) {
+        case 'pause':
+          timer.pause();
+        case 'resume':
+          timer.resume();
+        case 'stop':
+          timer.stop();
+        case 'show':
+          TimerPlatform.instance.show();
+      }
+    };
     // Reminders are scheduled once the data is open, and kept up to date.
     ref.listen(nodeRepositoryProvider, (_, next) {
       if (next case AsyncData(:final value)) {
@@ -36,6 +66,29 @@ class HomeScreen extends ConsumerWidget {
       }
     });
 
+    // The mini timer window (Windows): just the timer, always on top.
+    return ValueListenableBuilder<bool>(
+      valueListenable: TimerPlatform.instance.miniWindow,
+      builder: (context, mini, child) => mini
+          ? Scaffold(
+              body: Center(
+                child: TimerBar(
+                  compact: true,
+                  onOpen: (id) => _openFromBar(context, ref, id),
+                ),
+              ),
+            )
+          : child!,
+      child: _full(context, ref, l10n, ready),
+    );
+  }
+
+  Widget _full(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+    AsyncValue<Object?> ready,
+  ) {
     // Ctrl+F reaches the search box from anywhere.
     return CallbackShortcuts(
       bindings: {
@@ -45,11 +98,19 @@ class HomeScreen extends ConsumerWidget {
       child: Scaffold(
         appBar: AppBar(title: Text(l10n.appTitle)),
         body: switch (ready) {
-          AsyncData() => LayoutBuilder(
-            builder: (context, constraints) =>
-                constraints.maxWidth >= wideBreakpoint
-                ? const _WideLayout()
-                : const _NarrowLayout(),
+          AsyncData() => Column(
+            children: [
+              // A running timer shows across the top of every screen.
+              TimerBar(onOpen: (id) => _openFromBar(context, ref, id)),
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) =>
+                      constraints.maxWidth >= wideBreakpoint
+                      ? const _WideLayout()
+                      : const _NarrowLayout(),
+                ),
+              ),
+            ],
           ),
           AsyncError(:final error) => Center(
             child: Padding(
@@ -85,7 +146,6 @@ class _WideLayout extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
     final selected = ref.watch(selectedNodeProvider);
     final removedView = ref.watch(removedViewProvider);
     final sidePage = ref.watch(sidePageProvider);
@@ -137,6 +197,8 @@ class _WideLayout extends ConsumerWidget {
                 child: _Pane(
                   child: sidePage == SidePage.calendarPage && attachment == null
                       ? CalendarPage(onOpen: open)
+                      : sidePage == SidePage.reviewPage && attachment == null
+                      ? ReviewPage(onOpen: open)
                       : attachment != null
                       ? AttachmentPage(
                           key: ValueKey(attachment.id),
@@ -152,7 +214,7 @@ class _WideLayout extends ConsumerWidget {
                       : removedView != null
                       ? RemovedList(which: removedView, onOpen: open)
                       : selected == null
-                      ? Center(child: Text(l10n.noSelection))
+                      ? TodayPage(onOpen: open)
                       : NodeDetail(
                           nodeId: selected,
                           onOpen: open,
@@ -189,52 +251,93 @@ class _Pane extends StatelessWidget {
   );
 }
 
-class _NarrowLayout extends StatelessWidget {
+/// Phones: Today, the tree and the calendar as tabs (Today first); items
+/// and other pages open full screen on top.
+class _NarrowLayout extends StatefulWidget {
   const _NarrowLayout();
 
   @override
-  Widget build(BuildContext context) => _OpenFromReminders(
-    onOpen: (id) => openNodePage(context, id),
-    child: CalendarOpener(
-      open: () => openCalendarPage(context),
-      child: AttachmentOpener(
-        open: (id, {via}) => openAttachmentPage(context, id, via: via),
-        child: TreePane(
-          onOpen: (id) => openNodePage(context, id),
-          onOpenPage: (page) => Navigator.of(context).push(
+  State<_NarrowLayout> createState() => _NarrowLayoutState();
+}
+
+class _NarrowLayoutState extends State<_NarrowLayout> {
+  int _tab = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    void open(String id) => openNodePage(context, id);
+    final body = switch (_tab) {
+      0 => TodayPage(onOpen: open),
+      2 => CalendarPage(onOpen: open),
+      _ => TreePane(
+        onOpen: open,
+        onOpenPage: (page) => switch (page) {
+          SidePage.todayPage => setState(() => _tab = 0),
+          SidePage.calendarPage => setState(() => _tab = 2),
+          _ => Navigator.of(context).push(
             MaterialPageRoute<void>(
               builder: (context) => Scaffold(
                 appBar: AppBar(),
                 body: switch (page) {
-                  SidePage.calendarPage => CalendarPage(
-                    onOpen: (id) => openNodePage(context, id),
-                  ),
-                  SidePage.valuesPage => ValuesPage(
-                    onOpen: (id) => openNodePage(context, id),
-                  ),
+                  SidePage.reviewPage => ReviewPage(onOpen: open),
+                  SidePage.valuesPage => ValuesPage(onOpen: open),
                   // Searching shows results in the tree pane, under this page.
                   SidePage.tagsPage => TagsPage(
                     onSearched: () => Navigator.of(context).maybePop(),
                   ),
+                  _ => const SizedBox.shrink(),
                 },
               ),
             ),
           ),
-          onOpenRemoved: (which) => Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (context) => Scaffold(
-                appBar: AppBar(),
-                body: RemovedList(
-                  which: which,
-                  onOpen: (id) => openNodePage(context, id),
-                ),
-              ),
+        },
+        onOpenRemoved: (which) => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (context) => Scaffold(
+              appBar: AppBar(),
+              body: RemovedList(which: which, onOpen: open),
             ),
           ),
         ),
       ),
-    ),
-  );
+    };
+    return _OpenFromReminders(
+      onOpen: open,
+      child: CalendarOpener(
+        open: () => setState(() => _tab = 2),
+        child: AttachmentOpener(
+          open: (id, {via}) => openAttachmentPage(context, id, via: via),
+          child: Column(
+            children: [
+              Expanded(child: body),
+              NavigationBar(
+                selectedIndex: _tab,
+                onDestinationSelected: (i) => setState(() => _tab = i),
+                destinations: [
+                  NavigationDestination(
+                    icon: const Icon(Icons.wb_sunny_outlined),
+                    selectedIcon: const Icon(Icons.wb_sunny),
+                    label: l10n.todayView,
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.account_tree_outlined),
+                    selectedIcon: const Icon(Icons.account_tree),
+                    label: l10n.treeView,
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.calendar_month_outlined),
+                    selectedIcon: const Icon(Icons.calendar_month),
+                    label: l10n.calendarView,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// Phones: pushes the calendar page.

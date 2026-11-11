@@ -8,6 +8,7 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../domain/calendar.dart';
 import '../domain/node_repository.dart';
+import 'timer_platform.dart';
 
 /// Local notifications for reminders (DESIGN.md §6.5): Windows toasts and
 /// Android notifications, scheduled for the next two weeks and rescheduled
@@ -58,9 +59,19 @@ class ReminderNotifier {
           guid: '5b8f6c2e-3a4d-4e7b-9c1f-2d6a8e0b4f37',
         ),
       ),
-      onDidReceiveNotificationResponse: (r) => opened.value = r.payload,
+      onDidReceiveNotificationResponse: (r) => switch (r.actionId) {
+        'timer_pause' => TimerPlatform.instance.onAction?.call('pause'),
+        'timer_stop' => TimerPlatform.instance.onAction?.call('stop'),
+        _ => opened.value = r.payload,
+      },
     );
     _ready = true;
+  }
+
+  /// The initialized plugin (shared with the timer notification).
+  Future<FlutterLocalNotificationsPlugin> plugin() async {
+    await _init();
+    return _plugin;
   }
 
   /// Asks to show notifications (Android 13+) and set exact alarms.

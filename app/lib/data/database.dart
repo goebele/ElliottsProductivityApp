@@ -26,6 +26,10 @@ part 'database.g.dart';
     Annotations,
     Reminders,
     NodeUserPrefs,
+    TimeEntries,
+    Activity,
+    TodayEntries,
+    UserSettings,
     ChangeLog,
     Devices,
   ],
@@ -49,7 +53,7 @@ class AppDatabase extends _$AppDatabase {
   /// `dart run drift_dev schema dump lib/data/database.dart drift_schemas/`
   /// and `dart run drift_dev schema generate drift_schemas/ test/generated_migrations/`.
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -140,6 +144,23 @@ class AppDatabase extends _$AppDatabase {
         await m.createIndex(remindersNode);
         await m.createTable(nodeUserPrefs);
         await m.createIndex(nodeUserPrefsNode);
+      }
+      if (from < 12) {
+        await m.createTable(timeEntries);
+        await m.createIndex(timeEntriesNode);
+        await m.createIndex(timeEntriesStarted);
+        await m.createTable(activity);
+        await m.createIndex(activityAt);
+        await m.createIndex(activityNode);
+      }
+      if (from < 13) {
+        await m.createTable(todayEntries);
+        await m.createIndex(todayEntriesDate);
+        await m.createTable(userSettings);
+      }
+      // Before v2 the nodes table is created whole, with this column.
+      if (from >= 2 && from < 12) {
+        await m.addColumn(nodes, nodes.progressOverride);
       }
     },
   );

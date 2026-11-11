@@ -2013,6 +2013,540 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show in calendar'**
   String get showInCalendar;
+
+  /// No description provided for @timerStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start timer'**
+  String get timerStart;
+
+  /// No description provided for @timerStartMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Timer or focus'**
+  String get timerStartMenu;
+
+  /// No description provided for @timerStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop timer'**
+  String get timerStop;
+
+  /// No description provided for @timerPause.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get timerPause;
+
+  /// No description provided for @timerResume.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get timerResume;
+
+  /// No description provided for @timerPaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused · {title}'**
+  String timerPaused(String title);
+
+  /// No description provided for @timerNow.
+  ///
+  /// In en, this message translates to:
+  /// **'now'**
+  String get timerNow;
+
+  /// No description provided for @timerMiniWindow.
+  ///
+  /// In en, this message translates to:
+  /// **'Mini window (stays on top)'**
+  String get timerMiniWindow;
+
+  /// No description provided for @timerExpand.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to the full window'**
+  String get timerExpand;
+
+  /// No description provided for @focusFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Focus for {length}'**
+  String focusFor(String length);
+
+  /// No description provided for @focusForEstimate.
+  ///
+  /// In en, this message translates to:
+  /// **'Focus for the estimate ({length})'**
+  String focusForEstimate(String length);
+
+  /// No description provided for @focusLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'{title} · {left} left'**
+  String focusLeft(String title, String left);
+
+  /// No description provided for @focusOver.
+  ///
+  /// In en, this message translates to:
+  /// **'{title} · {elapsed} (focus time is up)'**
+  String focusOver(String title, String elapsed);
+
+  /// No description provided for @focusEndedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Focus time is up'**
+  String get focusEndedTitle;
+
+  /// No description provided for @focusEndedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'How did {title} go?'**
+  String focusEndedBody(String title);
+
+  /// No description provided for @focusKeepGoing.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep going'**
+  String get focusKeepGoing;
+
+  /// No description provided for @focusDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get focusDone;
+
+  /// No description provided for @focusBreak.
+  ///
+  /// In en, this message translates to:
+  /// **'Take a break'**
+  String get focusBreak;
+
+  /// No description provided for @breakLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'Break · {left} left'**
+  String breakLeft(String left);
+
+  /// No description provided for @breakOver.
+  ///
+  /// In en, this message translates to:
+  /// **'Break\'s over'**
+  String get breakOver;
+
+  /// No description provided for @breakEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'End break'**
+  String get breakEnd;
+
+  /// No description provided for @estimateAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimate'**
+  String get estimateAdd;
+
+  /// No description provided for @estimateIs.
+  ///
+  /// In en, this message translates to:
+  /// **'Est. {length}'**
+  String estimateIs(String length);
+
+  /// No description provided for @estimateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimate'**
+  String get estimateTitle;
+
+  /// No description provided for @estimateMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'Or minutes'**
+  String get estimateMinutes;
+
+  /// No description provided for @trackedNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Track time'**
+  String get trackedNone;
+
+  /// No description provided for @trackedIs.
+  ///
+  /// In en, this message translates to:
+  /// **'{tracked} tracked'**
+  String trackedIs(String tracked);
+
+  /// No description provided for @trackedOf.
+  ///
+  /// In en, this message translates to:
+  /// **'{tracked} of {estimate}'**
+  String trackedOf(String tracked, String estimate);
+
+  /// No description provided for @trackedTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Time entries: add, edit or delete'**
+  String get trackedTooltip;
+
+  /// No description provided for @rollupItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Items: {tracked} of {estimate}'**
+  String rollupItems(String tracked, String estimate);
+
+  /// No description provided for @timeEntriesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get timeEntriesTitle;
+
+  /// No description provided for @timeEntriesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No time tracked yet. Start a timer with ▶, or add time.'**
+  String get timeEntriesEmpty;
+
+  /// No description provided for @timeAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add time…'**
+  String get timeAdd;
+
+  /// No description provided for @timeEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit time'**
+  String get timeEdit;
+
+  /// No description provided for @timeDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get timeDelete;
+
+  /// No description provided for @timeLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Length'**
+  String get timeLength;
+
+  /// No description provided for @timeNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get timeNote;
+
+  /// No description provided for @timePersonal.
+  ///
+  /// In en, this message translates to:
+  /// **'Only you see your time.'**
+  String get timePersonal;
+
+  /// No description provided for @progressItems.
+  ///
+  /// In en, this message translates to:
+  /// **'{done}/{total} · {percent}%'**
+  String progressItems(int done, int total, int percent);
+
+  /// No description provided for @progressManual.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% (set by hand)'**
+  String progressManual(int percent);
+
+  /// No description provided for @progressSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Set progress manually…'**
+  String get progressSet;
+
+  /// No description provided for @progressSetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Progress'**
+  String get progressSetTitle;
+
+  /// No description provided for @progressUseItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Count items again'**
+  String get progressUseItems;
+
+  /// No description provided for @reviewView.
+  ///
+  /// In en, this message translates to:
+  /// **'Review'**
+  String get reviewView;
+
+  /// No description provided for @reviewCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Dates…'**
+  String get reviewCustom;
+
+  /// No description provided for @reviewThis.
+  ///
+  /// In en, this message translates to:
+  /// **'This one'**
+  String get reviewThis;
+
+  /// No description provided for @reviewCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy as Markdown'**
+  String get reviewCopy;
+
+  /// No description provided for @reviewCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied'**
+  String get reviewCopied;
+
+  /// No description provided for @reviewExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Export (.md)…'**
+  String get reviewExport;
+
+  /// No description provided for @reviewTitleFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Review: {range}'**
+  String reviewTitleFor(String range);
+
+  /// No description provided for @reviewCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'completed'**
+  String get reviewCompleted;
+
+  /// No description provided for @reviewCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'created'**
+  String get reviewCreated;
+
+  /// No description provided for @reviewTracked.
+  ///
+  /// In en, this message translates to:
+  /// **'tracked'**
+  String get reviewTracked;
+
+  /// No description provided for @reviewOverdue.
+  ///
+  /// In en, this message translates to:
+  /// **'overdue'**
+  String get reviewOverdue;
+
+  /// No description provided for @reviewEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing done, tracked or created in these dates yet.'**
+  String get reviewEmpty;
+
+  /// No description provided for @reviewCompletedByProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed, by project'**
+  String get reviewCompletedByProject;
+
+  /// No description provided for @reviewCompletedByValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed, by value'**
+  String get reviewCompletedByValue;
+
+  /// No description provided for @reviewTimeByProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Time by project'**
+  String get reviewTimeByProject;
+
+  /// No description provided for @reviewTimeByValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Time by value'**
+  String get reviewTimeByValue;
+
+  /// No description provided for @reviewTimeByTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Time by tag'**
+  String get reviewTimeByTag;
+
+  /// No description provided for @reviewRoutines.
+  ///
+  /// In en, this message translates to:
+  /// **'Routines'**
+  String get reviewRoutines;
+
+  /// No description provided for @reviewOverdueTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get reviewOverdueTitle;
+
+  /// No description provided for @reviewDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Due {date}'**
+  String reviewDue(String date);
+
+  /// No description provided for @todayView.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get todayView;
+
+  /// No description provided for @treeView.
+  ///
+  /// In en, this message translates to:
+  /// **'Tree'**
+  String get treeView;
+
+  /// No description provided for @todayDoneCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total} done'**
+  String todayDoneCount(int done, int total);
+
+  /// No description provided for @todayEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing on today yet. Add an item with ⋮ → Add to Today, or try Pick one for me.'**
+  String get todayEmpty;
+
+  /// No description provided for @todayPickOne.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick one for me'**
+  String get todayPickOne;
+
+  /// No description provided for @todayPickAnother.
+  ///
+  /// In en, this message translates to:
+  /// **'Another'**
+  String get todayPickAnother;
+
+  /// No description provided for @todayPickNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing open matches. Try fewer filters.'**
+  String get todayPickNone;
+
+  /// No description provided for @todayAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to Today'**
+  String get todayAdd;
+
+  /// No description provided for @todayAddItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to Today'**
+  String get todayAddItem;
+
+  /// No description provided for @todayRemoveItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from Today'**
+  String get todayRemoveItem;
+
+  /// No description provided for @todayRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from today'**
+  String get todayRemove;
+
+  /// No description provided for @todayRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed {title} from today'**
+  String todayRemoved(String title);
+
+  /// No description provided for @todayOverdue.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, =1{Overdue · 1 day} other{Overdue · {days} days}}'**
+  String todayOverdue(int days);
+
+  /// No description provided for @todayDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Due today'**
+  String get todayDue;
+
+  /// No description provided for @todayAt.
+  ///
+  /// In en, this message translates to:
+  /// **'At {time}'**
+  String todayAt(String time);
+
+  /// No description provided for @todayPicked.
+  ///
+  /// In en, this message translates to:
+  /// **'Added by you'**
+  String get todayPicked;
+
+  /// No description provided for @todayLeftOver.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item you added on an earlier day isn\'t done} other{{count} items you added on earlier days aren\'t done}}'**
+  String todayLeftOver(int count);
+
+  /// No description provided for @todayKeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep on today'**
+  String get todayKeep;
+
+  /// No description provided for @todayDrop.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop'**
+  String get todayDrop;
+
+  /// No description provided for @todaySettings.
+  ///
+  /// In en, this message translates to:
+  /// **'What Today adds by itself'**
+  String get todaySettings;
+
+  /// No description provided for @todayAutoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add by itself:'**
+  String get todayAutoTitle;
+
+  /// No description provided for @todayAutoRoutines.
+  ///
+  /// In en, this message translates to:
+  /// **'Routines due today'**
+  String get todayAutoRoutines;
+
+  /// No description provided for @todayAutoDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Due today'**
+  String get todayAutoDue;
+
+  /// No description provided for @todayAutoOverdue.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get todayAutoOverdue;
+
+  /// No description provided for @todayAutoEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'Events today'**
+  String get todayAutoEvents;
+
+  /// No description provided for @todayAutoActive.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress (Active)'**
+  String get todayAutoActive;
 }
 
 class _AppLocalizationsDelegate

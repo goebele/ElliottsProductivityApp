@@ -8,6 +8,7 @@ import '../l10n/app_localizations.dart';
 import '../providers.dart';
 import 'labels.dart';
 import 'peek.dart';
+import 'time_ui.dart';
 import 'tree_pane.dart';
 import 'tree_providers.dart';
 
@@ -328,28 +329,29 @@ class _Panel extends ConsumerWidget {
                         ),
                       ),
                     ),
-                  if (entry.childCount > 0)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(28, 8, 12, 0),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: LinearProgressIndicator(
-                              value: entry.doneCount / entry.childCount,
-                              borderRadius: BorderRadius.circular(4),
+                  if (entry.childCount > 0 || node.progressOverride != null)
+                    if (ref.watch(progressProvider(node.id)).value
+                        case final p?)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(28, 8, 12, 0),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: LinearProgressIndicator(
+                                value: p.fraction,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            l10n.progressCount(
-                              entry.doneCount,
-                              entry.childCount,
+                            const SizedBox(width: 8),
+                            Text(
+                              p.override != null
+                                  ? '${p.override}%'
+                                  : l10n.progressCount(p.done, p.total),
+                              style: theme.textTheme.labelSmall,
                             ),
-                            style: theme.textTheme.labelSmall,
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
                   if (description.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.fromLTRB(28, 6, 12, 0),

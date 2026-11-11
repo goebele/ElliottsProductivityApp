@@ -146,6 +146,9 @@ class Nodes extends Table with SyncColumns {
   BoolColumn get sharedWithChildren =>
       boolean().withDefault(const Constant(false))();
 
+  /// Progress set by hand (0–100), instead of counting done items (§6.16).
+  IntColumn get progressOverride => integer().nullable()();
+
   /// Archive / Trash state, separate from [status] (§6.11).
   TextColumn get lifecycle =>
       textEnum<Lifecycle>().withDefault(Constant(Lifecycle.live.name))();
@@ -326,6 +329,83 @@ class NodeUserPrefs extends Table with SyncColumns {
 
   /// Included in "Export calendar" (.ics). Off by default (v0.13).
   BoolColumn get icsExport => boolean().withDefault(const Constant(false))();
+}
+
+enum TimeSource { timer, manual }
+
+/// Personal (§6.15): time spent on a node. [endedAt] null = the timer is
+/// running; there is at most one per user. A pause ends the entry, and
+/// resuming starts a new one. Deleting sets [deleted].
+@TableIndex(name: 'time_entries_node', columns: {#nodeId})
+@TableIndex(name: 'time_entries_started', columns: {#startedAt})
+class TimeEntries extends Table with SyncColumns {
+  TextColumn get nodeId => text()();
+  DateTimeColumn get startedAt => dateTime()();
+  DateTimeColumn get endedAt => dateTime().nullable()();
+  TextColumn get source => text().map(
+    const TolerantEnumConverter(TimeSource.values, TimeSource.timer),
+  )();
+
+  /// Focus mode: the countdown length, so it shows on every device.
+  IntColumn get focusMinutes => integer().nullable()();
+  TextColumn get note => text().nullable()();
+}
+
+enum ActivityAction {
+  created,
+  completed,
+  uncompleted,
+  archived,
+  trashed,
+  restored,
+  timeLogged,
+}
+
+/// Personal (§5.2, §6.16): a durable history for reports. Rows are only
+/// added, never changed, and survive Trash purges and change-log
+/// compaction, so reports still show the work.
+@TableIndex(name: 'activity_at', columns: {#at})
+@TableIndex(name: 'activity_node', columns: {#nodeId})
+class Activity extends Table with SyncColumns {
+  DateTimeColumn get at => dateTime()();
+  TextColumn get nodeId => text()();
+  TextColumn get action => text().map(
+    const TolerantEnumConverter(ActivityAction.values, ActivityAction.created),
+  )();
+
+  /// For a repeat: the occurrence (`YYYY-MM-DD`) it was for.
+  TextColumn get occurrenceDate => text().nullable()();
+  TextColumn get titleSnapshot => text()();
+
+  /// The top-level item's id and title then (null at the top level).
+  TextColumn get topProjectId => text().nullable()();
+  TextColumn get topProjectSnapshot => text().nullable()();
+
+  /// JSON list of the effective value ids then.
+  TextColumn get valuesSnapshot => text().withDefault(const Constant('[]'))();
+  IntColumn get minutes => integer().nullable()();
+}
+
+/// Personal (§6.7): one item's place on one day's Today list. A row puts
+/// it there (picked, or ordered by dragging); [hidden] takes an item that
+/// was added automatically off that day's list. Rows are per day.
+@TableIndex(name: 'today_entries_date', columns: {#date, #sortKey})
+class TodayEntries extends Table with SyncColumns {
+  /// `YYYY-MM-DD`.
+  TextColumn get date => text()();
+  TextColumn get nodeId => text()();
+  TextColumn get sortKey => text()();
+  BoolColumn get hidden => boolean().withDefault(const Constant(false))();
+
+  /// For a pick left unfinished: answered "keep" or "drop" on a later day,
+  /// so it isn't asked again.
+  BoolColumn get resolved => boolean().withDefault(const Constant(false))();
+}
+
+/// Personal settings that follow you between devices, as key → JSON.
+class UserSettings extends Table with SyncColumns {
+  TextColumn get key => text()();
+  TextColumn get value => text()();
 }
 
 /// Completions of repeating items and their descendants (§5.2, D11, D24).

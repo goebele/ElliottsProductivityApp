@@ -310,6 +310,17 @@ class $NodesTable extends Nodes with TableInfo<$NodesTable, Node> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _progressOverrideMeta = const VerificationMeta(
+    'progressOverride',
+  );
+  @override
+  late final GeneratedColumn<int> progressOverride = GeneratedColumn<int>(
+    'progress_override',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   @override
   late final GeneratedColumnWithTypeConverter<Lifecycle, String> lifecycle =
       GeneratedColumn<String>(
@@ -372,6 +383,7 @@ class $NodesTable extends Nodes with TableInfo<$NodesTable, Node> {
     repeatStart,
     exclusiveChildren,
     sharedWithChildren,
+    progressOverride,
     lifecycle,
     lifecycleAt,
     lifecycleRootId,
@@ -569,6 +581,15 @@ class $NodesTable extends Nodes with TableInfo<$NodesTable, Node> {
         ),
       );
     }
+    if (data.containsKey('progress_override')) {
+      context.handle(
+        _progressOverrideMeta,
+        progressOverride.isAcceptableOrUnknown(
+          data['progress_override']!,
+          _progressOverrideMeta,
+        ),
+      );
+    }
     if (data.containsKey('lifecycle_at')) {
       context.handle(
         _lifecycleAtMeta,
@@ -714,6 +735,10 @@ class $NodesTable extends Nodes with TableInfo<$NodesTable, Node> {
         DriftSqlType.bool,
         data['${effectivePrefix}shared_with_children'],
       )!,
+      progressOverride: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}progress_override'],
+      ),
       lifecycle: $NodesTable.$converterlifecycle.fromSql(
         attachedDatabase.typeMapping.read(
           DriftSqlType.string,
@@ -818,6 +843,9 @@ class Node extends DataClass implements Insertable<Node> {
   /// if each had linked it. "Pinned" for all sub-items.
   final bool sharedWithChildren;
 
+  /// Progress set by hand (0–100), instead of counting done items (§6.16).
+  final int? progressOverride;
+
   /// Archive / Trash state, separate from [status] (§6.11).
   final Lifecycle lifecycle;
   final DateTime? lifecycleAt;
@@ -854,6 +882,7 @@ class Node extends DataClass implements Insertable<Node> {
     this.repeatStart,
     required this.exclusiveChildren,
     required this.sharedWithChildren,
+    this.progressOverride,
     required this.lifecycle,
     this.lifecycleAt,
     this.lifecycleRootId,
@@ -923,6 +952,9 @@ class Node extends DataClass implements Insertable<Node> {
     }
     map['exclusive_children'] = Variable<bool>(exclusiveChildren);
     map['shared_with_children'] = Variable<bool>(sharedWithChildren);
+    if (!nullToAbsent || progressOverride != null) {
+      map['progress_override'] = Variable<int>(progressOverride);
+    }
     {
       map['lifecycle'] = Variable<String>(
         $NodesTable.$converterlifecycle.toSql(lifecycle),
@@ -993,6 +1025,9 @@ class Node extends DataClass implements Insertable<Node> {
           : Value(repeatStart),
       exclusiveChildren: Value(exclusiveChildren),
       sharedWithChildren: Value(sharedWithChildren),
+      progressOverride: progressOverride == null && nullToAbsent
+          ? const Value.absent()
+          : Value(progressOverride),
       lifecycle: Value(lifecycle),
       lifecycleAt: lifecycleAt == null && nullToAbsent
           ? const Value.absent()
@@ -1037,6 +1072,7 @@ class Node extends DataClass implements Insertable<Node> {
       repeatStart: serializer.fromJson<String?>(json['repeatStart']),
       exclusiveChildren: serializer.fromJson<bool>(json['exclusiveChildren']),
       sharedWithChildren: serializer.fromJson<bool>(json['sharedWithChildren']),
+      progressOverride: serializer.fromJson<int?>(json['progressOverride']),
       lifecycle: $NodesTable.$converterlifecycle.fromJson(
         serializer.fromJson<String>(json['lifecycle']),
       ),
@@ -1076,6 +1112,7 @@ class Node extends DataClass implements Insertable<Node> {
       'repeatStart': serializer.toJson<String?>(repeatStart),
       'exclusiveChildren': serializer.toJson<bool>(exclusiveChildren),
       'sharedWithChildren': serializer.toJson<bool>(sharedWithChildren),
+      'progressOverride': serializer.toJson<int?>(progressOverride),
       'lifecycle': serializer.toJson<String>(
         $NodesTable.$converterlifecycle.toJson(lifecycle),
       ),
@@ -1113,6 +1150,7 @@ class Node extends DataClass implements Insertable<Node> {
     Value<String?> repeatStart = const Value.absent(),
     bool? exclusiveChildren,
     bool? sharedWithChildren,
+    Value<int?> progressOverride = const Value.absent(),
     Lifecycle? lifecycle,
     Value<DateTime?> lifecycleAt = const Value.absent(),
     Value<String?> lifecycleRootId = const Value.absent(),
@@ -1147,6 +1185,9 @@ class Node extends DataClass implements Insertable<Node> {
     repeatStart: repeatStart.present ? repeatStart.value : this.repeatStart,
     exclusiveChildren: exclusiveChildren ?? this.exclusiveChildren,
     sharedWithChildren: sharedWithChildren ?? this.sharedWithChildren,
+    progressOverride: progressOverride.present
+        ? progressOverride.value
+        : this.progressOverride,
     lifecycle: lifecycle ?? this.lifecycle,
     lifecycleAt: lifecycleAt.present ? lifecycleAt.value : this.lifecycleAt,
     lifecycleRootId: lifecycleRootId.present
@@ -1197,6 +1238,9 @@ class Node extends DataClass implements Insertable<Node> {
       sharedWithChildren: data.sharedWithChildren.present
           ? data.sharedWithChildren.value
           : this.sharedWithChildren,
+      progressOverride: data.progressOverride.present
+          ? data.progressOverride.value
+          : this.progressOverride,
       lifecycle: data.lifecycle.present ? data.lifecycle.value : this.lifecycle,
       lifecycleAt: data.lifecycleAt.present
           ? data.lifecycleAt.value
@@ -1238,6 +1282,7 @@ class Node extends DataClass implements Insertable<Node> {
           ..write('repeatStart: $repeatStart, ')
           ..write('exclusiveChildren: $exclusiveChildren, ')
           ..write('sharedWithChildren: $sharedWithChildren, ')
+          ..write('progressOverride: $progressOverride, ')
           ..write('lifecycle: $lifecycle, ')
           ..write('lifecycleAt: $lifecycleAt, ')
           ..write('lifecycleRootId: $lifecycleRootId')
@@ -1275,6 +1320,7 @@ class Node extends DataClass implements Insertable<Node> {
     repeatStart,
     exclusiveChildren,
     sharedWithChildren,
+    progressOverride,
     lifecycle,
     lifecycleAt,
     lifecycleRootId,
@@ -1311,6 +1357,7 @@ class Node extends DataClass implements Insertable<Node> {
           other.repeatStart == this.repeatStart &&
           other.exclusiveChildren == this.exclusiveChildren &&
           other.sharedWithChildren == this.sharedWithChildren &&
+          other.progressOverride == this.progressOverride &&
           other.lifecycle == this.lifecycle &&
           other.lifecycleAt == this.lifecycleAt &&
           other.lifecycleRootId == this.lifecycleRootId);
@@ -1345,6 +1392,7 @@ class NodesCompanion extends UpdateCompanion<Node> {
   final Value<String?> repeatStart;
   final Value<bool> exclusiveChildren;
   final Value<bool> sharedWithChildren;
+  final Value<int?> progressOverride;
   final Value<Lifecycle> lifecycle;
   final Value<DateTime?> lifecycleAt;
   final Value<String?> lifecycleRootId;
@@ -1378,6 +1426,7 @@ class NodesCompanion extends UpdateCompanion<Node> {
     this.repeatStart = const Value.absent(),
     this.exclusiveChildren = const Value.absent(),
     this.sharedWithChildren = const Value.absent(),
+    this.progressOverride = const Value.absent(),
     this.lifecycle = const Value.absent(),
     this.lifecycleAt = const Value.absent(),
     this.lifecycleRootId = const Value.absent(),
@@ -1412,6 +1461,7 @@ class NodesCompanion extends UpdateCompanion<Node> {
     this.repeatStart = const Value.absent(),
     this.exclusiveChildren = const Value.absent(),
     this.sharedWithChildren = const Value.absent(),
+    this.progressOverride = const Value.absent(),
     this.lifecycle = const Value.absent(),
     this.lifecycleAt = const Value.absent(),
     this.lifecycleRootId = const Value.absent(),
@@ -1454,6 +1504,7 @@ class NodesCompanion extends UpdateCompanion<Node> {
     Expression<String>? repeatStart,
     Expression<bool>? exclusiveChildren,
     Expression<bool>? sharedWithChildren,
+    Expression<int>? progressOverride,
     Expression<String>? lifecycle,
     Expression<DateTime>? lifecycleAt,
     Expression<String>? lifecycleRootId,
@@ -1489,6 +1540,7 @@ class NodesCompanion extends UpdateCompanion<Node> {
       if (exclusiveChildren != null) 'exclusive_children': exclusiveChildren,
       if (sharedWithChildren != null)
         'shared_with_children': sharedWithChildren,
+      if (progressOverride != null) 'progress_override': progressOverride,
       if (lifecycle != null) 'lifecycle': lifecycle,
       if (lifecycleAt != null) 'lifecycle_at': lifecycleAt,
       if (lifecycleRootId != null) 'lifecycle_root_id': lifecycleRootId,
@@ -1525,6 +1577,7 @@ class NodesCompanion extends UpdateCompanion<Node> {
     Value<String?>? repeatStart,
     Value<bool>? exclusiveChildren,
     Value<bool>? sharedWithChildren,
+    Value<int?>? progressOverride,
     Value<Lifecycle>? lifecycle,
     Value<DateTime?>? lifecycleAt,
     Value<String?>? lifecycleRootId,
@@ -1559,6 +1612,7 @@ class NodesCompanion extends UpdateCompanion<Node> {
       repeatStart: repeatStart ?? this.repeatStart,
       exclusiveChildren: exclusiveChildren ?? this.exclusiveChildren,
       sharedWithChildren: sharedWithChildren ?? this.sharedWithChildren,
+      progressOverride: progressOverride ?? this.progressOverride,
       lifecycle: lifecycle ?? this.lifecycle,
       lifecycleAt: lifecycleAt ?? this.lifecycleAt,
       lifecycleRootId: lifecycleRootId ?? this.lifecycleRootId,
@@ -1659,6 +1713,9 @@ class NodesCompanion extends UpdateCompanion<Node> {
     if (sharedWithChildren.present) {
       map['shared_with_children'] = Variable<bool>(sharedWithChildren.value);
     }
+    if (progressOverride.present) {
+      map['progress_override'] = Variable<int>(progressOverride.value);
+    }
     if (lifecycle.present) {
       map['lifecycle'] = Variable<String>(
         $NodesTable.$converterlifecycle.toSql(lifecycle.value),
@@ -1707,6 +1764,7 @@ class NodesCompanion extends UpdateCompanion<Node> {
           ..write('repeatStart: $repeatStart, ')
           ..write('exclusiveChildren: $exclusiveChildren, ')
           ..write('sharedWithChildren: $sharedWithChildren, ')
+          ..write('progressOverride: $progressOverride, ')
           ..write('lifecycle: $lifecycle, ')
           ..write('lifecycleAt: $lifecycleAt, ')
           ..write('lifecycleRootId: $lifecycleRootId, ')
@@ -11474,6 +11532,2997 @@ class NodeUserPrefsCompanion extends UpdateCompanion<NodeUserPref> {
   }
 }
 
+class $TimeEntriesTable extends TimeEntries
+    with TableInfo<$TimeEntriesTable, TimeEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TimeEntriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _spaceIdMeta = const VerificationMeta(
+    'spaceId',
+  );
+  @override
+  late final GeneratedColumn<String> spaceId = GeneratedColumn<String>(
+    'space_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdByMeta = const VerificationMeta(
+    'createdBy',
+  );
+  @override
+  late final GeneratedColumn<String> createdBy = GeneratedColumn<String>(
+    'created_by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedByMeta = const VerificationMeta(
+    'updatedBy',
+  );
+  @override
+  late final GeneratedColumn<String> updatedBy = GeneratedColumn<String>(
+    'updated_by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _hlcMeta = const VerificationMeta('hlc');
+  @override
+  late final GeneratedColumn<String> hlc = GeneratedColumn<String>(
+    'hlc',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
+  @override
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _nodeIdMeta = const VerificationMeta('nodeId');
+  @override
+  late final GeneratedColumn<String> nodeId = GeneratedColumn<String>(
+    'node_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _startedAtMeta = const VerificationMeta(
+    'startedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> startedAt = GeneratedColumn<DateTime>(
+    'started_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _endedAtMeta = const VerificationMeta(
+    'endedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> endedAt = GeneratedColumn<DateTime>(
+    'ended_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<TimeSource, String> source =
+      GeneratedColumn<String>(
+        'source',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<TimeSource>($TimeEntriesTable.$convertersource);
+  static const VerificationMeta _focusMinutesMeta = const VerificationMeta(
+    'focusMinutes',
+  );
+  @override
+  late final GeneratedColumn<int> focusMinutes = GeneratedColumn<int>(
+    'focus_minutes',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    spaceId,
+    createdAt,
+    createdBy,
+    updatedBy,
+    hlc,
+    deleted,
+    nodeId,
+    startedAt,
+    endedAt,
+    source,
+    focusMinutes,
+    note,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'time_entries';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TimeEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('space_id')) {
+      context.handle(
+        _spaceIdMeta,
+        spaceId.isAcceptableOrUnknown(data['space_id']!, _spaceIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_spaceIdMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('created_by')) {
+      context.handle(
+        _createdByMeta,
+        createdBy.isAcceptableOrUnknown(data['created_by']!, _createdByMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdByMeta);
+    }
+    if (data.containsKey('updated_by')) {
+      context.handle(
+        _updatedByMeta,
+        updatedBy.isAcceptableOrUnknown(data['updated_by']!, _updatedByMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedByMeta);
+    }
+    if (data.containsKey('hlc')) {
+      context.handle(
+        _hlcMeta,
+        hlc.isAcceptableOrUnknown(data['hlc']!, _hlcMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_hlcMeta);
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
+    }
+    if (data.containsKey('node_id')) {
+      context.handle(
+        _nodeIdMeta,
+        nodeId.isAcceptableOrUnknown(data['node_id']!, _nodeIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nodeIdMeta);
+    }
+    if (data.containsKey('started_at')) {
+      context.handle(
+        _startedAtMeta,
+        startedAt.isAcceptableOrUnknown(data['started_at']!, _startedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startedAtMeta);
+    }
+    if (data.containsKey('ended_at')) {
+      context.handle(
+        _endedAtMeta,
+        endedAt.isAcceptableOrUnknown(data['ended_at']!, _endedAtMeta),
+      );
+    }
+    if (data.containsKey('focus_minutes')) {
+      context.handle(
+        _focusMinutesMeta,
+        focusMinutes.isAcceptableOrUnknown(
+          data['focus_minutes']!,
+          _focusMinutesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  TimeEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TimeEntry(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      spaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}space_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      createdBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_by'],
+      )!,
+      updatedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_by'],
+      )!,
+      hlc: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}hlc'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
+      nodeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}node_id'],
+      )!,
+      startedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}started_at'],
+      )!,
+      endedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}ended_at'],
+      ),
+      source: $TimeEntriesTable.$convertersource.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}source'],
+        )!,
+      ),
+      focusMinutes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}focus_minutes'],
+      ),
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
+    );
+  }
+
+  @override
+  $TimeEntriesTable createAlias(String alias) {
+    return $TimeEntriesTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<TimeSource, String> $convertersource =
+      const TolerantEnumConverter(TimeSource.values, TimeSource.timer);
+}
+
+class TimeEntry extends DataClass implements Insertable<TimeEntry> {
+  /// UUIDv7.
+  final String id;
+
+  /// The space this row belongs to (§5.0, D13).
+  final String spaceId;
+  final DateTime createdAt;
+
+  /// User ID of the creator.
+  final String createdBy;
+
+  /// User ID of whoever made the latest change.
+  final String updatedBy;
+
+  /// Hybrid logical clock stamp of the latest change (see `sync/hlc.dart`).
+  final String hlc;
+
+  /// Tombstone flag. Rows are never hard-deleted until compaction.
+  final bool deleted;
+  final String nodeId;
+  final DateTime startedAt;
+  final DateTime? endedAt;
+  final TimeSource source;
+
+  /// Focus mode: the countdown length, so it shows on every device.
+  final int? focusMinutes;
+  final String? note;
+  const TimeEntry({
+    required this.id,
+    required this.spaceId,
+    required this.createdAt,
+    required this.createdBy,
+    required this.updatedBy,
+    required this.hlc,
+    required this.deleted,
+    required this.nodeId,
+    required this.startedAt,
+    this.endedAt,
+    required this.source,
+    this.focusMinutes,
+    this.note,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['space_id'] = Variable<String>(spaceId);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['created_by'] = Variable<String>(createdBy);
+    map['updated_by'] = Variable<String>(updatedBy);
+    map['hlc'] = Variable<String>(hlc);
+    map['deleted'] = Variable<bool>(deleted);
+    map['node_id'] = Variable<String>(nodeId);
+    map['started_at'] = Variable<DateTime>(startedAt);
+    if (!nullToAbsent || endedAt != null) {
+      map['ended_at'] = Variable<DateTime>(endedAt);
+    }
+    {
+      map['source'] = Variable<String>(
+        $TimeEntriesTable.$convertersource.toSql(source),
+      );
+    }
+    if (!nullToAbsent || focusMinutes != null) {
+      map['focus_minutes'] = Variable<int>(focusMinutes);
+    }
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    return map;
+  }
+
+  TimeEntriesCompanion toCompanion(bool nullToAbsent) {
+    return TimeEntriesCompanion(
+      id: Value(id),
+      spaceId: Value(spaceId),
+      createdAt: Value(createdAt),
+      createdBy: Value(createdBy),
+      updatedBy: Value(updatedBy),
+      hlc: Value(hlc),
+      deleted: Value(deleted),
+      nodeId: Value(nodeId),
+      startedAt: Value(startedAt),
+      endedAt: endedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(endedAt),
+      source: Value(source),
+      focusMinutes: focusMinutes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(focusMinutes),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+    );
+  }
+
+  factory TimeEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TimeEntry(
+      id: serializer.fromJson<String>(json['id']),
+      spaceId: serializer.fromJson<String>(json['spaceId']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      createdBy: serializer.fromJson<String>(json['createdBy']),
+      updatedBy: serializer.fromJson<String>(json['updatedBy']),
+      hlc: serializer.fromJson<String>(json['hlc']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
+      nodeId: serializer.fromJson<String>(json['nodeId']),
+      startedAt: serializer.fromJson<DateTime>(json['startedAt']),
+      endedAt: serializer.fromJson<DateTime?>(json['endedAt']),
+      source: serializer.fromJson<TimeSource>(json['source']),
+      focusMinutes: serializer.fromJson<int?>(json['focusMinutes']),
+      note: serializer.fromJson<String?>(json['note']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'spaceId': serializer.toJson<String>(spaceId),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'createdBy': serializer.toJson<String>(createdBy),
+      'updatedBy': serializer.toJson<String>(updatedBy),
+      'hlc': serializer.toJson<String>(hlc),
+      'deleted': serializer.toJson<bool>(deleted),
+      'nodeId': serializer.toJson<String>(nodeId),
+      'startedAt': serializer.toJson<DateTime>(startedAt),
+      'endedAt': serializer.toJson<DateTime?>(endedAt),
+      'source': serializer.toJson<TimeSource>(source),
+      'focusMinutes': serializer.toJson<int?>(focusMinutes),
+      'note': serializer.toJson<String?>(note),
+    };
+  }
+
+  TimeEntry copyWith({
+    String? id,
+    String? spaceId,
+    DateTime? createdAt,
+    String? createdBy,
+    String? updatedBy,
+    String? hlc,
+    bool? deleted,
+    String? nodeId,
+    DateTime? startedAt,
+    Value<DateTime?> endedAt = const Value.absent(),
+    TimeSource? source,
+    Value<int?> focusMinutes = const Value.absent(),
+    Value<String?> note = const Value.absent(),
+  }) => TimeEntry(
+    id: id ?? this.id,
+    spaceId: spaceId ?? this.spaceId,
+    createdAt: createdAt ?? this.createdAt,
+    createdBy: createdBy ?? this.createdBy,
+    updatedBy: updatedBy ?? this.updatedBy,
+    hlc: hlc ?? this.hlc,
+    deleted: deleted ?? this.deleted,
+    nodeId: nodeId ?? this.nodeId,
+    startedAt: startedAt ?? this.startedAt,
+    endedAt: endedAt.present ? endedAt.value : this.endedAt,
+    source: source ?? this.source,
+    focusMinutes: focusMinutes.present ? focusMinutes.value : this.focusMinutes,
+    note: note.present ? note.value : this.note,
+  );
+  TimeEntry copyWithCompanion(TimeEntriesCompanion data) {
+    return TimeEntry(
+      id: data.id.present ? data.id.value : this.id,
+      spaceId: data.spaceId.present ? data.spaceId.value : this.spaceId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
+      updatedBy: data.updatedBy.present ? data.updatedBy.value : this.updatedBy,
+      hlc: data.hlc.present ? data.hlc.value : this.hlc,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+      nodeId: data.nodeId.present ? data.nodeId.value : this.nodeId,
+      startedAt: data.startedAt.present ? data.startedAt.value : this.startedAt,
+      endedAt: data.endedAt.present ? data.endedAt.value : this.endedAt,
+      source: data.source.present ? data.source.value : this.source,
+      focusMinutes: data.focusMinutes.present
+          ? data.focusMinutes.value
+          : this.focusMinutes,
+      note: data.note.present ? data.note.value : this.note,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TimeEntry(')
+          ..write('id: $id, ')
+          ..write('spaceId: $spaceId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedBy: $updatedBy, ')
+          ..write('hlc: $hlc, ')
+          ..write('deleted: $deleted, ')
+          ..write('nodeId: $nodeId, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('endedAt: $endedAt, ')
+          ..write('source: $source, ')
+          ..write('focusMinutes: $focusMinutes, ')
+          ..write('note: $note')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    spaceId,
+    createdAt,
+    createdBy,
+    updatedBy,
+    hlc,
+    deleted,
+    nodeId,
+    startedAt,
+    endedAt,
+    source,
+    focusMinutes,
+    note,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TimeEntry &&
+          other.id == this.id &&
+          other.spaceId == this.spaceId &&
+          other.createdAt == this.createdAt &&
+          other.createdBy == this.createdBy &&
+          other.updatedBy == this.updatedBy &&
+          other.hlc == this.hlc &&
+          other.deleted == this.deleted &&
+          other.nodeId == this.nodeId &&
+          other.startedAt == this.startedAt &&
+          other.endedAt == this.endedAt &&
+          other.source == this.source &&
+          other.focusMinutes == this.focusMinutes &&
+          other.note == this.note);
+}
+
+class TimeEntriesCompanion extends UpdateCompanion<TimeEntry> {
+  final Value<String> id;
+  final Value<String> spaceId;
+  final Value<DateTime> createdAt;
+  final Value<String> createdBy;
+  final Value<String> updatedBy;
+  final Value<String> hlc;
+  final Value<bool> deleted;
+  final Value<String> nodeId;
+  final Value<DateTime> startedAt;
+  final Value<DateTime?> endedAt;
+  final Value<TimeSource> source;
+  final Value<int?> focusMinutes;
+  final Value<String?> note;
+  final Value<int> rowid;
+  const TimeEntriesCompanion({
+    this.id = const Value.absent(),
+    this.spaceId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.updatedBy = const Value.absent(),
+    this.hlc = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.nodeId = const Value.absent(),
+    this.startedAt = const Value.absent(),
+    this.endedAt = const Value.absent(),
+    this.source = const Value.absent(),
+    this.focusMinutes = const Value.absent(),
+    this.note = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TimeEntriesCompanion.insert({
+    required String id,
+    required String spaceId,
+    required DateTime createdAt,
+    required String createdBy,
+    required String updatedBy,
+    required String hlc,
+    this.deleted = const Value.absent(),
+    required String nodeId,
+    required DateTime startedAt,
+    this.endedAt = const Value.absent(),
+    required TimeSource source,
+    this.focusMinutes = const Value.absent(),
+    this.note = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       spaceId = Value(spaceId),
+       createdAt = Value(createdAt),
+       createdBy = Value(createdBy),
+       updatedBy = Value(updatedBy),
+       hlc = Value(hlc),
+       nodeId = Value(nodeId),
+       startedAt = Value(startedAt),
+       source = Value(source);
+  static Insertable<TimeEntry> custom({
+    Expression<String>? id,
+    Expression<String>? spaceId,
+    Expression<DateTime>? createdAt,
+    Expression<String>? createdBy,
+    Expression<String>? updatedBy,
+    Expression<String>? hlc,
+    Expression<bool>? deleted,
+    Expression<String>? nodeId,
+    Expression<DateTime>? startedAt,
+    Expression<DateTime>? endedAt,
+    Expression<String>? source,
+    Expression<int>? focusMinutes,
+    Expression<String>? note,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (spaceId != null) 'space_id': spaceId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (createdBy != null) 'created_by': createdBy,
+      if (updatedBy != null) 'updated_by': updatedBy,
+      if (hlc != null) 'hlc': hlc,
+      if (deleted != null) 'deleted': deleted,
+      if (nodeId != null) 'node_id': nodeId,
+      if (startedAt != null) 'started_at': startedAt,
+      if (endedAt != null) 'ended_at': endedAt,
+      if (source != null) 'source': source,
+      if (focusMinutes != null) 'focus_minutes': focusMinutes,
+      if (note != null) 'note': note,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TimeEntriesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? spaceId,
+    Value<DateTime>? createdAt,
+    Value<String>? createdBy,
+    Value<String>? updatedBy,
+    Value<String>? hlc,
+    Value<bool>? deleted,
+    Value<String>? nodeId,
+    Value<DateTime>? startedAt,
+    Value<DateTime?>? endedAt,
+    Value<TimeSource>? source,
+    Value<int?>? focusMinutes,
+    Value<String?>? note,
+    Value<int>? rowid,
+  }) {
+    return TimeEntriesCompanion(
+      id: id ?? this.id,
+      spaceId: spaceId ?? this.spaceId,
+      createdAt: createdAt ?? this.createdAt,
+      createdBy: createdBy ?? this.createdBy,
+      updatedBy: updatedBy ?? this.updatedBy,
+      hlc: hlc ?? this.hlc,
+      deleted: deleted ?? this.deleted,
+      nodeId: nodeId ?? this.nodeId,
+      startedAt: startedAt ?? this.startedAt,
+      endedAt: endedAt ?? this.endedAt,
+      source: source ?? this.source,
+      focusMinutes: focusMinutes ?? this.focusMinutes,
+      note: note ?? this.note,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (spaceId.present) {
+      map['space_id'] = Variable<String>(spaceId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (createdBy.present) {
+      map['created_by'] = Variable<String>(createdBy.value);
+    }
+    if (updatedBy.present) {
+      map['updated_by'] = Variable<String>(updatedBy.value);
+    }
+    if (hlc.present) {
+      map['hlc'] = Variable<String>(hlc.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
+    if (nodeId.present) {
+      map['node_id'] = Variable<String>(nodeId.value);
+    }
+    if (startedAt.present) {
+      map['started_at'] = Variable<DateTime>(startedAt.value);
+    }
+    if (endedAt.present) {
+      map['ended_at'] = Variable<DateTime>(endedAt.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(
+        $TimeEntriesTable.$convertersource.toSql(source.value),
+      );
+    }
+    if (focusMinutes.present) {
+      map['focus_minutes'] = Variable<int>(focusMinutes.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TimeEntriesCompanion(')
+          ..write('id: $id, ')
+          ..write('spaceId: $spaceId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedBy: $updatedBy, ')
+          ..write('hlc: $hlc, ')
+          ..write('deleted: $deleted, ')
+          ..write('nodeId: $nodeId, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('endedAt: $endedAt, ')
+          ..write('source: $source, ')
+          ..write('focusMinutes: $focusMinutes, ')
+          ..write('note: $note, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ActivityTable extends Activity
+    with TableInfo<$ActivityTable, ActivityData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ActivityTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _spaceIdMeta = const VerificationMeta(
+    'spaceId',
+  );
+  @override
+  late final GeneratedColumn<String> spaceId = GeneratedColumn<String>(
+    'space_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdByMeta = const VerificationMeta(
+    'createdBy',
+  );
+  @override
+  late final GeneratedColumn<String> createdBy = GeneratedColumn<String>(
+    'created_by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedByMeta = const VerificationMeta(
+    'updatedBy',
+  );
+  @override
+  late final GeneratedColumn<String> updatedBy = GeneratedColumn<String>(
+    'updated_by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _hlcMeta = const VerificationMeta('hlc');
+  @override
+  late final GeneratedColumn<String> hlc = GeneratedColumn<String>(
+    'hlc',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
+  @override
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _atMeta = const VerificationMeta('at');
+  @override
+  late final GeneratedColumn<DateTime> at = GeneratedColumn<DateTime>(
+    'at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nodeIdMeta = const VerificationMeta('nodeId');
+  @override
+  late final GeneratedColumn<String> nodeId = GeneratedColumn<String>(
+    'node_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<ActivityAction, String> action =
+      GeneratedColumn<String>(
+        'action',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<ActivityAction>($ActivityTable.$converteraction);
+  static const VerificationMeta _occurrenceDateMeta = const VerificationMeta(
+    'occurrenceDate',
+  );
+  @override
+  late final GeneratedColumn<String> occurrenceDate = GeneratedColumn<String>(
+    'occurrence_date',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _titleSnapshotMeta = const VerificationMeta(
+    'titleSnapshot',
+  );
+  @override
+  late final GeneratedColumn<String> titleSnapshot = GeneratedColumn<String>(
+    'title_snapshot',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _topProjectIdMeta = const VerificationMeta(
+    'topProjectId',
+  );
+  @override
+  late final GeneratedColumn<String> topProjectId = GeneratedColumn<String>(
+    'top_project_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _topProjectSnapshotMeta =
+      const VerificationMeta('topProjectSnapshot');
+  @override
+  late final GeneratedColumn<String> topProjectSnapshot =
+      GeneratedColumn<String>(
+        'top_project_snapshot',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _valuesSnapshotMeta = const VerificationMeta(
+    'valuesSnapshot',
+  );
+  @override
+  late final GeneratedColumn<String> valuesSnapshot = GeneratedColumn<String>(
+    'values_snapshot',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
+  static const VerificationMeta _minutesMeta = const VerificationMeta(
+    'minutes',
+  );
+  @override
+  late final GeneratedColumn<int> minutes = GeneratedColumn<int>(
+    'minutes',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    spaceId,
+    createdAt,
+    createdBy,
+    updatedBy,
+    hlc,
+    deleted,
+    at,
+    nodeId,
+    action,
+    occurrenceDate,
+    titleSnapshot,
+    topProjectId,
+    topProjectSnapshot,
+    valuesSnapshot,
+    minutes,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'activity';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ActivityData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('space_id')) {
+      context.handle(
+        _spaceIdMeta,
+        spaceId.isAcceptableOrUnknown(data['space_id']!, _spaceIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_spaceIdMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('created_by')) {
+      context.handle(
+        _createdByMeta,
+        createdBy.isAcceptableOrUnknown(data['created_by']!, _createdByMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdByMeta);
+    }
+    if (data.containsKey('updated_by')) {
+      context.handle(
+        _updatedByMeta,
+        updatedBy.isAcceptableOrUnknown(data['updated_by']!, _updatedByMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedByMeta);
+    }
+    if (data.containsKey('hlc')) {
+      context.handle(
+        _hlcMeta,
+        hlc.isAcceptableOrUnknown(data['hlc']!, _hlcMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_hlcMeta);
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
+    }
+    if (data.containsKey('at')) {
+      context.handle(_atMeta, at.isAcceptableOrUnknown(data['at']!, _atMeta));
+    } else if (isInserting) {
+      context.missing(_atMeta);
+    }
+    if (data.containsKey('node_id')) {
+      context.handle(
+        _nodeIdMeta,
+        nodeId.isAcceptableOrUnknown(data['node_id']!, _nodeIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nodeIdMeta);
+    }
+    if (data.containsKey('occurrence_date')) {
+      context.handle(
+        _occurrenceDateMeta,
+        occurrenceDate.isAcceptableOrUnknown(
+          data['occurrence_date']!,
+          _occurrenceDateMeta,
+        ),
+      );
+    }
+    if (data.containsKey('title_snapshot')) {
+      context.handle(
+        _titleSnapshotMeta,
+        titleSnapshot.isAcceptableOrUnknown(
+          data['title_snapshot']!,
+          _titleSnapshotMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_titleSnapshotMeta);
+    }
+    if (data.containsKey('top_project_id')) {
+      context.handle(
+        _topProjectIdMeta,
+        topProjectId.isAcceptableOrUnknown(
+          data['top_project_id']!,
+          _topProjectIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('top_project_snapshot')) {
+      context.handle(
+        _topProjectSnapshotMeta,
+        topProjectSnapshot.isAcceptableOrUnknown(
+          data['top_project_snapshot']!,
+          _topProjectSnapshotMeta,
+        ),
+      );
+    }
+    if (data.containsKey('values_snapshot')) {
+      context.handle(
+        _valuesSnapshotMeta,
+        valuesSnapshot.isAcceptableOrUnknown(
+          data['values_snapshot']!,
+          _valuesSnapshotMeta,
+        ),
+      );
+    }
+    if (data.containsKey('minutes')) {
+      context.handle(
+        _minutesMeta,
+        minutes.isAcceptableOrUnknown(data['minutes']!, _minutesMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ActivityData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ActivityData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      spaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}space_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      createdBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_by'],
+      )!,
+      updatedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_by'],
+      )!,
+      hlc: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}hlc'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
+      at: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}at'],
+      )!,
+      nodeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}node_id'],
+      )!,
+      action: $ActivityTable.$converteraction.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}action'],
+        )!,
+      ),
+      occurrenceDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}occurrence_date'],
+      ),
+      titleSnapshot: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title_snapshot'],
+      )!,
+      topProjectId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}top_project_id'],
+      ),
+      topProjectSnapshot: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}top_project_snapshot'],
+      ),
+      valuesSnapshot: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}values_snapshot'],
+      )!,
+      minutes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}minutes'],
+      ),
+    );
+  }
+
+  @override
+  $ActivityTable createAlias(String alias) {
+    return $ActivityTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<ActivityAction, String> $converteraction =
+      const TolerantEnumConverter(
+        ActivityAction.values,
+        ActivityAction.created,
+      );
+}
+
+class ActivityData extends DataClass implements Insertable<ActivityData> {
+  /// UUIDv7.
+  final String id;
+
+  /// The space this row belongs to (§5.0, D13).
+  final String spaceId;
+  final DateTime createdAt;
+
+  /// User ID of the creator.
+  final String createdBy;
+
+  /// User ID of whoever made the latest change.
+  final String updatedBy;
+
+  /// Hybrid logical clock stamp of the latest change (see `sync/hlc.dart`).
+  final String hlc;
+
+  /// Tombstone flag. Rows are never hard-deleted until compaction.
+  final bool deleted;
+  final DateTime at;
+  final String nodeId;
+  final ActivityAction action;
+
+  /// For a repeat: the occurrence (`YYYY-MM-DD`) it was for.
+  final String? occurrenceDate;
+  final String titleSnapshot;
+
+  /// The top-level item's id and title then (null at the top level).
+  final String? topProjectId;
+  final String? topProjectSnapshot;
+
+  /// JSON list of the effective value ids then.
+  final String valuesSnapshot;
+  final int? minutes;
+  const ActivityData({
+    required this.id,
+    required this.spaceId,
+    required this.createdAt,
+    required this.createdBy,
+    required this.updatedBy,
+    required this.hlc,
+    required this.deleted,
+    required this.at,
+    required this.nodeId,
+    required this.action,
+    this.occurrenceDate,
+    required this.titleSnapshot,
+    this.topProjectId,
+    this.topProjectSnapshot,
+    required this.valuesSnapshot,
+    this.minutes,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['space_id'] = Variable<String>(spaceId);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['created_by'] = Variable<String>(createdBy);
+    map['updated_by'] = Variable<String>(updatedBy);
+    map['hlc'] = Variable<String>(hlc);
+    map['deleted'] = Variable<bool>(deleted);
+    map['at'] = Variable<DateTime>(at);
+    map['node_id'] = Variable<String>(nodeId);
+    {
+      map['action'] = Variable<String>(
+        $ActivityTable.$converteraction.toSql(action),
+      );
+    }
+    if (!nullToAbsent || occurrenceDate != null) {
+      map['occurrence_date'] = Variable<String>(occurrenceDate);
+    }
+    map['title_snapshot'] = Variable<String>(titleSnapshot);
+    if (!nullToAbsent || topProjectId != null) {
+      map['top_project_id'] = Variable<String>(topProjectId);
+    }
+    if (!nullToAbsent || topProjectSnapshot != null) {
+      map['top_project_snapshot'] = Variable<String>(topProjectSnapshot);
+    }
+    map['values_snapshot'] = Variable<String>(valuesSnapshot);
+    if (!nullToAbsent || minutes != null) {
+      map['minutes'] = Variable<int>(minutes);
+    }
+    return map;
+  }
+
+  ActivityCompanion toCompanion(bool nullToAbsent) {
+    return ActivityCompanion(
+      id: Value(id),
+      spaceId: Value(spaceId),
+      createdAt: Value(createdAt),
+      createdBy: Value(createdBy),
+      updatedBy: Value(updatedBy),
+      hlc: Value(hlc),
+      deleted: Value(deleted),
+      at: Value(at),
+      nodeId: Value(nodeId),
+      action: Value(action),
+      occurrenceDate: occurrenceDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(occurrenceDate),
+      titleSnapshot: Value(titleSnapshot),
+      topProjectId: topProjectId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(topProjectId),
+      topProjectSnapshot: topProjectSnapshot == null && nullToAbsent
+          ? const Value.absent()
+          : Value(topProjectSnapshot),
+      valuesSnapshot: Value(valuesSnapshot),
+      minutes: minutes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(minutes),
+    );
+  }
+
+  factory ActivityData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ActivityData(
+      id: serializer.fromJson<String>(json['id']),
+      spaceId: serializer.fromJson<String>(json['spaceId']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      createdBy: serializer.fromJson<String>(json['createdBy']),
+      updatedBy: serializer.fromJson<String>(json['updatedBy']),
+      hlc: serializer.fromJson<String>(json['hlc']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
+      at: serializer.fromJson<DateTime>(json['at']),
+      nodeId: serializer.fromJson<String>(json['nodeId']),
+      action: serializer.fromJson<ActivityAction>(json['action']),
+      occurrenceDate: serializer.fromJson<String?>(json['occurrenceDate']),
+      titleSnapshot: serializer.fromJson<String>(json['titleSnapshot']),
+      topProjectId: serializer.fromJson<String?>(json['topProjectId']),
+      topProjectSnapshot: serializer.fromJson<String?>(
+        json['topProjectSnapshot'],
+      ),
+      valuesSnapshot: serializer.fromJson<String>(json['valuesSnapshot']),
+      minutes: serializer.fromJson<int?>(json['minutes']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'spaceId': serializer.toJson<String>(spaceId),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'createdBy': serializer.toJson<String>(createdBy),
+      'updatedBy': serializer.toJson<String>(updatedBy),
+      'hlc': serializer.toJson<String>(hlc),
+      'deleted': serializer.toJson<bool>(deleted),
+      'at': serializer.toJson<DateTime>(at),
+      'nodeId': serializer.toJson<String>(nodeId),
+      'action': serializer.toJson<ActivityAction>(action),
+      'occurrenceDate': serializer.toJson<String?>(occurrenceDate),
+      'titleSnapshot': serializer.toJson<String>(titleSnapshot),
+      'topProjectId': serializer.toJson<String?>(topProjectId),
+      'topProjectSnapshot': serializer.toJson<String?>(topProjectSnapshot),
+      'valuesSnapshot': serializer.toJson<String>(valuesSnapshot),
+      'minutes': serializer.toJson<int?>(minutes),
+    };
+  }
+
+  ActivityData copyWith({
+    String? id,
+    String? spaceId,
+    DateTime? createdAt,
+    String? createdBy,
+    String? updatedBy,
+    String? hlc,
+    bool? deleted,
+    DateTime? at,
+    String? nodeId,
+    ActivityAction? action,
+    Value<String?> occurrenceDate = const Value.absent(),
+    String? titleSnapshot,
+    Value<String?> topProjectId = const Value.absent(),
+    Value<String?> topProjectSnapshot = const Value.absent(),
+    String? valuesSnapshot,
+    Value<int?> minutes = const Value.absent(),
+  }) => ActivityData(
+    id: id ?? this.id,
+    spaceId: spaceId ?? this.spaceId,
+    createdAt: createdAt ?? this.createdAt,
+    createdBy: createdBy ?? this.createdBy,
+    updatedBy: updatedBy ?? this.updatedBy,
+    hlc: hlc ?? this.hlc,
+    deleted: deleted ?? this.deleted,
+    at: at ?? this.at,
+    nodeId: nodeId ?? this.nodeId,
+    action: action ?? this.action,
+    occurrenceDate: occurrenceDate.present
+        ? occurrenceDate.value
+        : this.occurrenceDate,
+    titleSnapshot: titleSnapshot ?? this.titleSnapshot,
+    topProjectId: topProjectId.present ? topProjectId.value : this.topProjectId,
+    topProjectSnapshot: topProjectSnapshot.present
+        ? topProjectSnapshot.value
+        : this.topProjectSnapshot,
+    valuesSnapshot: valuesSnapshot ?? this.valuesSnapshot,
+    minutes: minutes.present ? minutes.value : this.minutes,
+  );
+  ActivityData copyWithCompanion(ActivityCompanion data) {
+    return ActivityData(
+      id: data.id.present ? data.id.value : this.id,
+      spaceId: data.spaceId.present ? data.spaceId.value : this.spaceId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
+      updatedBy: data.updatedBy.present ? data.updatedBy.value : this.updatedBy,
+      hlc: data.hlc.present ? data.hlc.value : this.hlc,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+      at: data.at.present ? data.at.value : this.at,
+      nodeId: data.nodeId.present ? data.nodeId.value : this.nodeId,
+      action: data.action.present ? data.action.value : this.action,
+      occurrenceDate: data.occurrenceDate.present
+          ? data.occurrenceDate.value
+          : this.occurrenceDate,
+      titleSnapshot: data.titleSnapshot.present
+          ? data.titleSnapshot.value
+          : this.titleSnapshot,
+      topProjectId: data.topProjectId.present
+          ? data.topProjectId.value
+          : this.topProjectId,
+      topProjectSnapshot: data.topProjectSnapshot.present
+          ? data.topProjectSnapshot.value
+          : this.topProjectSnapshot,
+      valuesSnapshot: data.valuesSnapshot.present
+          ? data.valuesSnapshot.value
+          : this.valuesSnapshot,
+      minutes: data.minutes.present ? data.minutes.value : this.minutes,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ActivityData(')
+          ..write('id: $id, ')
+          ..write('spaceId: $spaceId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedBy: $updatedBy, ')
+          ..write('hlc: $hlc, ')
+          ..write('deleted: $deleted, ')
+          ..write('at: $at, ')
+          ..write('nodeId: $nodeId, ')
+          ..write('action: $action, ')
+          ..write('occurrenceDate: $occurrenceDate, ')
+          ..write('titleSnapshot: $titleSnapshot, ')
+          ..write('topProjectId: $topProjectId, ')
+          ..write('topProjectSnapshot: $topProjectSnapshot, ')
+          ..write('valuesSnapshot: $valuesSnapshot, ')
+          ..write('minutes: $minutes')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    spaceId,
+    createdAt,
+    createdBy,
+    updatedBy,
+    hlc,
+    deleted,
+    at,
+    nodeId,
+    action,
+    occurrenceDate,
+    titleSnapshot,
+    topProjectId,
+    topProjectSnapshot,
+    valuesSnapshot,
+    minutes,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ActivityData &&
+          other.id == this.id &&
+          other.spaceId == this.spaceId &&
+          other.createdAt == this.createdAt &&
+          other.createdBy == this.createdBy &&
+          other.updatedBy == this.updatedBy &&
+          other.hlc == this.hlc &&
+          other.deleted == this.deleted &&
+          other.at == this.at &&
+          other.nodeId == this.nodeId &&
+          other.action == this.action &&
+          other.occurrenceDate == this.occurrenceDate &&
+          other.titleSnapshot == this.titleSnapshot &&
+          other.topProjectId == this.topProjectId &&
+          other.topProjectSnapshot == this.topProjectSnapshot &&
+          other.valuesSnapshot == this.valuesSnapshot &&
+          other.minutes == this.minutes);
+}
+
+class ActivityCompanion extends UpdateCompanion<ActivityData> {
+  final Value<String> id;
+  final Value<String> spaceId;
+  final Value<DateTime> createdAt;
+  final Value<String> createdBy;
+  final Value<String> updatedBy;
+  final Value<String> hlc;
+  final Value<bool> deleted;
+  final Value<DateTime> at;
+  final Value<String> nodeId;
+  final Value<ActivityAction> action;
+  final Value<String?> occurrenceDate;
+  final Value<String> titleSnapshot;
+  final Value<String?> topProjectId;
+  final Value<String?> topProjectSnapshot;
+  final Value<String> valuesSnapshot;
+  final Value<int?> minutes;
+  final Value<int> rowid;
+  const ActivityCompanion({
+    this.id = const Value.absent(),
+    this.spaceId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.updatedBy = const Value.absent(),
+    this.hlc = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.at = const Value.absent(),
+    this.nodeId = const Value.absent(),
+    this.action = const Value.absent(),
+    this.occurrenceDate = const Value.absent(),
+    this.titleSnapshot = const Value.absent(),
+    this.topProjectId = const Value.absent(),
+    this.topProjectSnapshot = const Value.absent(),
+    this.valuesSnapshot = const Value.absent(),
+    this.minutes = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ActivityCompanion.insert({
+    required String id,
+    required String spaceId,
+    required DateTime createdAt,
+    required String createdBy,
+    required String updatedBy,
+    required String hlc,
+    this.deleted = const Value.absent(),
+    required DateTime at,
+    required String nodeId,
+    required ActivityAction action,
+    this.occurrenceDate = const Value.absent(),
+    required String titleSnapshot,
+    this.topProjectId = const Value.absent(),
+    this.topProjectSnapshot = const Value.absent(),
+    this.valuesSnapshot = const Value.absent(),
+    this.minutes = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       spaceId = Value(spaceId),
+       createdAt = Value(createdAt),
+       createdBy = Value(createdBy),
+       updatedBy = Value(updatedBy),
+       hlc = Value(hlc),
+       at = Value(at),
+       nodeId = Value(nodeId),
+       action = Value(action),
+       titleSnapshot = Value(titleSnapshot);
+  static Insertable<ActivityData> custom({
+    Expression<String>? id,
+    Expression<String>? spaceId,
+    Expression<DateTime>? createdAt,
+    Expression<String>? createdBy,
+    Expression<String>? updatedBy,
+    Expression<String>? hlc,
+    Expression<bool>? deleted,
+    Expression<DateTime>? at,
+    Expression<String>? nodeId,
+    Expression<String>? action,
+    Expression<String>? occurrenceDate,
+    Expression<String>? titleSnapshot,
+    Expression<String>? topProjectId,
+    Expression<String>? topProjectSnapshot,
+    Expression<String>? valuesSnapshot,
+    Expression<int>? minutes,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (spaceId != null) 'space_id': spaceId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (createdBy != null) 'created_by': createdBy,
+      if (updatedBy != null) 'updated_by': updatedBy,
+      if (hlc != null) 'hlc': hlc,
+      if (deleted != null) 'deleted': deleted,
+      if (at != null) 'at': at,
+      if (nodeId != null) 'node_id': nodeId,
+      if (action != null) 'action': action,
+      if (occurrenceDate != null) 'occurrence_date': occurrenceDate,
+      if (titleSnapshot != null) 'title_snapshot': titleSnapshot,
+      if (topProjectId != null) 'top_project_id': topProjectId,
+      if (topProjectSnapshot != null)
+        'top_project_snapshot': topProjectSnapshot,
+      if (valuesSnapshot != null) 'values_snapshot': valuesSnapshot,
+      if (minutes != null) 'minutes': minutes,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ActivityCompanion copyWith({
+    Value<String>? id,
+    Value<String>? spaceId,
+    Value<DateTime>? createdAt,
+    Value<String>? createdBy,
+    Value<String>? updatedBy,
+    Value<String>? hlc,
+    Value<bool>? deleted,
+    Value<DateTime>? at,
+    Value<String>? nodeId,
+    Value<ActivityAction>? action,
+    Value<String?>? occurrenceDate,
+    Value<String>? titleSnapshot,
+    Value<String?>? topProjectId,
+    Value<String?>? topProjectSnapshot,
+    Value<String>? valuesSnapshot,
+    Value<int?>? minutes,
+    Value<int>? rowid,
+  }) {
+    return ActivityCompanion(
+      id: id ?? this.id,
+      spaceId: spaceId ?? this.spaceId,
+      createdAt: createdAt ?? this.createdAt,
+      createdBy: createdBy ?? this.createdBy,
+      updatedBy: updatedBy ?? this.updatedBy,
+      hlc: hlc ?? this.hlc,
+      deleted: deleted ?? this.deleted,
+      at: at ?? this.at,
+      nodeId: nodeId ?? this.nodeId,
+      action: action ?? this.action,
+      occurrenceDate: occurrenceDate ?? this.occurrenceDate,
+      titleSnapshot: titleSnapshot ?? this.titleSnapshot,
+      topProjectId: topProjectId ?? this.topProjectId,
+      topProjectSnapshot: topProjectSnapshot ?? this.topProjectSnapshot,
+      valuesSnapshot: valuesSnapshot ?? this.valuesSnapshot,
+      minutes: minutes ?? this.minutes,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (spaceId.present) {
+      map['space_id'] = Variable<String>(spaceId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (createdBy.present) {
+      map['created_by'] = Variable<String>(createdBy.value);
+    }
+    if (updatedBy.present) {
+      map['updated_by'] = Variable<String>(updatedBy.value);
+    }
+    if (hlc.present) {
+      map['hlc'] = Variable<String>(hlc.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
+    if (at.present) {
+      map['at'] = Variable<DateTime>(at.value);
+    }
+    if (nodeId.present) {
+      map['node_id'] = Variable<String>(nodeId.value);
+    }
+    if (action.present) {
+      map['action'] = Variable<String>(
+        $ActivityTable.$converteraction.toSql(action.value),
+      );
+    }
+    if (occurrenceDate.present) {
+      map['occurrence_date'] = Variable<String>(occurrenceDate.value);
+    }
+    if (titleSnapshot.present) {
+      map['title_snapshot'] = Variable<String>(titleSnapshot.value);
+    }
+    if (topProjectId.present) {
+      map['top_project_id'] = Variable<String>(topProjectId.value);
+    }
+    if (topProjectSnapshot.present) {
+      map['top_project_snapshot'] = Variable<String>(topProjectSnapshot.value);
+    }
+    if (valuesSnapshot.present) {
+      map['values_snapshot'] = Variable<String>(valuesSnapshot.value);
+    }
+    if (minutes.present) {
+      map['minutes'] = Variable<int>(minutes.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ActivityCompanion(')
+          ..write('id: $id, ')
+          ..write('spaceId: $spaceId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedBy: $updatedBy, ')
+          ..write('hlc: $hlc, ')
+          ..write('deleted: $deleted, ')
+          ..write('at: $at, ')
+          ..write('nodeId: $nodeId, ')
+          ..write('action: $action, ')
+          ..write('occurrenceDate: $occurrenceDate, ')
+          ..write('titleSnapshot: $titleSnapshot, ')
+          ..write('topProjectId: $topProjectId, ')
+          ..write('topProjectSnapshot: $topProjectSnapshot, ')
+          ..write('valuesSnapshot: $valuesSnapshot, ')
+          ..write('minutes: $minutes, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $TodayEntriesTable extends TodayEntries
+    with TableInfo<$TodayEntriesTable, TodayEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TodayEntriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _spaceIdMeta = const VerificationMeta(
+    'spaceId',
+  );
+  @override
+  late final GeneratedColumn<String> spaceId = GeneratedColumn<String>(
+    'space_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdByMeta = const VerificationMeta(
+    'createdBy',
+  );
+  @override
+  late final GeneratedColumn<String> createdBy = GeneratedColumn<String>(
+    'created_by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedByMeta = const VerificationMeta(
+    'updatedBy',
+  );
+  @override
+  late final GeneratedColumn<String> updatedBy = GeneratedColumn<String>(
+    'updated_by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _hlcMeta = const VerificationMeta('hlc');
+  @override
+  late final GeneratedColumn<String> hlc = GeneratedColumn<String>(
+    'hlc',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
+  @override
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _dateMeta = const VerificationMeta('date');
+  @override
+  late final GeneratedColumn<String> date = GeneratedColumn<String>(
+    'date',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nodeIdMeta = const VerificationMeta('nodeId');
+  @override
+  late final GeneratedColumn<String> nodeId = GeneratedColumn<String>(
+    'node_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sortKeyMeta = const VerificationMeta(
+    'sortKey',
+  );
+  @override
+  late final GeneratedColumn<String> sortKey = GeneratedColumn<String>(
+    'sort_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _hiddenMeta = const VerificationMeta('hidden');
+  @override
+  late final GeneratedColumn<bool> hidden = GeneratedColumn<bool>(
+    'hidden',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("hidden" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _resolvedMeta = const VerificationMeta(
+    'resolved',
+  );
+  @override
+  late final GeneratedColumn<bool> resolved = GeneratedColumn<bool>(
+    'resolved',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("resolved" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    spaceId,
+    createdAt,
+    createdBy,
+    updatedBy,
+    hlc,
+    deleted,
+    date,
+    nodeId,
+    sortKey,
+    hidden,
+    resolved,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'today_entries';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TodayEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('space_id')) {
+      context.handle(
+        _spaceIdMeta,
+        spaceId.isAcceptableOrUnknown(data['space_id']!, _spaceIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_spaceIdMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('created_by')) {
+      context.handle(
+        _createdByMeta,
+        createdBy.isAcceptableOrUnknown(data['created_by']!, _createdByMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdByMeta);
+    }
+    if (data.containsKey('updated_by')) {
+      context.handle(
+        _updatedByMeta,
+        updatedBy.isAcceptableOrUnknown(data['updated_by']!, _updatedByMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedByMeta);
+    }
+    if (data.containsKey('hlc')) {
+      context.handle(
+        _hlcMeta,
+        hlc.isAcceptableOrUnknown(data['hlc']!, _hlcMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_hlcMeta);
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
+    }
+    if (data.containsKey('date')) {
+      context.handle(
+        _dateMeta,
+        date.isAcceptableOrUnknown(data['date']!, _dateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dateMeta);
+    }
+    if (data.containsKey('node_id')) {
+      context.handle(
+        _nodeIdMeta,
+        nodeId.isAcceptableOrUnknown(data['node_id']!, _nodeIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nodeIdMeta);
+    }
+    if (data.containsKey('sort_key')) {
+      context.handle(
+        _sortKeyMeta,
+        sortKey.isAcceptableOrUnknown(data['sort_key']!, _sortKeyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sortKeyMeta);
+    }
+    if (data.containsKey('hidden')) {
+      context.handle(
+        _hiddenMeta,
+        hidden.isAcceptableOrUnknown(data['hidden']!, _hiddenMeta),
+      );
+    }
+    if (data.containsKey('resolved')) {
+      context.handle(
+        _resolvedMeta,
+        resolved.isAcceptableOrUnknown(data['resolved']!, _resolvedMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  TodayEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TodayEntry(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      spaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}space_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      createdBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_by'],
+      )!,
+      updatedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_by'],
+      )!,
+      hlc: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}hlc'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
+      date: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}date'],
+      )!,
+      nodeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}node_id'],
+      )!,
+      sortKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sort_key'],
+      )!,
+      hidden: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}hidden'],
+      )!,
+      resolved: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}resolved'],
+      )!,
+    );
+  }
+
+  @override
+  $TodayEntriesTable createAlias(String alias) {
+    return $TodayEntriesTable(attachedDatabase, alias);
+  }
+}
+
+class TodayEntry extends DataClass implements Insertable<TodayEntry> {
+  /// UUIDv7.
+  final String id;
+
+  /// The space this row belongs to (§5.0, D13).
+  final String spaceId;
+  final DateTime createdAt;
+
+  /// User ID of the creator.
+  final String createdBy;
+
+  /// User ID of whoever made the latest change.
+  final String updatedBy;
+
+  /// Hybrid logical clock stamp of the latest change (see `sync/hlc.dart`).
+  final String hlc;
+
+  /// Tombstone flag. Rows are never hard-deleted until compaction.
+  final bool deleted;
+
+  /// `YYYY-MM-DD`.
+  final String date;
+  final String nodeId;
+  final String sortKey;
+  final bool hidden;
+
+  /// For a pick left unfinished: answered "keep" or "drop" on a later day,
+  /// so it isn't asked again.
+  final bool resolved;
+  const TodayEntry({
+    required this.id,
+    required this.spaceId,
+    required this.createdAt,
+    required this.createdBy,
+    required this.updatedBy,
+    required this.hlc,
+    required this.deleted,
+    required this.date,
+    required this.nodeId,
+    required this.sortKey,
+    required this.hidden,
+    required this.resolved,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['space_id'] = Variable<String>(spaceId);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['created_by'] = Variable<String>(createdBy);
+    map['updated_by'] = Variable<String>(updatedBy);
+    map['hlc'] = Variable<String>(hlc);
+    map['deleted'] = Variable<bool>(deleted);
+    map['date'] = Variable<String>(date);
+    map['node_id'] = Variable<String>(nodeId);
+    map['sort_key'] = Variable<String>(sortKey);
+    map['hidden'] = Variable<bool>(hidden);
+    map['resolved'] = Variable<bool>(resolved);
+    return map;
+  }
+
+  TodayEntriesCompanion toCompanion(bool nullToAbsent) {
+    return TodayEntriesCompanion(
+      id: Value(id),
+      spaceId: Value(spaceId),
+      createdAt: Value(createdAt),
+      createdBy: Value(createdBy),
+      updatedBy: Value(updatedBy),
+      hlc: Value(hlc),
+      deleted: Value(deleted),
+      date: Value(date),
+      nodeId: Value(nodeId),
+      sortKey: Value(sortKey),
+      hidden: Value(hidden),
+      resolved: Value(resolved),
+    );
+  }
+
+  factory TodayEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TodayEntry(
+      id: serializer.fromJson<String>(json['id']),
+      spaceId: serializer.fromJson<String>(json['spaceId']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      createdBy: serializer.fromJson<String>(json['createdBy']),
+      updatedBy: serializer.fromJson<String>(json['updatedBy']),
+      hlc: serializer.fromJson<String>(json['hlc']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
+      date: serializer.fromJson<String>(json['date']),
+      nodeId: serializer.fromJson<String>(json['nodeId']),
+      sortKey: serializer.fromJson<String>(json['sortKey']),
+      hidden: serializer.fromJson<bool>(json['hidden']),
+      resolved: serializer.fromJson<bool>(json['resolved']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'spaceId': serializer.toJson<String>(spaceId),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'createdBy': serializer.toJson<String>(createdBy),
+      'updatedBy': serializer.toJson<String>(updatedBy),
+      'hlc': serializer.toJson<String>(hlc),
+      'deleted': serializer.toJson<bool>(deleted),
+      'date': serializer.toJson<String>(date),
+      'nodeId': serializer.toJson<String>(nodeId),
+      'sortKey': serializer.toJson<String>(sortKey),
+      'hidden': serializer.toJson<bool>(hidden),
+      'resolved': serializer.toJson<bool>(resolved),
+    };
+  }
+
+  TodayEntry copyWith({
+    String? id,
+    String? spaceId,
+    DateTime? createdAt,
+    String? createdBy,
+    String? updatedBy,
+    String? hlc,
+    bool? deleted,
+    String? date,
+    String? nodeId,
+    String? sortKey,
+    bool? hidden,
+    bool? resolved,
+  }) => TodayEntry(
+    id: id ?? this.id,
+    spaceId: spaceId ?? this.spaceId,
+    createdAt: createdAt ?? this.createdAt,
+    createdBy: createdBy ?? this.createdBy,
+    updatedBy: updatedBy ?? this.updatedBy,
+    hlc: hlc ?? this.hlc,
+    deleted: deleted ?? this.deleted,
+    date: date ?? this.date,
+    nodeId: nodeId ?? this.nodeId,
+    sortKey: sortKey ?? this.sortKey,
+    hidden: hidden ?? this.hidden,
+    resolved: resolved ?? this.resolved,
+  );
+  TodayEntry copyWithCompanion(TodayEntriesCompanion data) {
+    return TodayEntry(
+      id: data.id.present ? data.id.value : this.id,
+      spaceId: data.spaceId.present ? data.spaceId.value : this.spaceId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
+      updatedBy: data.updatedBy.present ? data.updatedBy.value : this.updatedBy,
+      hlc: data.hlc.present ? data.hlc.value : this.hlc,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+      date: data.date.present ? data.date.value : this.date,
+      nodeId: data.nodeId.present ? data.nodeId.value : this.nodeId,
+      sortKey: data.sortKey.present ? data.sortKey.value : this.sortKey,
+      hidden: data.hidden.present ? data.hidden.value : this.hidden,
+      resolved: data.resolved.present ? data.resolved.value : this.resolved,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TodayEntry(')
+          ..write('id: $id, ')
+          ..write('spaceId: $spaceId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedBy: $updatedBy, ')
+          ..write('hlc: $hlc, ')
+          ..write('deleted: $deleted, ')
+          ..write('date: $date, ')
+          ..write('nodeId: $nodeId, ')
+          ..write('sortKey: $sortKey, ')
+          ..write('hidden: $hidden, ')
+          ..write('resolved: $resolved')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    spaceId,
+    createdAt,
+    createdBy,
+    updatedBy,
+    hlc,
+    deleted,
+    date,
+    nodeId,
+    sortKey,
+    hidden,
+    resolved,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TodayEntry &&
+          other.id == this.id &&
+          other.spaceId == this.spaceId &&
+          other.createdAt == this.createdAt &&
+          other.createdBy == this.createdBy &&
+          other.updatedBy == this.updatedBy &&
+          other.hlc == this.hlc &&
+          other.deleted == this.deleted &&
+          other.date == this.date &&
+          other.nodeId == this.nodeId &&
+          other.sortKey == this.sortKey &&
+          other.hidden == this.hidden &&
+          other.resolved == this.resolved);
+}
+
+class TodayEntriesCompanion extends UpdateCompanion<TodayEntry> {
+  final Value<String> id;
+  final Value<String> spaceId;
+  final Value<DateTime> createdAt;
+  final Value<String> createdBy;
+  final Value<String> updatedBy;
+  final Value<String> hlc;
+  final Value<bool> deleted;
+  final Value<String> date;
+  final Value<String> nodeId;
+  final Value<String> sortKey;
+  final Value<bool> hidden;
+  final Value<bool> resolved;
+  final Value<int> rowid;
+  const TodayEntriesCompanion({
+    this.id = const Value.absent(),
+    this.spaceId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.updatedBy = const Value.absent(),
+    this.hlc = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.date = const Value.absent(),
+    this.nodeId = const Value.absent(),
+    this.sortKey = const Value.absent(),
+    this.hidden = const Value.absent(),
+    this.resolved = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TodayEntriesCompanion.insert({
+    required String id,
+    required String spaceId,
+    required DateTime createdAt,
+    required String createdBy,
+    required String updatedBy,
+    required String hlc,
+    this.deleted = const Value.absent(),
+    required String date,
+    required String nodeId,
+    required String sortKey,
+    this.hidden = const Value.absent(),
+    this.resolved = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       spaceId = Value(spaceId),
+       createdAt = Value(createdAt),
+       createdBy = Value(createdBy),
+       updatedBy = Value(updatedBy),
+       hlc = Value(hlc),
+       date = Value(date),
+       nodeId = Value(nodeId),
+       sortKey = Value(sortKey);
+  static Insertable<TodayEntry> custom({
+    Expression<String>? id,
+    Expression<String>? spaceId,
+    Expression<DateTime>? createdAt,
+    Expression<String>? createdBy,
+    Expression<String>? updatedBy,
+    Expression<String>? hlc,
+    Expression<bool>? deleted,
+    Expression<String>? date,
+    Expression<String>? nodeId,
+    Expression<String>? sortKey,
+    Expression<bool>? hidden,
+    Expression<bool>? resolved,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (spaceId != null) 'space_id': spaceId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (createdBy != null) 'created_by': createdBy,
+      if (updatedBy != null) 'updated_by': updatedBy,
+      if (hlc != null) 'hlc': hlc,
+      if (deleted != null) 'deleted': deleted,
+      if (date != null) 'date': date,
+      if (nodeId != null) 'node_id': nodeId,
+      if (sortKey != null) 'sort_key': sortKey,
+      if (hidden != null) 'hidden': hidden,
+      if (resolved != null) 'resolved': resolved,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TodayEntriesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? spaceId,
+    Value<DateTime>? createdAt,
+    Value<String>? createdBy,
+    Value<String>? updatedBy,
+    Value<String>? hlc,
+    Value<bool>? deleted,
+    Value<String>? date,
+    Value<String>? nodeId,
+    Value<String>? sortKey,
+    Value<bool>? hidden,
+    Value<bool>? resolved,
+    Value<int>? rowid,
+  }) {
+    return TodayEntriesCompanion(
+      id: id ?? this.id,
+      spaceId: spaceId ?? this.spaceId,
+      createdAt: createdAt ?? this.createdAt,
+      createdBy: createdBy ?? this.createdBy,
+      updatedBy: updatedBy ?? this.updatedBy,
+      hlc: hlc ?? this.hlc,
+      deleted: deleted ?? this.deleted,
+      date: date ?? this.date,
+      nodeId: nodeId ?? this.nodeId,
+      sortKey: sortKey ?? this.sortKey,
+      hidden: hidden ?? this.hidden,
+      resolved: resolved ?? this.resolved,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (spaceId.present) {
+      map['space_id'] = Variable<String>(spaceId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (createdBy.present) {
+      map['created_by'] = Variable<String>(createdBy.value);
+    }
+    if (updatedBy.present) {
+      map['updated_by'] = Variable<String>(updatedBy.value);
+    }
+    if (hlc.present) {
+      map['hlc'] = Variable<String>(hlc.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
+    if (date.present) {
+      map['date'] = Variable<String>(date.value);
+    }
+    if (nodeId.present) {
+      map['node_id'] = Variable<String>(nodeId.value);
+    }
+    if (sortKey.present) {
+      map['sort_key'] = Variable<String>(sortKey.value);
+    }
+    if (hidden.present) {
+      map['hidden'] = Variable<bool>(hidden.value);
+    }
+    if (resolved.present) {
+      map['resolved'] = Variable<bool>(resolved.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TodayEntriesCompanion(')
+          ..write('id: $id, ')
+          ..write('spaceId: $spaceId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedBy: $updatedBy, ')
+          ..write('hlc: $hlc, ')
+          ..write('deleted: $deleted, ')
+          ..write('date: $date, ')
+          ..write('nodeId: $nodeId, ')
+          ..write('sortKey: $sortKey, ')
+          ..write('hidden: $hidden, ')
+          ..write('resolved: $resolved, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $UserSettingsTable extends UserSettings
+    with TableInfo<$UserSettingsTable, UserSetting> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $UserSettingsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _spaceIdMeta = const VerificationMeta(
+    'spaceId',
+  );
+  @override
+  late final GeneratedColumn<String> spaceId = GeneratedColumn<String>(
+    'space_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdByMeta = const VerificationMeta(
+    'createdBy',
+  );
+  @override
+  late final GeneratedColumn<String> createdBy = GeneratedColumn<String>(
+    'created_by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedByMeta = const VerificationMeta(
+    'updatedBy',
+  );
+  @override
+  late final GeneratedColumn<String> updatedBy = GeneratedColumn<String>(
+    'updated_by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _hlcMeta = const VerificationMeta('hlc');
+  @override
+  late final GeneratedColumn<String> hlc = GeneratedColumn<String>(
+    'hlc',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
+  @override
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _keyMeta = const VerificationMeta('key');
+  @override
+  late final GeneratedColumn<String> key = GeneratedColumn<String>(
+    'key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _valueMeta = const VerificationMeta('value');
+  @override
+  late final GeneratedColumn<String> value = GeneratedColumn<String>(
+    'value',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    spaceId,
+    createdAt,
+    createdBy,
+    updatedBy,
+    hlc,
+    deleted,
+    key,
+    value,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'user_settings';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<UserSetting> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('space_id')) {
+      context.handle(
+        _spaceIdMeta,
+        spaceId.isAcceptableOrUnknown(data['space_id']!, _spaceIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_spaceIdMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('created_by')) {
+      context.handle(
+        _createdByMeta,
+        createdBy.isAcceptableOrUnknown(data['created_by']!, _createdByMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdByMeta);
+    }
+    if (data.containsKey('updated_by')) {
+      context.handle(
+        _updatedByMeta,
+        updatedBy.isAcceptableOrUnknown(data['updated_by']!, _updatedByMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedByMeta);
+    }
+    if (data.containsKey('hlc')) {
+      context.handle(
+        _hlcMeta,
+        hlc.isAcceptableOrUnknown(data['hlc']!, _hlcMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_hlcMeta);
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
+    }
+    if (data.containsKey('key')) {
+      context.handle(
+        _keyMeta,
+        key.isAcceptableOrUnknown(data['key']!, _keyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_keyMeta);
+    }
+    if (data.containsKey('value')) {
+      context.handle(
+        _valueMeta,
+        value.isAcceptableOrUnknown(data['value']!, _valueMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_valueMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  UserSetting map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return UserSetting(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      spaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}space_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      createdBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_by'],
+      )!,
+      updatedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_by'],
+      )!,
+      hlc: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}hlc'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
+      key: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}key'],
+      )!,
+      value: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}value'],
+      )!,
+    );
+  }
+
+  @override
+  $UserSettingsTable createAlias(String alias) {
+    return $UserSettingsTable(attachedDatabase, alias);
+  }
+}
+
+class UserSetting extends DataClass implements Insertable<UserSetting> {
+  /// UUIDv7.
+  final String id;
+
+  /// The space this row belongs to (§5.0, D13).
+  final String spaceId;
+  final DateTime createdAt;
+
+  /// User ID of the creator.
+  final String createdBy;
+
+  /// User ID of whoever made the latest change.
+  final String updatedBy;
+
+  /// Hybrid logical clock stamp of the latest change (see `sync/hlc.dart`).
+  final String hlc;
+
+  /// Tombstone flag. Rows are never hard-deleted until compaction.
+  final bool deleted;
+  final String key;
+  final String value;
+  const UserSetting({
+    required this.id,
+    required this.spaceId,
+    required this.createdAt,
+    required this.createdBy,
+    required this.updatedBy,
+    required this.hlc,
+    required this.deleted,
+    required this.key,
+    required this.value,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['space_id'] = Variable<String>(spaceId);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['created_by'] = Variable<String>(createdBy);
+    map['updated_by'] = Variable<String>(updatedBy);
+    map['hlc'] = Variable<String>(hlc);
+    map['deleted'] = Variable<bool>(deleted);
+    map['key'] = Variable<String>(key);
+    map['value'] = Variable<String>(value);
+    return map;
+  }
+
+  UserSettingsCompanion toCompanion(bool nullToAbsent) {
+    return UserSettingsCompanion(
+      id: Value(id),
+      spaceId: Value(spaceId),
+      createdAt: Value(createdAt),
+      createdBy: Value(createdBy),
+      updatedBy: Value(updatedBy),
+      hlc: Value(hlc),
+      deleted: Value(deleted),
+      key: Value(key),
+      value: Value(value),
+    );
+  }
+
+  factory UserSetting.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return UserSetting(
+      id: serializer.fromJson<String>(json['id']),
+      spaceId: serializer.fromJson<String>(json['spaceId']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      createdBy: serializer.fromJson<String>(json['createdBy']),
+      updatedBy: serializer.fromJson<String>(json['updatedBy']),
+      hlc: serializer.fromJson<String>(json['hlc']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
+      key: serializer.fromJson<String>(json['key']),
+      value: serializer.fromJson<String>(json['value']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'spaceId': serializer.toJson<String>(spaceId),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'createdBy': serializer.toJson<String>(createdBy),
+      'updatedBy': serializer.toJson<String>(updatedBy),
+      'hlc': serializer.toJson<String>(hlc),
+      'deleted': serializer.toJson<bool>(deleted),
+      'key': serializer.toJson<String>(key),
+      'value': serializer.toJson<String>(value),
+    };
+  }
+
+  UserSetting copyWith({
+    String? id,
+    String? spaceId,
+    DateTime? createdAt,
+    String? createdBy,
+    String? updatedBy,
+    String? hlc,
+    bool? deleted,
+    String? key,
+    String? value,
+  }) => UserSetting(
+    id: id ?? this.id,
+    spaceId: spaceId ?? this.spaceId,
+    createdAt: createdAt ?? this.createdAt,
+    createdBy: createdBy ?? this.createdBy,
+    updatedBy: updatedBy ?? this.updatedBy,
+    hlc: hlc ?? this.hlc,
+    deleted: deleted ?? this.deleted,
+    key: key ?? this.key,
+    value: value ?? this.value,
+  );
+  UserSetting copyWithCompanion(UserSettingsCompanion data) {
+    return UserSetting(
+      id: data.id.present ? data.id.value : this.id,
+      spaceId: data.spaceId.present ? data.spaceId.value : this.spaceId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
+      updatedBy: data.updatedBy.present ? data.updatedBy.value : this.updatedBy,
+      hlc: data.hlc.present ? data.hlc.value : this.hlc,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+      key: data.key.present ? data.key.value : this.key,
+      value: data.value.present ? data.value.value : this.value,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UserSetting(')
+          ..write('id: $id, ')
+          ..write('spaceId: $spaceId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedBy: $updatedBy, ')
+          ..write('hlc: $hlc, ')
+          ..write('deleted: $deleted, ')
+          ..write('key: $key, ')
+          ..write('value: $value')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    spaceId,
+    createdAt,
+    createdBy,
+    updatedBy,
+    hlc,
+    deleted,
+    key,
+    value,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is UserSetting &&
+          other.id == this.id &&
+          other.spaceId == this.spaceId &&
+          other.createdAt == this.createdAt &&
+          other.createdBy == this.createdBy &&
+          other.updatedBy == this.updatedBy &&
+          other.hlc == this.hlc &&
+          other.deleted == this.deleted &&
+          other.key == this.key &&
+          other.value == this.value);
+}
+
+class UserSettingsCompanion extends UpdateCompanion<UserSetting> {
+  final Value<String> id;
+  final Value<String> spaceId;
+  final Value<DateTime> createdAt;
+  final Value<String> createdBy;
+  final Value<String> updatedBy;
+  final Value<String> hlc;
+  final Value<bool> deleted;
+  final Value<String> key;
+  final Value<String> value;
+  final Value<int> rowid;
+  const UserSettingsCompanion({
+    this.id = const Value.absent(),
+    this.spaceId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.updatedBy = const Value.absent(),
+    this.hlc = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.key = const Value.absent(),
+    this.value = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  UserSettingsCompanion.insert({
+    required String id,
+    required String spaceId,
+    required DateTime createdAt,
+    required String createdBy,
+    required String updatedBy,
+    required String hlc,
+    this.deleted = const Value.absent(),
+    required String key,
+    required String value,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       spaceId = Value(spaceId),
+       createdAt = Value(createdAt),
+       createdBy = Value(createdBy),
+       updatedBy = Value(updatedBy),
+       hlc = Value(hlc),
+       key = Value(key),
+       value = Value(value);
+  static Insertable<UserSetting> custom({
+    Expression<String>? id,
+    Expression<String>? spaceId,
+    Expression<DateTime>? createdAt,
+    Expression<String>? createdBy,
+    Expression<String>? updatedBy,
+    Expression<String>? hlc,
+    Expression<bool>? deleted,
+    Expression<String>? key,
+    Expression<String>? value,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (spaceId != null) 'space_id': spaceId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (createdBy != null) 'created_by': createdBy,
+      if (updatedBy != null) 'updated_by': updatedBy,
+      if (hlc != null) 'hlc': hlc,
+      if (deleted != null) 'deleted': deleted,
+      if (key != null) 'key': key,
+      if (value != null) 'value': value,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  UserSettingsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? spaceId,
+    Value<DateTime>? createdAt,
+    Value<String>? createdBy,
+    Value<String>? updatedBy,
+    Value<String>? hlc,
+    Value<bool>? deleted,
+    Value<String>? key,
+    Value<String>? value,
+    Value<int>? rowid,
+  }) {
+    return UserSettingsCompanion(
+      id: id ?? this.id,
+      spaceId: spaceId ?? this.spaceId,
+      createdAt: createdAt ?? this.createdAt,
+      createdBy: createdBy ?? this.createdBy,
+      updatedBy: updatedBy ?? this.updatedBy,
+      hlc: hlc ?? this.hlc,
+      deleted: deleted ?? this.deleted,
+      key: key ?? this.key,
+      value: value ?? this.value,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (spaceId.present) {
+      map['space_id'] = Variable<String>(spaceId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (createdBy.present) {
+      map['created_by'] = Variable<String>(createdBy.value);
+    }
+    if (updatedBy.present) {
+      map['updated_by'] = Variable<String>(updatedBy.value);
+    }
+    if (hlc.present) {
+      map['hlc'] = Variable<String>(hlc.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
+    if (key.present) {
+      map['key'] = Variable<String>(key.value);
+    }
+    if (value.present) {
+      map['value'] = Variable<String>(value.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UserSettingsCompanion(')
+          ..write('id: $id, ')
+          ..write('spaceId: $spaceId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedBy: $updatedBy, ')
+          ..write('hlc: $hlc, ')
+          ..write('deleted: $deleted, ')
+          ..write('key: $key, ')
+          ..write('value: $value, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $ChangeLogTable extends ChangeLog
     with TableInfo<$ChangeLogTable, ChangeOp> {
   @override
@@ -12572,6 +15621,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $AnnotationsTable annotations = $AnnotationsTable(this);
   late final $RemindersTable reminders = $RemindersTable(this);
   late final $NodeUserPrefsTable nodeUserPrefs = $NodeUserPrefsTable(this);
+  late final $TimeEntriesTable timeEntries = $TimeEntriesTable(this);
+  late final $ActivityTable activity = $ActivityTable(this);
+  late final $TodayEntriesTable todayEntries = $TodayEntriesTable(this);
+  late final $UserSettingsTable userSettings = $UserSettingsTable(this);
   late final $ChangeLogTable changeLog = $ChangeLogTable(this);
   late final $DevicesTable devices = $DevicesTable(this);
   late final Index nodesParentSort = Index(
@@ -12626,6 +15679,26 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'node_user_prefs_node',
     'CREATE INDEX node_user_prefs_node ON node_user_prefs (node_id)',
   );
+  late final Index timeEntriesNode = Index(
+    'time_entries_node',
+    'CREATE INDEX time_entries_node ON time_entries (node_id)',
+  );
+  late final Index timeEntriesStarted = Index(
+    'time_entries_started',
+    'CREATE INDEX time_entries_started ON time_entries (started_at)',
+  );
+  late final Index activityAt = Index(
+    'activity_at',
+    'CREATE INDEX activity_at ON activity (at)',
+  );
+  late final Index activityNode = Index(
+    'activity_node',
+    'CREATE INDEX activity_node ON activity (node_id)',
+  );
+  late final Index todayEntriesDate = Index(
+    'today_entries_date',
+    'CREATE INDEX today_entries_date ON today_entries (date, sort_key)',
+  );
   late final Index occurrenceCompletionsNode = Index(
     'occurrence_completions_node',
     'CREATE INDEX occurrence_completions_node ON occurrence_completions (node_id, occurrence_date)',
@@ -12663,6 +15736,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     annotations,
     reminders,
     nodeUserPrefs,
+    timeEntries,
+    activity,
+    todayEntries,
+    userSettings,
     changeLog,
     devices,
     nodesParentSort,
@@ -12678,6 +15755,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     annotationsAttachment,
     remindersNode,
     nodeUserPrefsNode,
+    timeEntriesNode,
+    timeEntriesStarted,
+    activityAt,
+    activityNode,
+    todayEntriesDate,
     occurrenceCompletionsNode,
     changeLogHlc,
     changeLogField,
@@ -12740,6 +15822,7 @@ typedef $$NodesTableCreateCompanionBuilder = NodesCompanion Function({
   Value<String?> repeatStart,
   Value<bool> exclusiveChildren,
   Value<bool> sharedWithChildren,
+  Value<int?> progressOverride,
   Value<Lifecycle> lifecycle,
   Value<DateTime?> lifecycleAt,
   Value<String?> lifecycleRootId,
@@ -12774,6 +15857,7 @@ typedef $$NodesTableUpdateCompanionBuilder = NodesCompanion Function({
   Value<String?> repeatStart,
   Value<bool> exclusiveChildren,
   Value<bool> sharedWithChildren,
+  Value<int?> progressOverride,
   Value<Lifecycle> lifecycle,
   Value<DateTime?> lifecycleAt,
   Value<String?> lifecycleRootId,
@@ -12928,6 +16012,11 @@ class $$NodesTableFilterComposer extends Composer<_$AppDatabase, $NodesTable> {
 
   ColumnFilters<bool> get sharedWithChildren => $composableBuilder(
     column: $table.sharedWithChildren,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get progressOverride => $composableBuilder(
+    column: $table.progressOverride,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -13097,6 +16186,11 @@ class $$NodesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get progressOverride => $composableBuilder(
+    column: $table.progressOverride,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get lifecycle => $composableBuilder(
     column: $table.lifecycle,
     builder: (column) => ColumnOrderings(column),
@@ -13220,6 +16314,11 @@ class $$NodesTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get progressOverride => $composableBuilder(
+    column: $table.progressOverride,
+    builder: (column) => column,
+  );
+
   GeneratedColumnWithTypeConverter<Lifecycle, String> get lifecycle =>
       $composableBuilder(column: $table.lifecycle, builder: (column) => column);
 
@@ -13290,6 +16389,7 @@ class $$NodesTableTableManager
                 Value<String?> repeatStart = const Value.absent(),
                 Value<bool> exclusiveChildren = const Value.absent(),
                 Value<bool> sharedWithChildren = const Value.absent(),
+                Value<int?> progressOverride = const Value.absent(),
                 Value<Lifecycle> lifecycle = const Value.absent(),
                 Value<DateTime?> lifecycleAt = const Value.absent(),
                 Value<String?> lifecycleRootId = const Value.absent(),
@@ -13323,6 +16423,7 @@ class $$NodesTableTableManager
                 repeatStart: repeatStart,
                 exclusiveChildren: exclusiveChildren,
                 sharedWithChildren: sharedWithChildren,
+                progressOverride: progressOverride,
                 lifecycle: lifecycle,
                 lifecycleAt: lifecycleAt,
                 lifecycleRootId: lifecycleRootId,
@@ -13358,6 +16459,7 @@ class $$NodesTableTableManager
                 Value<String?> repeatStart = const Value.absent(),
                 Value<bool> exclusiveChildren = const Value.absent(),
                 Value<bool> sharedWithChildren = const Value.absent(),
+                Value<int?> progressOverride = const Value.absent(),
                 Value<Lifecycle> lifecycle = const Value.absent(),
                 Value<DateTime?> lifecycleAt = const Value.absent(),
                 Value<String?> lifecycleRootId = const Value.absent(),
@@ -13391,6 +16493,7 @@ class $$NodesTableTableManager
                 repeatStart: repeatStart,
                 exclusiveChildren: exclusiveChildren,
                 sharedWithChildren: sharedWithChildren,
+                progressOverride: progressOverride,
                 lifecycle: lifecycle,
                 lifecycleAt: lifecycleAt,
                 lifecycleRootId: lifecycleRootId,
@@ -18196,6 +21299,1421 @@ typedef $$NodeUserPrefsTableProcessedTableManager =
       NodeUserPref,
       PrefetchHooks Function()
     >;
+typedef $$TimeEntriesTableCreateCompanionBuilder =
+    TimeEntriesCompanion Function({
+      required String id,
+      required String spaceId,
+      required DateTime createdAt,
+      required String createdBy,
+      required String updatedBy,
+      required String hlc,
+      Value<bool> deleted,
+      required String nodeId,
+      required DateTime startedAt,
+      Value<DateTime?> endedAt,
+      required TimeSource source,
+      Value<int?> focusMinutes,
+      Value<String?> note,
+      Value<int> rowid,
+    });
+typedef $$TimeEntriesTableUpdateCompanionBuilder =
+    TimeEntriesCompanion Function({
+      Value<String> id,
+      Value<String> spaceId,
+      Value<DateTime> createdAt,
+      Value<String> createdBy,
+      Value<String> updatedBy,
+      Value<String> hlc,
+      Value<bool> deleted,
+      Value<String> nodeId,
+      Value<DateTime> startedAt,
+      Value<DateTime?> endedAt,
+      Value<TimeSource> source,
+      Value<int?> focusMinutes,
+      Value<String?> note,
+      Value<int> rowid,
+    });
+
+class $$TimeEntriesTableFilterComposer
+    extends Composer<_$AppDatabase, $TimeEntriesTable> {
+  $$TimeEntriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get spaceId => $composableBuilder(
+    column: $table.spaceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedBy => $composableBuilder(
+    column: $table.updatedBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get hlc => $composableBuilder(
+    column: $table.hlc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nodeId => $composableBuilder(
+    column: $table.nodeId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get endedAt => $composableBuilder(
+    column: $table.endedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<TimeSource, TimeSource, String> get source =>
+      $composableBuilder(
+        column: $table.source,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+
+  ColumnFilters<int> get focusMinutes => $composableBuilder(
+    column: $table.focusMinutes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$TimeEntriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $TimeEntriesTable> {
+  $$TimeEntriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get spaceId => $composableBuilder(
+    column: $table.spaceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedBy => $composableBuilder(
+    column: $table.updatedBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get hlc => $composableBuilder(
+    column: $table.hlc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nodeId => $composableBuilder(
+    column: $table.nodeId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get endedAt => $composableBuilder(
+    column: $table.endedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get focusMinutes => $composableBuilder(
+    column: $table.focusMinutes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$TimeEntriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TimeEntriesTable> {
+  $$TimeEntriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get spaceId =>
+      $composableBuilder(column: $table.spaceId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get createdBy =>
+      $composableBuilder(column: $table.createdBy, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedBy =>
+      $composableBuilder(column: $table.updatedBy, builder: (column) => column);
+
+  GeneratedColumn<String> get hlc =>
+      $composableBuilder(column: $table.hlc, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+
+  GeneratedColumn<String> get nodeId =>
+      $composableBuilder(column: $table.nodeId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get startedAt =>
+      $composableBuilder(column: $table.startedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get endedAt =>
+      $composableBuilder(column: $table.endedAt, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<TimeSource, String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
+
+  GeneratedColumn<int> get focusMinutes => $composableBuilder(
+    column: $table.focusMinutes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
+}
+
+class $$TimeEntriesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $TimeEntriesTable,
+          TimeEntry,
+          $$TimeEntriesTableFilterComposer,
+          $$TimeEntriesTableOrderingComposer,
+          $$TimeEntriesTableAnnotationComposer,
+          $$TimeEntriesTableCreateCompanionBuilder,
+          $$TimeEntriesTableUpdateCompanionBuilder,
+          (
+            TimeEntry,
+            BaseReferences<_$AppDatabase, $TimeEntriesTable, TimeEntry>,
+          ),
+          TimeEntry,
+          PrefetchHooks Function()
+        > {
+  $$TimeEntriesTableTableManager(_$AppDatabase db, $TimeEntriesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TimeEntriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TimeEntriesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TimeEntriesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> spaceId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<String> createdBy = const Value.absent(),
+                Value<String> updatedBy = const Value.absent(),
+                Value<String> hlc = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<String> nodeId = const Value.absent(),
+                Value<DateTime> startedAt = const Value.absent(),
+                Value<DateTime?> endedAt = const Value.absent(),
+                Value<TimeSource> source = const Value.absent(),
+                Value<int?> focusMinutes = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TimeEntriesCompanion(
+                id: id,
+                spaceId: spaceId,
+                createdAt: createdAt,
+                createdBy: createdBy,
+                updatedBy: updatedBy,
+                hlc: hlc,
+                deleted: deleted,
+                nodeId: nodeId,
+                startedAt: startedAt,
+                endedAt: endedAt,
+                source: source,
+                focusMinutes: focusMinutes,
+                note: note,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String spaceId,
+                required DateTime createdAt,
+                required String createdBy,
+                required String updatedBy,
+                required String hlc,
+                Value<bool> deleted = const Value.absent(),
+                required String nodeId,
+                required DateTime startedAt,
+                Value<DateTime?> endedAt = const Value.absent(),
+                required TimeSource source,
+                Value<int?> focusMinutes = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TimeEntriesCompanion.insert(
+                id: id,
+                spaceId: spaceId,
+                createdAt: createdAt,
+                createdBy: createdBy,
+                updatedBy: updatedBy,
+                hlc: hlc,
+                deleted: deleted,
+                nodeId: nodeId,
+                startedAt: startedAt,
+                endedAt: endedAt,
+                source: source,
+                focusMinutes: focusMinutes,
+                note: note,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$TimeEntriesTable, TimeEntry>(table),
+                  BaseReferences<_$AppDatabase, $TimeEntriesTable, TimeEntry>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$TimeEntriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $TimeEntriesTable,
+      TimeEntry,
+      $$TimeEntriesTableFilterComposer,
+      $$TimeEntriesTableOrderingComposer,
+      $$TimeEntriesTableAnnotationComposer,
+      $$TimeEntriesTableCreateCompanionBuilder,
+      $$TimeEntriesTableUpdateCompanionBuilder,
+      (TimeEntry, BaseReferences<_$AppDatabase, $TimeEntriesTable, TimeEntry>),
+      TimeEntry,
+      PrefetchHooks Function()
+    >;
+typedef $$ActivityTableCreateCompanionBuilder = ActivityCompanion Function({
+  required String id,
+  required String spaceId,
+  required DateTime createdAt,
+  required String createdBy,
+  required String updatedBy,
+  required String hlc,
+  Value<bool> deleted,
+  required DateTime at,
+  required String nodeId,
+  required ActivityAction action,
+  Value<String?> occurrenceDate,
+  required String titleSnapshot,
+  Value<String?> topProjectId,
+  Value<String?> topProjectSnapshot,
+  Value<String> valuesSnapshot,
+  Value<int?> minutes,
+  Value<int> rowid,
+});
+typedef $$ActivityTableUpdateCompanionBuilder = ActivityCompanion Function({
+  Value<String> id,
+  Value<String> spaceId,
+  Value<DateTime> createdAt,
+  Value<String> createdBy,
+  Value<String> updatedBy,
+  Value<String> hlc,
+  Value<bool> deleted,
+  Value<DateTime> at,
+  Value<String> nodeId,
+  Value<ActivityAction> action,
+  Value<String?> occurrenceDate,
+  Value<String> titleSnapshot,
+  Value<String?> topProjectId,
+  Value<String?> topProjectSnapshot,
+  Value<String> valuesSnapshot,
+  Value<int?> minutes,
+  Value<int> rowid,
+});
+
+class $$ActivityTableFilterComposer
+    extends Composer<_$AppDatabase, $ActivityTable> {
+  $$ActivityTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get spaceId => $composableBuilder(
+    column: $table.spaceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedBy => $composableBuilder(
+    column: $table.updatedBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get hlc => $composableBuilder(
+    column: $table.hlc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get at => $composableBuilder(
+    column: $table.at,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nodeId => $composableBuilder(
+    column: $table.nodeId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<ActivityAction, ActivityAction, String>
+  get action => $composableBuilder(
+    column: $table.action,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  ColumnFilters<String> get occurrenceDate => $composableBuilder(
+    column: $table.occurrenceDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get titleSnapshot => $composableBuilder(
+    column: $table.titleSnapshot,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get topProjectId => $composableBuilder(
+    column: $table.topProjectId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get topProjectSnapshot => $composableBuilder(
+    column: $table.topProjectSnapshot,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get valuesSnapshot => $composableBuilder(
+    column: $table.valuesSnapshot,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get minutes => $composableBuilder(
+    column: $table.minutes,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ActivityTableOrderingComposer
+    extends Composer<_$AppDatabase, $ActivityTable> {
+  $$ActivityTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get spaceId => $composableBuilder(
+    column: $table.spaceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedBy => $composableBuilder(
+    column: $table.updatedBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get hlc => $composableBuilder(
+    column: $table.hlc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get at => $composableBuilder(
+    column: $table.at,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nodeId => $composableBuilder(
+    column: $table.nodeId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get action => $composableBuilder(
+    column: $table.action,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get occurrenceDate => $composableBuilder(
+    column: $table.occurrenceDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get titleSnapshot => $composableBuilder(
+    column: $table.titleSnapshot,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get topProjectId => $composableBuilder(
+    column: $table.topProjectId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get topProjectSnapshot => $composableBuilder(
+    column: $table.topProjectSnapshot,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get valuesSnapshot => $composableBuilder(
+    column: $table.valuesSnapshot,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get minutes => $composableBuilder(
+    column: $table.minutes,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ActivityTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ActivityTable> {
+  $$ActivityTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get spaceId =>
+      $composableBuilder(column: $table.spaceId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get createdBy =>
+      $composableBuilder(column: $table.createdBy, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedBy =>
+      $composableBuilder(column: $table.updatedBy, builder: (column) => column);
+
+  GeneratedColumn<String> get hlc =>
+      $composableBuilder(column: $table.hlc, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get at =>
+      $composableBuilder(column: $table.at, builder: (column) => column);
+
+  GeneratedColumn<String> get nodeId =>
+      $composableBuilder(column: $table.nodeId, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<ActivityAction, String> get action =>
+      $composableBuilder(column: $table.action, builder: (column) => column);
+
+  GeneratedColumn<String> get occurrenceDate => $composableBuilder(
+    column: $table.occurrenceDate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get titleSnapshot => $composableBuilder(
+    column: $table.titleSnapshot,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get topProjectId => $composableBuilder(
+    column: $table.topProjectId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get topProjectSnapshot => $composableBuilder(
+    column: $table.topProjectSnapshot,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get valuesSnapshot => $composableBuilder(
+    column: $table.valuesSnapshot,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get minutes =>
+      $composableBuilder(column: $table.minutes, builder: (column) => column);
+}
+
+class $$ActivityTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ActivityTable,
+          ActivityData,
+          $$ActivityTableFilterComposer,
+          $$ActivityTableOrderingComposer,
+          $$ActivityTableAnnotationComposer,
+          $$ActivityTableCreateCompanionBuilder,
+          $$ActivityTableUpdateCompanionBuilder,
+          (
+            ActivityData,
+            BaseReferences<_$AppDatabase, $ActivityTable, ActivityData>,
+          ),
+          ActivityData,
+          PrefetchHooks Function()
+        > {
+  $$ActivityTableTableManager(_$AppDatabase db, $ActivityTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ActivityTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ActivityTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ActivityTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> spaceId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<String> createdBy = const Value.absent(),
+                Value<String> updatedBy = const Value.absent(),
+                Value<String> hlc = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<DateTime> at = const Value.absent(),
+                Value<String> nodeId = const Value.absent(),
+                Value<ActivityAction> action = const Value.absent(),
+                Value<String?> occurrenceDate = const Value.absent(),
+                Value<String> titleSnapshot = const Value.absent(),
+                Value<String?> topProjectId = const Value.absent(),
+                Value<String?> topProjectSnapshot = const Value.absent(),
+                Value<String> valuesSnapshot = const Value.absent(),
+                Value<int?> minutes = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ActivityCompanion(
+                id: id,
+                spaceId: spaceId,
+                createdAt: createdAt,
+                createdBy: createdBy,
+                updatedBy: updatedBy,
+                hlc: hlc,
+                deleted: deleted,
+                at: at,
+                nodeId: nodeId,
+                action: action,
+                occurrenceDate: occurrenceDate,
+                titleSnapshot: titleSnapshot,
+                topProjectId: topProjectId,
+                topProjectSnapshot: topProjectSnapshot,
+                valuesSnapshot: valuesSnapshot,
+                minutes: minutes,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String spaceId,
+                required DateTime createdAt,
+                required String createdBy,
+                required String updatedBy,
+                required String hlc,
+                Value<bool> deleted = const Value.absent(),
+                required DateTime at,
+                required String nodeId,
+                required ActivityAction action,
+                Value<String?> occurrenceDate = const Value.absent(),
+                required String titleSnapshot,
+                Value<String?> topProjectId = const Value.absent(),
+                Value<String?> topProjectSnapshot = const Value.absent(),
+                Value<String> valuesSnapshot = const Value.absent(),
+                Value<int?> minutes = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ActivityCompanion.insert(
+                id: id,
+                spaceId: spaceId,
+                createdAt: createdAt,
+                createdBy: createdBy,
+                updatedBy: updatedBy,
+                hlc: hlc,
+                deleted: deleted,
+                at: at,
+                nodeId: nodeId,
+                action: action,
+                occurrenceDate: occurrenceDate,
+                titleSnapshot: titleSnapshot,
+                topProjectId: topProjectId,
+                topProjectSnapshot: topProjectSnapshot,
+                valuesSnapshot: valuesSnapshot,
+                minutes: minutes,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ActivityTable, ActivityData>(table),
+                  BaseReferences<_$AppDatabase, $ActivityTable, ActivityData>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ActivityTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ActivityTable,
+      ActivityData,
+      $$ActivityTableFilterComposer,
+      $$ActivityTableOrderingComposer,
+      $$ActivityTableAnnotationComposer,
+      $$ActivityTableCreateCompanionBuilder,
+      $$ActivityTableUpdateCompanionBuilder,
+      (
+        ActivityData,
+        BaseReferences<_$AppDatabase, $ActivityTable, ActivityData>,
+      ),
+      ActivityData,
+      PrefetchHooks Function()
+    >;
+typedef $$TodayEntriesTableCreateCompanionBuilder =
+    TodayEntriesCompanion Function({
+      required String id,
+      required String spaceId,
+      required DateTime createdAt,
+      required String createdBy,
+      required String updatedBy,
+      required String hlc,
+      Value<bool> deleted,
+      required String date,
+      required String nodeId,
+      required String sortKey,
+      Value<bool> hidden,
+      Value<bool> resolved,
+      Value<int> rowid,
+    });
+typedef $$TodayEntriesTableUpdateCompanionBuilder =
+    TodayEntriesCompanion Function({
+      Value<String> id,
+      Value<String> spaceId,
+      Value<DateTime> createdAt,
+      Value<String> createdBy,
+      Value<String> updatedBy,
+      Value<String> hlc,
+      Value<bool> deleted,
+      Value<String> date,
+      Value<String> nodeId,
+      Value<String> sortKey,
+      Value<bool> hidden,
+      Value<bool> resolved,
+      Value<int> rowid,
+    });
+
+class $$TodayEntriesTableFilterComposer
+    extends Composer<_$AppDatabase, $TodayEntriesTable> {
+  $$TodayEntriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get spaceId => $composableBuilder(
+    column: $table.spaceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedBy => $composableBuilder(
+    column: $table.updatedBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get hlc => $composableBuilder(
+    column: $table.hlc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nodeId => $composableBuilder(
+    column: $table.nodeId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sortKey => $composableBuilder(
+    column: $table.sortKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get hidden => $composableBuilder(
+    column: $table.hidden,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get resolved => $composableBuilder(
+    column: $table.resolved,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$TodayEntriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $TodayEntriesTable> {
+  $$TodayEntriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get spaceId => $composableBuilder(
+    column: $table.spaceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedBy => $composableBuilder(
+    column: $table.updatedBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get hlc => $composableBuilder(
+    column: $table.hlc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nodeId => $composableBuilder(
+    column: $table.nodeId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sortKey => $composableBuilder(
+    column: $table.sortKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get hidden => $composableBuilder(
+    column: $table.hidden,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get resolved => $composableBuilder(
+    column: $table.resolved,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$TodayEntriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TodayEntriesTable> {
+  $$TodayEntriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get spaceId =>
+      $composableBuilder(column: $table.spaceId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get createdBy =>
+      $composableBuilder(column: $table.createdBy, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedBy =>
+      $composableBuilder(column: $table.updatedBy, builder: (column) => column);
+
+  GeneratedColumn<String> get hlc =>
+      $composableBuilder(column: $table.hlc, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+
+  GeneratedColumn<String> get date =>
+      $composableBuilder(column: $table.date, builder: (column) => column);
+
+  GeneratedColumn<String> get nodeId =>
+      $composableBuilder(column: $table.nodeId, builder: (column) => column);
+
+  GeneratedColumn<String> get sortKey =>
+      $composableBuilder(column: $table.sortKey, builder: (column) => column);
+
+  GeneratedColumn<bool> get hidden =>
+      $composableBuilder(column: $table.hidden, builder: (column) => column);
+
+  GeneratedColumn<bool> get resolved =>
+      $composableBuilder(column: $table.resolved, builder: (column) => column);
+}
+
+class $$TodayEntriesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $TodayEntriesTable,
+          TodayEntry,
+          $$TodayEntriesTableFilterComposer,
+          $$TodayEntriesTableOrderingComposer,
+          $$TodayEntriesTableAnnotationComposer,
+          $$TodayEntriesTableCreateCompanionBuilder,
+          $$TodayEntriesTableUpdateCompanionBuilder,
+          (
+            TodayEntry,
+            BaseReferences<_$AppDatabase, $TodayEntriesTable, TodayEntry>,
+          ),
+          TodayEntry,
+          PrefetchHooks Function()
+        > {
+  $$TodayEntriesTableTableManager(_$AppDatabase db, $TodayEntriesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TodayEntriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TodayEntriesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TodayEntriesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> spaceId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<String> createdBy = const Value.absent(),
+                Value<String> updatedBy = const Value.absent(),
+                Value<String> hlc = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<String> date = const Value.absent(),
+                Value<String> nodeId = const Value.absent(),
+                Value<String> sortKey = const Value.absent(),
+                Value<bool> hidden = const Value.absent(),
+                Value<bool> resolved = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TodayEntriesCompanion(
+                id: id,
+                spaceId: spaceId,
+                createdAt: createdAt,
+                createdBy: createdBy,
+                updatedBy: updatedBy,
+                hlc: hlc,
+                deleted: deleted,
+                date: date,
+                nodeId: nodeId,
+                sortKey: sortKey,
+                hidden: hidden,
+                resolved: resolved,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String spaceId,
+                required DateTime createdAt,
+                required String createdBy,
+                required String updatedBy,
+                required String hlc,
+                Value<bool> deleted = const Value.absent(),
+                required String date,
+                required String nodeId,
+                required String sortKey,
+                Value<bool> hidden = const Value.absent(),
+                Value<bool> resolved = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TodayEntriesCompanion.insert(
+                id: id,
+                spaceId: spaceId,
+                createdAt: createdAt,
+                createdBy: createdBy,
+                updatedBy: updatedBy,
+                hlc: hlc,
+                deleted: deleted,
+                date: date,
+                nodeId: nodeId,
+                sortKey: sortKey,
+                hidden: hidden,
+                resolved: resolved,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$TodayEntriesTable, TodayEntry>(table),
+                  BaseReferences<_$AppDatabase, $TodayEntriesTable, TodayEntry>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$TodayEntriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $TodayEntriesTable,
+      TodayEntry,
+      $$TodayEntriesTableFilterComposer,
+      $$TodayEntriesTableOrderingComposer,
+      $$TodayEntriesTableAnnotationComposer,
+      $$TodayEntriesTableCreateCompanionBuilder,
+      $$TodayEntriesTableUpdateCompanionBuilder,
+      (
+        TodayEntry,
+        BaseReferences<_$AppDatabase, $TodayEntriesTable, TodayEntry>,
+      ),
+      TodayEntry,
+      PrefetchHooks Function()
+    >;
+typedef $$UserSettingsTableCreateCompanionBuilder =
+    UserSettingsCompanion Function({
+      required String id,
+      required String spaceId,
+      required DateTime createdAt,
+      required String createdBy,
+      required String updatedBy,
+      required String hlc,
+      Value<bool> deleted,
+      required String key,
+      required String value,
+      Value<int> rowid,
+    });
+typedef $$UserSettingsTableUpdateCompanionBuilder =
+    UserSettingsCompanion Function({
+      Value<String> id,
+      Value<String> spaceId,
+      Value<DateTime> createdAt,
+      Value<String> createdBy,
+      Value<String> updatedBy,
+      Value<String> hlc,
+      Value<bool> deleted,
+      Value<String> key,
+      Value<String> value,
+      Value<int> rowid,
+    });
+
+class $$UserSettingsTableFilterComposer
+    extends Composer<_$AppDatabase, $UserSettingsTable> {
+  $$UserSettingsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get spaceId => $composableBuilder(
+    column: $table.spaceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedBy => $composableBuilder(
+    column: $table.updatedBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get hlc => $composableBuilder(
+    column: $table.hlc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get key => $composableBuilder(
+    column: $table.key,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get value => $composableBuilder(
+    column: $table.value,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$UserSettingsTableOrderingComposer
+    extends Composer<_$AppDatabase, $UserSettingsTable> {
+  $$UserSettingsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get spaceId => $composableBuilder(
+    column: $table.spaceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedBy => $composableBuilder(
+    column: $table.updatedBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get hlc => $composableBuilder(
+    column: $table.hlc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get key => $composableBuilder(
+    column: $table.key,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get value => $composableBuilder(
+    column: $table.value,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$UserSettingsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $UserSettingsTable> {
+  $$UserSettingsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get spaceId =>
+      $composableBuilder(column: $table.spaceId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get createdBy =>
+      $composableBuilder(column: $table.createdBy, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedBy =>
+      $composableBuilder(column: $table.updatedBy, builder: (column) => column);
+
+  GeneratedColumn<String> get hlc =>
+      $composableBuilder(column: $table.hlc, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+
+  GeneratedColumn<String> get key =>
+      $composableBuilder(column: $table.key, builder: (column) => column);
+
+  GeneratedColumn<String> get value =>
+      $composableBuilder(column: $table.value, builder: (column) => column);
+}
+
+class $$UserSettingsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $UserSettingsTable,
+          UserSetting,
+          $$UserSettingsTableFilterComposer,
+          $$UserSettingsTableOrderingComposer,
+          $$UserSettingsTableAnnotationComposer,
+          $$UserSettingsTableCreateCompanionBuilder,
+          $$UserSettingsTableUpdateCompanionBuilder,
+          (
+            UserSetting,
+            BaseReferences<_$AppDatabase, $UserSettingsTable, UserSetting>,
+          ),
+          UserSetting,
+          PrefetchHooks Function()
+        > {
+  $$UserSettingsTableTableManager(_$AppDatabase db, $UserSettingsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$UserSettingsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$UserSettingsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$UserSettingsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> spaceId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<String> createdBy = const Value.absent(),
+                Value<String> updatedBy = const Value.absent(),
+                Value<String> hlc = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<String> key = const Value.absent(),
+                Value<String> value = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => UserSettingsCompanion(
+                id: id,
+                spaceId: spaceId,
+                createdAt: createdAt,
+                createdBy: createdBy,
+                updatedBy: updatedBy,
+                hlc: hlc,
+                deleted: deleted,
+                key: key,
+                value: value,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String spaceId,
+                required DateTime createdAt,
+                required String createdBy,
+                required String updatedBy,
+                required String hlc,
+                Value<bool> deleted = const Value.absent(),
+                required String key,
+                required String value,
+                Value<int> rowid = const Value.absent(),
+              }) => UserSettingsCompanion.insert(
+                id: id,
+                spaceId: spaceId,
+                createdAt: createdAt,
+                createdBy: createdBy,
+                updatedBy: updatedBy,
+                hlc: hlc,
+                deleted: deleted,
+                key: key,
+                value: value,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$UserSettingsTable, UserSetting>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $UserSettingsTable,
+                    UserSetting
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$UserSettingsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $UserSettingsTable,
+      UserSetting,
+      $$UserSettingsTableFilterComposer,
+      $$UserSettingsTableOrderingComposer,
+      $$UserSettingsTableAnnotationComposer,
+      $$UserSettingsTableCreateCompanionBuilder,
+      $$UserSettingsTableUpdateCompanionBuilder,
+      (
+        UserSetting,
+        BaseReferences<_$AppDatabase, $UserSettingsTable, UserSetting>,
+      ),
+      UserSetting,
+      PrefetchHooks Function()
+    >;
 typedef $$ChangeLogTableCreateCompanionBuilder = ChangeLogCompanion Function({
   required String opId,
   required String spaceId,
@@ -18763,6 +23281,14 @@ class $AppDatabaseManager {
       $$RemindersTableTableManager(_db, _db.reminders);
   $$NodeUserPrefsTableTableManager get nodeUserPrefs =>
       $$NodeUserPrefsTableTableManager(_db, _db.nodeUserPrefs);
+  $$TimeEntriesTableTableManager get timeEntries =>
+      $$TimeEntriesTableTableManager(_db, _db.timeEntries);
+  $$ActivityTableTableManager get activity =>
+      $$ActivityTableTableManager(_db, _db.activity);
+  $$TodayEntriesTableTableManager get todayEntries =>
+      $$TodayEntriesTableTableManager(_db, _db.todayEntries);
+  $$UserSettingsTableTableManager get userSettings =>
+      $$UserSettingsTableTableManager(_db, _db.userSettings);
   $$ChangeLogTableTableManager get changeLog =>
       $$ChangeLogTableTableManager(_db, _db.changeLog);
   $$DevicesTableTableManager get devices =>

@@ -17,6 +17,8 @@ import 'markdown.dart';
 import 'notes_column.dart';
 import 'peek.dart';
 import 'tags.dart';
+import 'time_ui.dart';
+import 'timer.dart';
 import 'values.dart';
 import 'removal.dart';
 import 'tree_pane.dart';
@@ -227,32 +229,56 @@ class _DetailState extends ConsumerState<_Detail> {
           ),
         ],
         const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: AutosaveField(
-                value: node.title,
-                autofocus: node.title.isEmpty,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  decoration: isFinished(node.status) && !isNote
-                      ? TextDecoration.lineThrough
-                      : null,
-                ),
-                decoration: InputDecoration(
-                  hintText: l10n.titleHint,
-                  border: InputBorder.none,
-                ),
-                onSave: (title) async =>
-                    (await _repo(ref)).rename(node.id, title),
+        LayoutBuilder(
+          builder: (context, c) {
+            final title = AutosaveField(
+              value: node.title,
+              autofocus: node.title.isEmpty,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                decoration: isFinished(node.status) && !isNote
+                    ? TextDecoration.lineThrough
+                    : null,
               ),
-            ),
-            if (!isNote) ...[
-              StatusMenuButton(node: node),
-              const SizedBox(width: 24),
-              DoneButton(node: node),
-            ],
-            NodeMenu(node: node, onLeave: widget.onLeave),
-          ],
+              decoration: InputDecoration(
+                hintText: l10n.titleHint,
+                border: InputBorder.none,
+              ),
+              onSave: (title) async =>
+                  (await _repo(ref)).rename(node.id, title),
+            );
+            final actions = [
+              if (!isNote) ...[
+                TimerButton(node: node),
+                StatusMenuButton(node: node),
+                const SizedBox(width: 24),
+                DoneButton(node: node),
+              ],
+              NodeMenu(node: node, onLeave: widget.onLeave),
+            ];
+            // Narrow (phones): the buttons go on their own row.
+            if (c.maxWidth < 560 && !isNote) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  title,
+                  Row(
+                    children: [
+                      actions[0],
+                      actions[1],
+                      const Spacer(),
+                      ...actions.skip(3),
+                    ],
+                  ),
+                ],
+              );
+            }
+            return Row(
+              children: [
+                Expanded(child: title),
+                ...actions,
+              ],
+            );
+          },
         ),
         if (!isNote) ...[
           const SizedBox(height: 4),
@@ -260,6 +286,11 @@ class _DetailState extends ConsumerState<_Detail> {
         ],
         const SizedBox(height: 6),
         TagChips(node: node),
+        if (!isNote) ...[
+          const SizedBox(height: 6),
+          TimeChips(node: node),
+          ProgressRow(node: node),
+        ],
         const SizedBox(height: 12),
         Wrap(
           spacing: 12,
