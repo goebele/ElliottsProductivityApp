@@ -1,0 +1,37 @@
+-- Local-only full-text index over node titles and text (§5.4, §6.6).
+import 'tables.dart';
+
+-- External content: it reads `nodes`, and these triggers keep it in step.
+CREATE VIRTUAL TABLE node_search USING fts5(
+  title,
+  body_md,
+  content=nodes,
+  content_rowid=rowid,
+  tokenize='unicode61 remove_diacritics 2'
+);
+
+CREATE TRIGGER nodes_search_insert AFTER INSERT ON nodes BEGIN
+  INSERT INTO node_search(rowid, title, body_md)
+  VALUES (new.rowid, new.title, new.body_md);
+END;
+
+CREATE TRIGGER nodes_search_delete AFTER DELETE ON nodes BEGIN
+  INSERT INTO node_search(node_search, rowid, title, body_md)
+  VALUES ('delete', old.rowid, old.title, old.body_md);
+END;
+
+CREATE TRIGGER nodes_search_update AFTER UPDATE OF title, body_md ON nodes BEGIN
+  INSERT INTO node_search(node_search, rowid, title, body_md)
+  VALUES ('delete', old.rowid, old.title, old.body_md);
+  INSERT INTO node_search(rowid, title, body_md)
+  VALUES (new.rowid, new.title, new.body_md);
+END;
+
+-- Local-only: attachment filenames and the text of .txt/.md files (§6.6).
+-- Kept in step by the attachment repository; rebuildable from the files.
+CREATE VIRTUAL TABLE attachment_search USING fts5(
+  attachment_id UNINDEXED,
+  filename,
+  content,
+  tokenize='unicode61 remove_diacritics 2'
+);
