@@ -327,7 +327,7 @@ class PeekCard extends ConsumerWidget {
         ],
         if (node.bodyMd.trim().isNotEmpty) ...[
           const SizedBox(height: 8),
-          MarkdownView(node.bodyMd),
+          MarkdownView(node.bodyMd, onOpenNode: onOpen),
         ],
         if (notes.isNotEmpty) ...[
           const SizedBox(height: 8),

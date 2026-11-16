@@ -6,6 +6,7 @@ import '../domain/node_repository.dart';
 import '../l10n/app_localizations.dart';
 import '../providers.dart';
 import '../data/database.dart';
+import '../domain/completion.dart';
 import 'done_button.dart';
 import 'removal.dart';
 import 'labels.dart';
@@ -180,6 +181,12 @@ enum DropZone { before, inside, after }
 
 /// Whether [drag] may be dropped on the row [id] at [place]: never on itself
 /// or anywhere inside its own subtree.
+/// What the tree shows under a row: nothing for a task with a completion
+/// condition, whose items are its checkbox lines (§6.7.1).
+extension on NodeWithChildCount {
+  int get treeCount => CompletionService.hasRequirements(node) ? 0 : childCount;
+}
+
 bool canDrop(TreeDrag drag, String id, TreePlace place) =>
     drag.id != id && !place.path.contains(drag.id);
 
@@ -226,10 +233,14 @@ Future<void> moveDropped(
   try {
     await moveTo(newParent, index);
   } on MoveWouldCreateCycleException {
-    messenger?.showSnackBar(SnackBar(content: Text(l10n.cantMoveThere)));
+    messenger?.showSnackBar(
+      SnackBar(persist: false, content: Text(l10n.cantMoveThere)),
+    );
     return;
   } on PlacementNotAllowedException {
-    messenger?.showSnackBar(SnackBar(content: Text(l10n.cantMoveThere)));
+    messenger?.showSnackBar(
+      SnackBar(persist: false, content: Text(l10n.cantMoveThere)),
+    );
     return;
   }
   if (newParent != null) expanded.expandAll([newParent]);
@@ -237,6 +248,7 @@ Future<void> moveDropped(
     ?..hideCurrentSnackBar()
     ..showSnackBar(
       SnackBar(
+        persist: false,
         content: Text(l10n.movedItem(l10n.titleOrUntitled(drag.title))),
         action: SnackBarAction(
           label: l10n.undo,
@@ -272,7 +284,7 @@ class _TreeBranch extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final node = entry.node;
     final expanded = ref.watch(expandedNodesProvider).contains(node.id);
-    final hasChildren = entry.childCount > 0;
+    final hasChildren = entry.treeCount > 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -426,9 +438,9 @@ class _TreeRowState extends ConsumerState<_TreeRow> {
               ),
             ),
             if (entry.isShortcut) const ShortcutMarker(),
-            if (entry.childCount > 0)
+            if (entry.treeCount > 0)
               Text(
-                '${entry.childCount}',
+                '${entry.treeCount}',
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -442,7 +454,7 @@ class _TreeRowState extends ConsumerState<_TreeRow> {
       controller: _menu,
       menuChildren: [
         if (hasStatus) ...statusMenuItems(context, ref, node),
-        if (entry.childCount > 0) ...[
+        if (entry.treeCount > 0) ...[
           const Divider(height: 1),
           MenuItemButton(
             leadingIcon: const Icon(Icons.zoom_in),

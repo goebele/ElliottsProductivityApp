@@ -91,8 +91,9 @@ class _ReviewPageState extends ConsumerState<ReviewPage> {
         ClipboardData(text: reviewMarkdown(r, title: title)),
       );
       if (context.mounted) {
-        ScaffoldMessenger.maybeOf(context)
-            ?.showSnackBar(SnackBar(content: Text(l10n.reviewCopied)));
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          SnackBar(persist: false, content: Text(l10n.reviewCopied)),
+        );
       }
     }
 

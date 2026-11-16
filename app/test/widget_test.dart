@@ -7,6 +7,7 @@ import 'package:elliotts_productivity_app/domain/repeat_rule.dart';
 import 'package:elliotts_productivity_app/platform/reminder_notifier.dart';
 import 'package:elliotts_productivity_app/platform/timer_platform.dart';
 import 'package:elliotts_productivity_app/providers.dart';
+import 'package:elliotts_productivity_app/ui/done_button.dart' show StatusChip;
 import 'package:elliotts_productivity_app/ui/app.dart';
 import 'package:elliotts_productivity_app/ui/calendar_page.dart';
 import 'package:elliotts_productivity_app/ui/today_page.dart';
@@ -29,8 +30,8 @@ Future<void> settle(WidgetTester tester) async {
   }
 }
 
-const wide = Size(1200, 800);
-const phone = Size(400, 800);
+const wide = Size(1200, 1000);
+const phone = Size(400, 1400);
 
 void main() {
   late TestEnv env;
@@ -218,17 +219,13 @@ void main() {
       'Description (Markdown)',
     );
     expect(description, findsNothing);
-    await tester.tap(find.widgetWithText(ActionChip, 'Description'));
+    await tester.tap(find.text('Add a description…'));
     await settle(tester);
     await tester.enterText(description, 'Leg day');
     await settle(tester);
 
-    // The view switcher by the Items heading.
-    await tester.tap(find.byTooltip('Checklist'));
-    await settle(tester);
-
     // One dialog for deadline, time slot and repeat.
-    await tester.tap(find.widgetWithText(ActionChip, 'Date & time'));
+    await tester.tap(find.byTooltip('Set date & time'));
     await settle(tester);
     expect(find.widgetWithText(SwitchListTile, 'Time slot'), findsOneWidget);
     await tester.tap(find.widgetWithText(SwitchListTile, 'Deadline'));
@@ -241,12 +238,12 @@ void main() {
 
     var node = (await env.nodes.get(id))!;
     expect(node.bodyMd, 'Leg day');
-    expect(node.childView, ChildView.checklist);
+    expect(find.byTooltip('Checklist'), findsNothing, reason: 'no boxes');
     expect(node.dueDate, dateKey(DateTime.now()));
     expect(node.startAt, isNull, reason: 'time slot left off');
     expect(node.rrule, 'FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR');
     expect(find.widgetWithText(InputChip, 'Every weekday'), findsOneWidget);
-    expect(find.widgetWithText(ActionChip, 'Date & time'), findsNothing);
+    expect(find.byTooltip('Set date & time'), findsOneWidget);
     // The tree icon follows what the task has: it repeats, so a routine.
     expect(
       find.descendant(
@@ -315,14 +312,13 @@ void main() {
     await tester.tap(inTree('Trip'));
     await settle(tester);
     expect(find.widgetWithText(Card, 'Book hotel'), findsOneWidget);
-    expect(
-      find.text('Packing ideas'),
-      findsNothing,
-      reason: 'notes column starts collapsed',
-    );
     expect(inTree('Packing ideas'), findsNothing);
-
-    await tester.tap(find.text('Notes & files (1)'));
+    // The notes panel starts open, and collapses to a strip.
+    expect(find.widgetWithText(Card, 'Packing ideas'), findsOneWidget);
+    await tester.tap(find.byTooltip('Hide notes & files'));
+    await settle(tester);
+    expect(find.text('Packing ideas'), findsNothing);
+    await tester.tap(find.byTooltip('Show notes & files'));
     await settle(tester);
     expect(find.widgetWithText(Card, 'Packing ideas'), findsOneWidget);
     expect(find.text('Sunscreen'), findsOneWidget);
@@ -335,7 +331,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Status'), findsNothing);
-    expect(find.widgetWithText(ActionChip, 'Date & time'), findsNothing);
+    expect(find.byTooltip('Set date & time'), findsNothing);
     await tester.enterText(
       find.widgetWithText(TextField, 'Title'),
       'Questions',
@@ -400,7 +396,7 @@ void main() {
     await tester.tap(inTree('Swim'));
     await settle(tester);
 
-    await tester.tap(find.widgetWithText(ActionChip, 'Date & time'));
+    await tester.tap(find.byTooltip('Set date & time'));
     await settle(tester);
     await tester.tap(find.widgetWithText(SwitchListTile, 'Repeat'));
     await tester.pump();
@@ -475,8 +471,6 @@ void main() {
     await settle(tester);
     expect(find.text('Done: Arms'), findsOneWidget);
     expect(find.textContaining('Every 3 days · last done'), findsOneWidget);
-    // The parent is done for today too, once its pick is (Q-L).
-    expect(find.text('Completed for today'), findsOneWidget);
 
     await tester.tap(
       find.descendant(
@@ -506,8 +500,7 @@ void main() {
 
     await tester.tap(inTree('Groceries'));
     await settle(tester);
-    await tester.tap(find.byTooltip('Checklist'));
-    await settle(tester);
+    // Task cards have their own tick box.
     await tester.tap(find.byType(Checkbox));
     await settle(tester);
 
@@ -516,9 +509,74 @@ void main() {
     await stopApp(tester);
   });
 
-  testWidgets('header: an explicit Done button, then Completed and Reopen', (
+  testWidgets('checkbox lines: a tap ticks; no page; menu renames, deletes', (
     tester,
   ) async {
+    late String shop;
+    late String milk;
+    await startApp(
+      tester,
+      size: wide,
+      seed: (env) async {
+        shop = await env.nodes.create(title: 'Shopping');
+        milk = await env.nodes.completion.addCheckbox(shop, 'Milk');
+        await env.nodes.completion.addCheckbox(shop, 'Eggs');
+      },
+    );
+    expect(inTree('Milk'), findsNothing, reason: 'lines are not in the tree');
+    await tester.tap(inTree('Shopping'));
+    await settle(tester);
+
+    // Tapping a line ticks it rather than opening it.
+    await tester.tap(find.text('Milk'));
+    await settle(tester);
+    expect(titleField('Shopping'), findsOneWidget);
+    expect((await env.nodes.get(milk))!.status, NodeStatus.done);
+
+    // The + by the field adds a line and stays.
+    await tester.enterText(addField, 'Bread');
+    await tester.tap(find.byTooltip('Add a checkbox'));
+    await settle(tester);
+    expect(titleField('Shopping'), findsOneWidget);
+    expect(find.text('Bread'), findsOneWidget);
+
+    // Right-click: rename.
+    await tester.tap(find.text('Eggs'), buttons: kSecondaryButton);
+    await settle(tester);
+    await tester.tap(find.text('Rename'));
+    await settle(tester);
+    await tester.enterText(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.byType(TextField),
+      ),
+      'Free-range eggs',
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await settle(tester);
+    expect(find.text('Free-range eggs'), findsOneWidget);
+
+    // Long-press: delete, with Undo.
+    await tester.longPress(find.text('Bread'));
+    await settle(tester);
+    await tester.tap(find.text('Delete'));
+    await settle(tester);
+    expect(find.text('Bread'), findsNothing);
+    await tester.tap(find.widgetWithText(SnackBarAction, 'Undo'));
+    await settle(tester);
+    expect(find.text('Bread'), findsOneWidget);
+
+    // A task with a condition can't take tasks, nor lines children.
+    await tester.runAsync(
+      () => expectLater(
+        env.nodes.create(title: 'x', parentId: milk),
+        throwsA(isA<PlacementNotAllowedException>()),
+      ),
+    );
+    await stopApp(tester);
+  }, variant: TargetPlatformVariant.only(TargetPlatform.windows));
+
+  testWidgets('status chip: sets any status', (tester) async {
     late String taskId;
     await startApp(
       tester,
@@ -529,45 +587,12 @@ void main() {
     );
     await tester.tap(inTree('Call plumber'));
     await settle(tester);
-    expect(
-      find.byIcon(Icons.check_box_outline_blank),
-      findsNothing,
-      reason: 'nothing looks like a checkbox you could tick',
-    );
-
-    await tester.tap(find.widgetWithText(FilledButton, 'Done'));
-    await settle(tester);
-    expect((await env.nodes.get(taskId))!.status, NodeStatus.done);
-    expect(find.textContaining('Completed '), findsOneWidget);
-    expect(
-      find.widgetWithText(FilledButton, 'Done'),
-      findsNothing,
-      reason: 'a button that only completes, not a toggle',
-    );
-
-    // Undo from the snack bar puts it back as it was.
-    await tester.tap(find.widgetWithText(SnackBarAction, 'Undo'));
-    await settle(tester);
-    expect((await env.nodes.get(taskId))!.status, NodeStatus.open);
-
-    await tester.tap(find.widgetWithText(FilledButton, 'Done'));
-    await settle(tester);
-    await tester.tap(find.widgetWithText(TextButton, 'Reopen'));
-    await settle(tester);
-    expect((await env.nodes.get(taskId))!.status, NodeStatus.open);
-
-    // The compact menu beside the title sets any status.
-    await tester.tap(find.widgetWithText(TextButton, 'Open'));
+    await tester.tap(find.widgetWithText(StatusChip, 'Open'));
     await settle(tester);
     await tester.tap(find.widgetWithText(MenuItemButton, 'Waiting'));
     await settle(tester);
     expect((await env.nodes.get(taskId))!.status, NodeStatus.waiting);
-
-    // Waiting still completes with one press.
-    await tester.tap(find.widgetWithText(FilledButton, 'Done'));
-    await settle(tester);
-    expect((await env.nodes.get(taskId))!.status, NodeStatus.done);
-
+    expect(find.widgetWithText(StatusChip, 'Waiting'), findsOneWidget);
     await stopApp(tester);
   });
 
@@ -601,40 +626,6 @@ void main() {
     await stopApp(tester);
   }, variant: TargetPlatformVariant.only(TargetPlatform.windows));
 
-  testWidgets('header: a routine is done for today and keeps going', (
-    tester,
-  ) async {
-    late String id;
-    await startApp(
-      tester,
-      size: wide,
-      seed: (env) async {
-        id = await env.nodes.create(title: 'Stretch');
-        await env.nodes.setDates(
-          id,
-          NodeDates(rrule: 'FREQ=DAILY', repeatStart: DateTime.now()),
-        );
-      },
-    );
-    await tester.tap(inTree('Stretch'));
-    await settle(tester);
-
-    await tester.tap(find.widgetWithText(FilledButton, 'Done for today'));
-    await settle(tester);
-    expect((await env.nodes.get(id))!.status, NodeStatus.open);
-    expect(find.text('Completed for today'), findsWidgets);
-    expect(find.widgetWithText(TextButton, 'Open'), findsOneWidget);
-
-    // The inline Undo (the snack bar offers one too).
-    await tester.tap(
-      find.widgetWithText(TextButton, 'Undo').first.hitTestable(),
-    );
-    await settle(tester);
-    expect(find.widgetWithText(FilledButton, 'Done for today'), findsOneWidget);
-
-    await stopApp(tester);
-  });
-
   testWidgets('description: close the editor, click the text to edit again', (
     tester,
   ) async {
@@ -650,7 +641,7 @@ void main() {
     await settle(tester);
     final editor = find.widgetWithText(TextField, 'Description (Markdown)');
 
-    await tester.tap(find.widgetWithText(ActionChip, 'Description'));
+    await tester.tap(find.text('Add a description…'));
     await settle(tester);
     await tester.enterText(editor, 'Leg day');
     await tester.tap(find.byTooltip('Close description'));
@@ -677,7 +668,7 @@ void main() {
     await tester.enterText(editor, '');
     await tester.tap(find.byTooltip('Close description'));
     await settle(tester);
-    expect(find.widgetWithText(ActionChip, 'Description'), findsOneWidget);
+    expect(find.text('Add a description…'), findsOneWidget);
 
     await stopApp(tester);
   });
@@ -988,8 +979,9 @@ void main() {
       size: wide,
       seed: (env) async {
         recipe = await env.nodes.create(title: 'Bread');
+        // Steps are a way to show checkboxes (§6.7.1).
         for (final t in ['Mix', 'Knead', 'Bake']) {
-          await env.nodes.create(title: t, parentId: recipe);
+          await env.nodes.completion.addCheckbox(recipe, t);
         }
       },
     );
@@ -1033,7 +1025,7 @@ void main() {
     );
     await tester.tap(inTree('Gym'));
     await settle(tester);
-    await tester.tap(find.widgetWithText(ActionChip, 'Description'));
+    await tester.tap(find.text('Add a description…'));
     await settle(tester);
     final editor = find.widgetWithText(TextField, 'Description (Markdown)');
     await tester.enterText(editor, 'Leg day');
@@ -1398,7 +1390,7 @@ void main() {
     // Tie it to Trip.
     await tester.tap(inTree('Trip'));
     await settle(tester);
-    await tester.tap(find.widgetWithText(ActionChip, 'Value'));
+    await tester.tap(find.byTooltip('Add a value'));
     await settle(tester);
     await tester.tap(find.widgetWithText(CheckboxMenuButton, 'Family'));
     await settle(tester);
@@ -1434,7 +1426,7 @@ void main() {
     // A picker tag on Brushes.
     await tester.tap(inTree('Brushes'));
     await settle(tester);
-    await tester.tap(find.widgetWithText(ActionChip, 'Tag'));
+    await tester.tap(find.byTooltip('Add a tag'));
     await settle(tester);
     await tester.enterText(
       find.widgetWithText(TextField, 'Type a tag and press Enter'),
@@ -1657,7 +1649,7 @@ void main() {
     // On Report, the favourite is one tap in the picker.
     await tester.tap(inTree('Report'));
     await settle(tester);
-    await tester.tap(find.widgetWithText(ActionChip, 'Tag'));
+    await tester.tap(find.byTooltip('Add a tag'));
     await settle(tester);
     await tester.tap(find.widgetWithText(FilterChip, '#work'));
     await settle(tester);
@@ -2071,14 +2063,12 @@ void main() {
               repeatStart: todayAt(0),
             ),
           );
-          await env.nodes.setChildView(chores, ChildView.checklist);
-          dishes = await env.nodes.create(title: 'Dishes', parentId: chores);
-          await env.nodes.create(title: 'Floor', parentId: chores);
+          dishes = await env.nodes.completion.addCheckbox(chores, 'Dishes');
+          await env.nodes.completion.addCheckbox(chores, 'Floor');
         },
       );
       await tester.tap(inTree('Chores'));
       await settle(tester);
-      expect(find.text('Done for today'), findsOneWidget);
       final boxes = find.byType(Checkbox);
       expect(boxes, findsNWidgets(2));
       await tester.tap(boxes.first);
@@ -2087,10 +2077,14 @@ void main() {
         (await tester.runAsync(() => env.nodes.get(dishes)))!.status,
         NodeStatus.open,
       );
-      expect(find.text('Done for today'), findsOneWidget);
       await tester.tap(boxes.last);
       await settle(tester);
-      expect(find.text('Completed for today'), findsOneWidget);
+      final chores = (await tester.runAsync(() => env.nodes.get(dishes)))!
+          .parentId!;
+      final occ = await tester.runAsync(
+        () => env.nodes.occurrenceStatus(chores, today: DateTime.now()),
+      );
+      expect(occ!.done, isTrue);
       await stopApp(tester);
     },
   );
@@ -2108,7 +2102,7 @@ void main() {
     );
     await tester.tap(inTree('Taxes'));
     await settle(tester);
-    await tester.tap(find.widgetWithText(ActionChip, 'Date & time'));
+    await tester.tap(find.byTooltip('Set date & time'));
     await settle(tester);
     await tester.tap(find.widgetWithText(SwitchListTile, 'Deadline'));
     await settle(tester);
@@ -2190,7 +2184,7 @@ void main() {
     // The chip by an item's dates jumps too.
     await tester.tap(inTree('Dentist'));
     await settle(tester);
-    await tester.tap(find.widgetWithText(ActionChip, 'Show in calendar'));
+    await tester.tap(find.byTooltip('Show in calendar'));
     await settle(tester);
     expect(find.text('Only Dentist'), findsOneWidget);
     expect(inCalendar('Flight'), findsNothing);
@@ -2278,7 +2272,7 @@ void main() {
     expect(find.text('1/2 · 50%'), findsOneWidget);
     expect(find.text('Items: 0m of 45m'), findsOneWidget);
 
-    await tester.tap(find.widgetWithText(ActionChip, 'Estimate'));
+    await tester.tap(find.byTooltip('Set an estimate'));
     await settle(tester);
     await tester.tap(find.widgetWithText(ChoiceChip, '2h'));
     await settle(tester);
@@ -2382,7 +2376,7 @@ void main() {
     expect(find.byType(TodayPage), findsOneWidget);
     expect(onToday('Taxes'), findsOneWidget);
     expect(onToday('Water plants'), findsOneWidget);
-    expect(find.text('Overdue · 2 days'), findsOneWidget);
+    expect(find.textContaining('Overdue · 2 days'), findsOneWidget);
     expect(onToday('Read book'), findsNothing);
 
     // Remove one for today, then undo.
@@ -2408,7 +2402,7 @@ void main() {
     await tester.tap(find.widgetWithText(ListTile, 'Today'));
     await settle(tester);
     expect(onToday('Read book'), findsOneWidget);
-    expect(find.text('Added by you'), findsOneWidget);
+    expect(find.textContaining('Added by you'), findsOneWidget);
 
     // Routines off: Water plants goes.
     await tester.tap(find.byTooltip('What Today adds by itself'));
@@ -2509,6 +2503,389 @@ void main() {
     );
     await settle(tester);
     expect(find.byType(CalendarPage), findsOneWidget);
+    await stopApp(tester);
+  });
+
+  // ------------------------------------------------------------ note links
+
+  testWidgets('note links: [[ opens the picker; the link opens the note', (
+    tester,
+  ) async {
+    late String plan, packing;
+    await startApp(
+      tester,
+      size: const Size(1600, 1000),
+      seed: (env) async {
+        final trip = await env.nodes.create(title: 'Trip');
+        packing = await env.nodes.create(
+          title: 'Packing ideas',
+          type: NodeType.note,
+          parentId: trip,
+          bodyMd: 'Sunscreen',
+        );
+        plan = await env.nodes.create(
+          title: 'Plan',
+          type: NodeType.note,
+          parentId: trip,
+        );
+      },
+    );
+    await tester.tap(inTree('Trip'));
+    await settle(tester);
+    await tester.tap(find.text('Notes & files (2)'));
+    await settle(tester);
+    await tester.tap(find.widgetWithText(Card, 'Plan'));
+    await settle(tester);
+
+    // A new, empty note opens in its editor. Type, then [[.
+    final editor = find.widgetWithText(TextField, 'Write your note (Markdown)');
+    await tester.enterText(editor, 'Check [');
+    await settle(tester);
+    // Typing the second bracket opens the picker.
+    await tester.enterText(editor, 'Check [[');
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await settle(tester);
+    expect(find.text('Link to a note or item'), findsOneWidget);
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Search titles and text'),
+      'packing',
+    );
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await settle(tester);
+    await tester.tap(find.widgetWithText(ListTile, 'Packing ideas'));
+    await settle(tester);
+    expect(
+      tester.widget<TextField>(editor).controller!.text,
+      'Check [Packing ideas](epa://node/$packing)',
+    );
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await settle(tester);
+    final saved = await tester.runAsync(() => env.nodes.get(plan));
+    expect(saved!.bodyMd, 'Check [Packing ideas](epa://node/$packing)');
+
+    // The link opens the note, which lists Plan under "Linked from".
+    await tester.tapOnText(find.textRange.ofSubstring('Packing ideas'));
+    await settle(tester);
+    expect(find.text('Sunscreen'), findsOneWidget);
+    expect(find.text('Linked from 1:'), findsOneWidget);
+    expect(find.widgetWithText(ActionChip, 'Plan'), findsOneWidget);
+    await stopApp(tester);
+  });
+
+  testWidgets('note links: the toolbar button wraps the selected text', (
+    tester,
+  ) async {
+    late String target;
+    await startApp(
+      tester,
+      size: const Size(1600, 1000),
+      seed: (env) async {
+        target = await env.nodes.create(title: 'Budget');
+        await env.nodes.create(title: 'Trip');
+      },
+    );
+    await tester.tap(inTree('Trip'));
+    await settle(tester);
+    await tester.tap(find.text('Add a description…'));
+    await settle(tester);
+    final field = find.widgetWithText(TextField, 'Description (Markdown)');
+    await tester.enterText(field, 'Mind the money');
+    final controller = tester.widget<TextField>(field).controller!;
+    controller.selection = const TextSelection(baseOffset: 9, extentOffset: 14);
+    await tester.tap(find.byTooltip('Link to a note or item ([[)'));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await settle(tester);
+    await tester.tap(find.widgetWithText(ListTile, 'Budget'));
+    await settle(tester);
+    expect(controller.text, 'Mind the [money](epa://node/$target)');
+
+    // Ordinary links still use the Link button.
+    await tester.tap(find.byTooltip('Link'));
+    await settle(tester);
+    expect(controller.text, contains('(https://)'));
+    await stopApp(tester);
+  });
+
+  // ------------------------------------------------- completion conditions
+
+  testWidgets(
+    'requirements: + Requirement adds a counter that counts to done',
+    (tester) async {
+      late String id;
+      await startApp(
+        tester,
+        size: wide,
+        seed: (env) async {
+          id = await env.nodes.create(title: 'Practice problems');
+        },
+      );
+      await tester.tap(inTree('Practice problems'));
+      await settle(tester);
+      expect(find.text('Type'), findsNothing, reason: 'no type selector');
+
+      await tester.tap(find.widgetWithText(TextButton, 'Completion condition'));
+      await settle(tester);
+      await tester.tap(find.widgetWithText(MenuItemButton, 'Counter'));
+      await settle(tester);
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.byType(TextField),
+        ),
+        '2',
+      );
+      await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+      await settle(tester);
+      expect(find.text('0 / 2'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(FilledButton, '1'));
+      await settle(tester);
+      await tester.tap(find.widgetWithText(FilledButton, '1'));
+      await settle(tester);
+      expect(find.text('2 / 2'), findsOneWidget);
+      expect(
+        (await tester.runAsync(() => env.nodes.get(id)))!.status,
+        NodeStatus.done,
+      );
+      await stopApp(tester);
+    },
+  );
+
+  testWidgets('items: the button by the field makes a task and opens it', (
+    tester,
+  ) async {
+    await startApp(
+      tester,
+      size: wide,
+      seed: (env) async {
+        await env.nodes.create(title: 'Trip');
+      },
+    );
+    await tester.tap(inTree('Trip'));
+    await settle(tester);
+    await tester.enterText(addField, 'Book flight');
+    await tester.tap(find.byTooltip('New task under this, and open it'));
+    await settle(tester);
+    expect(titleField('Book flight'), findsOneWidget);
+    expect(find.text('Back to Trip'), findsNothing);
+    expect(find.text('Trip'), findsWidgets, reason: 'breadcrumb');
+    await stopApp(tester);
+  });
+
+  testWidgets('tag picker: the New tag button adds what is typed', (
+    tester,
+  ) async {
+    late String id;
+    await startApp(
+      tester,
+      size: wide,
+      seed: (env) async {
+        id = await env.nodes.create(title: 'Report');
+        await env.nodes.tags.add(id, 'work');
+      },
+    );
+    await tester.tap(inTree('Report'));
+    await settle(tester);
+    await tester.tap(find.byTooltip('Add a tag'));
+    await settle(tester);
+    final field = find.widgetWithText(TextField, 'Type a tag and press Enter');
+    expect(
+      tester
+          .widget<TextButton>(find.widgetWithText(TextButton, 'New tag'))
+          .onPressed,
+      isNull,
+      reason: 'nothing typed',
+    );
+    await tester.enterText(field, 'urgent');
+    await settle(tester);
+    await tester.tap(find.widgetWithText(TextButton, 'New tag #urgent'));
+    await settle(tester);
+    // An existing name says Add instead.
+    await tester.enterText(field, '#Work');
+    await settle(tester);
+    expect(find.widgetWithText(TextButton, 'Add #Work'), findsOneWidget);
+    final names = await tester.runAsync(
+      () async => [for (final t in await env.nodes.tags.of(id)) t.tag.name],
+    );
+    expect(names, containsAll(['urgent', 'work']));
+    await stopApp(tester);
+  });
+
+  testWidgets('today: + makes a task on Today and opens it (phone)', (
+    tester,
+  ) async {
+    await startApp(tester, size: phone, treeTab: false);
+    await tester.tap(find.byTooltip('New task for today'));
+    await settle(tester);
+    expect(find.text('Give it a title to continue'), findsOneWidget);
+    await tester.enterText(titleField('Title'), 'Call the bank');
+    await settle(tester);
+    await tester.pageBack();
+    await settle(tester);
+    expect(find.text('Call the bank'), findsOneWidget, reason: 'on Today');
+    await stopApp(tester);
+  });
+
+  testWidgets('snack bars with Undo time out', (tester) async {
+    await startApp(
+      tester,
+      size: wide,
+      seed: (env) async {
+        await env.nodes.create(title: 'Trip');
+      },
+    );
+    await tester.tap(find.text('New item'));
+    await settle(tester);
+    await tester.tap(inTree('Trip'));
+    await settle(tester);
+    expect(find.text('Removed an empty item'), findsOneWidget);
+    for (var i = 0; i < 12; i++) {
+      await tester.pump(const Duration(seconds: 1));
+    }
+    expect(find.text('Removed an empty item'), findsNothing);
+    await stopApp(tester);
+  });
+
+  testWidgets('leaving a blank new item moves it to Trash, with Undo', (
+    tester,
+  ) async {
+    await startApp(
+      tester,
+      size: wide,
+      seed: (env) async {
+        await env.nodes.create(title: 'Trip');
+      },
+    );
+    await tester.tap(find.text('New item'));
+    await settle(tester);
+    expect(find.text('Give it a title to continue'), findsOneWidget);
+    await tester.tap(inTree('Trip'));
+    await settle(tester);
+    expect(find.text('Removed an empty item'), findsOneWidget);
+    Future<List<Node>> live() async => [
+      for (final n in await env.db.select(env.db.nodes).get())
+        if (n.lifecycle == Lifecycle.live) n,
+    ];
+    expect((await tester.runAsync(live))!, hasLength(1));
+    await tester.tap(find.widgetWithText(SnackBarAction, 'Undo'));
+    await settle(tester);
+    expect((await tester.runAsync(live))!, hasLength(2));
+    await stopApp(tester);
+  });
+
+  testWidgets('items: view switch only for checkboxes; condition below', (
+    tester,
+  ) async {
+    await startApp(
+      tester,
+      size: wide,
+      seed: (env) async {
+        final trip = await env.nodes.create(title: 'Trip');
+        await env.nodes.create(title: 'Book flight', parentId: trip);
+        await env.nodes.create(title: 'Shopping');
+        final errands = await env.nodes.create(title: 'Errands');
+        await env.nodes.completion.addCheckbox(errands, 'Milk');
+      },
+    );
+    await tester.tap(inTree('Trip'));
+    await settle(tester);
+    expect(find.byTooltip('Checklist'), findsNothing, reason: 'tasks');
+    expect(
+      find.widgetWithText(TextButton, 'Completion condition'),
+      findsNothing,
+      reason: 'a parent is done through its tasks',
+    );
+    await tester.tap(inTree('Shopping'));
+    await settle(tester);
+    // Below the add field.
+    final field = tester.getTopLeft(addField);
+    final button = tester.getTopLeft(
+      find.widgetWithText(TextButton, 'Completion condition'),
+    );
+    expect(button.dy, greaterThan(field.dy));
+    await tester.tap(inTree('Errands'));
+    await settle(tester);
+    expect(find.byTooltip('Checklist'), findsOneWidget);
+    await stopApp(tester);
+  });
+
+  testWidgets('a new untitled task is locked until it has a title', (
+    tester,
+  ) async {
+    await startApp(
+      tester,
+      size: wide,
+      seed: (env) async {
+        await env.nodes.create(title: 'Trip');
+      },
+    );
+    await tester.tap(inTree('Trip'));
+    await settle(tester);
+    await tester.tap(find.byTooltip('New task under this, and open it'));
+    await settle(tester);
+    expect(find.text('Give it a title to continue'), findsOneWidget);
+    expect(find.text('Trip'), findsWidgets, reason: 'on the new page');
+    // The "+" can't make another one: the page is locked.
+    await tester.tap(
+      find.byTooltip('New task under this, and open it'),
+      warnIfMissed: false,
+    );
+    await settle(tester);
+    final all = (await tester.runAsync(
+      () => env.db.select(env.db.nodes).get(),
+    ))!;
+    expect(all.where((n) => n.title.isEmpty), hasLength(1));
+
+    await tester.enterText(titleField('Title'), 'Book flight');
+    await settle(tester);
+    expect(find.text('Give it a title to continue'), findsNothing);
+    await stopApp(tester);
+  });
+
+  testWidgets('today: tasks sharing a parent show under it, with progress', (
+    tester,
+  ) async {
+    await startApp(
+      tester,
+      size: const Size(1600, 1000),
+      seed: (env) async {
+        final workout = await env.nodes.create(title: 'Workout');
+        await env.nodes.setDates(
+          workout,
+          NodeDates(
+            rrule: const RepeatRule.daily().toRrule(),
+            repeatStart: todayAt(0),
+          ),
+        );
+        final pushups = await env.nodes.create(
+          title: 'Pushups',
+          parentId: workout,
+        );
+        final cardio = await env.nodes.create(
+          title: 'Cardio',
+          parentId: workout,
+        );
+        await env.nodes.create(title: 'Stretches', parentId: workout);
+        await env.nodes.completion.setCounter(pushups, 20);
+        await env.nodes.completion.setTimer(cardio, 30);
+      },
+    );
+    Finder onToday(String text) => find.descendant(
+      of: find.byType(TodayPage),
+      matching: find.textContaining(text),
+    );
+    expect(onToday('Workout'), findsOneWidget);
+    expect(onToday('0/3 done'), findsOneWidget);
+    expect(onToday('0/20'), findsOneWidget);
+    expect(onToday('0/30 min'), findsOneWidget);
+    expect(onToday('Define it'), findsOneWidget);
     await stopApp(tester);
   });
 }

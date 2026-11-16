@@ -60,4 +60,33 @@ void main() {
     );
     expect(markdownPlainText('  '), '');
   });
+
+  group('item links', () {
+    test('ids are read from epa:// links, once each, not from code', () {
+      const md =
+          'See [Packing](epa://node/abc-1) and [it again](epa://node/abc-1), '
+          '[web](https://x.com), `[code](epa://node/zzz)` and '
+          '[other](epa://node/def-2 "title").';
+      expect(nodeLinkIds(md), ['abc-1', 'def-2']);
+      expect(nodeIdFromUrl('epa://node/abc-1'), 'abc-1');
+      expect(nodeIdFromUrl('https://example.com'), isNull);
+      expect(nodeIdFromUrl(null), isNull);
+    });
+
+    test('insertNodeLink uses the selection or the title', () {
+      final plain = insertNodeLink(
+        const TextEdit('Go: ', 4, 4),
+        id: 'n1',
+        title: 'Packing [list]',
+      );
+      expect(plain.text, r'Go: [Packing \[list\]](epa://node/n1)');
+      expect(plain.start, plain.text.length);
+      final wrapped = insertNodeLink(
+        const TextEdit('Read this first', 5, 9),
+        id: 'n2',
+        title: 'Ignored',
+      );
+      expect(wrapped.text, 'Read [this](epa://node/n2) first');
+    });
+  });
 }

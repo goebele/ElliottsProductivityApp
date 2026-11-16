@@ -8,6 +8,7 @@ import '../platform/reminder_notifier.dart';
 import '../l10n/app_localizations.dart';
 import '../providers.dart';
 import 'calendar_page.dart';
+import 'property_rows.dart';
 import 'labels.dart';
 
 /// The optional things an item can have (DESIGN.md D5, rev. v0.5): a
@@ -17,16 +18,9 @@ import 'labels.dart';
 /// date & time dialog, and their ✕ removes just that part. With no dates
 /// yet, a single "+ Date & time" chip opens the dialog.
 class NodeAddOns extends ConsumerWidget {
-  const NodeAddOns({
-    super.key,
-    required this.node,
-    required this.descriptionShown,
-    required this.onAddDescription,
-  });
+  const NodeAddOns({super.key, required this.node});
 
   final Node node;
-  final bool descriptionShown;
-  final VoidCallback onAddDescription;
 
   Future<NodeRepository> _repo(WidgetRef ref) =>
       ref.read(nodeRepositoryProvider.future);
@@ -44,64 +38,60 @@ class NodeAddOns extends ConsumerWidget {
     final hasDates = dueDate != null || start != null || rrule != null;
     void openDates() => _editDates(context, ref);
 
+    // The task page's "When" row: its date chips, Show in calendar, and a
+    // small + that opens the dates dialog.
+    Widget chip({
+      required IconData icon,
+      required String label,
+      required Future<void> Function() onRemove,
+    }) => HoverDeleteChip(
+      builder: (x) => InputChip(
+        visualDensity: VisualDensity.compact,
+        avatar: Icon(icon, size: 18),
+        label: Text(label),
+        deleteIcon: x,
+        deleteButtonTooltipMessage: l10n.remove,
+        onPressed: openDates,
+        onDeleted: onRemove,
+      ),
+    );
+
     return Wrap(
-      spacing: 8,
-      runSpacing: 8,
+      spacing: 6,
+      runSpacing: 6,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         if (dueDate != null)
-          InputChip(
-            avatar: const Icon(Icons.flag_outlined),
-            label: Text(
-              l10n.dueOn(material.formatMediumDate(parseDateKey(dueDate))),
-            ),
-            deleteButtonTooltipMessage: l10n.remove,
-            onPressed: openDates,
-            onDeleted: () async => (await _repo(ref)).setDueDate(node.id, null),
+          chip(
+            icon: Icons.flag_outlined,
+            label: l10n.dueOn(material.formatMediumDate(parseDateKey(dueDate))),
+            onRemove: () async => (await _repo(ref)).setDueDate(node.id, null),
           ),
         if (start != null && end != null)
-          InputChip(
-            avatar: const Icon(Icons.event_outlined),
-            label: Text(
-              l10n.scheduleSummary(
-                material.formatMediumDate(start),
-                material.formatTimeOfDay(TimeOfDay.fromDateTime(start)),
-                material.formatTimeOfDay(TimeOfDay.fromDateTime(end)),
-              ),
+          chip(
+            icon: Icons.event_outlined,
+            label: l10n.scheduleSummary(
+              material.formatMediumDate(start),
+              material.formatTimeOfDay(TimeOfDay.fromDateTime(start)),
+              material.formatTimeOfDay(TimeOfDay.fromDateTime(end)),
             ),
-            deleteButtonTooltipMessage: l10n.remove,
-            onPressed: openDates,
-            onDeleted: () async => (await _repo(ref)).setSchedule(node.id),
+            onRemove: () async => (await _repo(ref)).setSchedule(node.id),
           ),
         if (rrule != null)
-          InputChip(
-            avatar: const Icon(Icons.repeat),
-            label: Text(
-              node.exclusiveChildren
-                  ? l10n.exclusiveChip(l10n.repeatSummary(rrule, locale))
-                  : l10n.repeatSummary(rrule, locale),
-            ),
-            deleteButtonTooltipMessage: l10n.remove,
-            onPressed: openDates,
-            onDeleted: () async => (await _repo(ref)).setRepeat(node.id, null),
+          chip(
+            icon: Icons.repeat,
+            label: node.exclusiveChildren
+                ? l10n.exclusiveChip(l10n.repeatSummary(rrule, locale))
+                : l10n.repeatSummary(rrule, locale),
+            onRemove: () async => (await _repo(ref)).setRepeat(node.id, null),
           ),
         if (hasDates)
-          ActionChip(
-            avatar: const Icon(Icons.calendar_month_outlined),
-            label: Text(l10n.showInCalendar),
+          RowAddButton(
+            tooltip: l10n.showInCalendar,
+            icon: Icons.calendar_month_outlined,
             onPressed: () => showInCalendar(context, ref, node),
           ),
-        if (!descriptionShown)
-          ActionChip(
-            avatar: const Icon(Icons.subject),
-            label: Text(l10n.addDescription),
-            onPressed: onAddDescription,
-          ),
-        if (!hasDates)
-          ActionChip(
-            avatar: const Icon(Icons.event_outlined),
-            label: Text(l10n.addDateTime),
-            onPressed: openDates,
-          ),
+        RowAddButton(tooltip: l10n.addDateTimeTooltip, onPressed: openDates),
       ],
     );
   }

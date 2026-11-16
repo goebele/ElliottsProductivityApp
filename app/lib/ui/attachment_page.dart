@@ -12,6 +12,7 @@ import 'files.dart';
 import 'labels.dart';
 import 'markdown.dart';
 import 'markup.dart';
+import 'prompt_dialog.dart';
 import 'tree_pane.dart';
 import 'tree_providers.dart';
 
@@ -284,31 +285,11 @@ class _AttachmentMenu extends ConsumerWidget {
         MenuItemButton(
           leadingIcon: const Icon(Icons.drive_file_rename_outline),
           onPressed: () async {
-            final controller = TextEditingController(text: a.filename);
-            final name = await showDialog<String>(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: Text(l10n.fileRename),
-                content: TextField(
-                  controller: controller,
-                  autofocus: true,
-                  onSubmitted: (v) => Navigator.pop(context, v),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text(
-                      MaterialLocalizations.of(context).cancelButtonLabel,
-                    ),
-                  ),
-                  FilledButton(
-                    onPressed: () => Navigator.pop(context, controller.text),
-                    child: Text(l10n.save),
-                  ),
-                ],
-              ),
+            final name = await promptText(
+              context,
+              title: l10n.fileRename,
+              initial: a.filename,
             );
-            controller.dispose();
             if (name != null && name.trim().isNotEmpty) {
               await (await repo()).rename(a.id, name.trim());
             }
@@ -327,6 +308,7 @@ class _AttachmentMenu extends ConsumerWidget {
               ?..hideCurrentSnackBar()
               ..showSnackBar(
                 SnackBar(
+                  persist: false,
                   content: Text(l10n.fileRemoved(a.filename)),
                   action: SnackBarAction(
                     label: l10n.undo,

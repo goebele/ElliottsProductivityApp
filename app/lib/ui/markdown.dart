@@ -5,14 +5,17 @@ import 'package:url_launcher/url_launcher.dart';
 import '../domain/markdown_format.dart';
 import '../l10n/app_localizations.dart';
 import 'autosave_field.dart';
+import 'node_link_picker.dart';
 
 /// Rendered Markdown (DESIGN.md §6.3), GitHub-flavoured: headings, bold and
 /// italic, lists, task-list checkboxes (read-only: lists you tick belong in
-/// items), code and links. Links open in the browser.
+/// items), code and links. Web links open in the browser; links to items
+/// (`epa://node/<id>`) open them in the app, through [onOpenNode].
 class MarkdownView extends StatelessWidget {
-  const MarkdownView(this.data, {super.key});
+  const MarkdownView(this.data, {super.key, this.onOpenNode});
 
   final String data;
+  final void Function(String id)? onOpenNode;
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +35,10 @@ class MarkdownView extends StatelessWidget {
         ),
       ),
       onTapLink: (text, href, title) async {
+        if (nodeIdFromUrl(href) case final id?) {
+          onOpenNode?.call(id);
+          return;
+        }
         final uri = href == null ? null : Uri.tryParse(href);
         if (uri != null &&
             const {'http', 'https', 'mailto'}.contains(uri.scheme)) {
@@ -74,6 +81,50 @@ class MarkdownEditorState extends State<MarkdownEditor> {
   final _controller = TextEditingController();
   final _focus = FocusNode();
   bool _preview = false;
+  String _lastText = '';
+  bool _picking = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_watchForBrackets);
+  }
+
+  /// Typing `[[` opens the link picker (the brackets are replaced by the
+  /// link, or kept if it's cancelled).
+  void _watchForBrackets() {
+    final now = _controller.text;
+    final before = _lastText;
+    _lastText = now;
+    final sel = _controller.selection;
+    if (_picking || !sel.isCollapsed || now.length != before.length + 1) {
+      return;
+    }
+    final at = sel.start;
+    if (at < 2 || now.substring(at - 2, at) != '[[') return;
+    _linkToItem(replacing: (at - 2, at));
+  }
+
+  /// Picks a note or item and inserts `[title](epa://node/<id>)`: around the
+  /// selected text if there is some, or in place of [replacing].
+  Future<void> _linkToItem({(int, int)? replacing}) async {
+    _picking = true;
+    final picked = await pickNodeLink(context);
+    _picking = false;
+    if (!mounted) return;
+    if (picked == null) {
+      _focus.requestFocus();
+      return;
+    }
+    if (replacing case (final start, final end)) {
+      final v = _controller.value;
+      _controller.value = TextEditingValue(
+        text: v.text.replaceRange(start, end, ''),
+        selection: TextSelection.collapsed(offset: start),
+      );
+    }
+    _apply((e) => insertNodeLink(e, id: picked.id, title: picked.title));
+  }
 
   @override
   void dispose() {
@@ -136,6 +187,12 @@ class MarkdownEditorState extends State<MarkdownEditor> {
               (e) => toggleLinePrefix(e, '1. '),
             ),
             tool(Icons.link, l10n.mdLink, (e) => insertLink(e)),
+            IconButton(
+              icon: const Icon(Icons.add_link),
+              tooltip: l10n.mdLinkItem,
+              visualDensity: VisualDensity.compact,
+              onPressed: _preview ? null : _linkToItem,
+            ),
             tool(Icons.code, l10n.mdCode, toggleCode),
             const SizedBox(width: 8),
             TextButton.icon(

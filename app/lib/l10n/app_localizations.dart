@@ -2547,6 +2547,282 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'In progress (Active)'**
   String get todayAutoActive;
+
+  /// No description provided for @mdLinkItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Link to a note or item ([[)'**
+  String get mdLinkItem;
+
+  /// No description provided for @linkToItemTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Link to a note or item'**
+  String get linkToItemTitle;
+
+  /// No description provided for @linkToItemHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search titles and text'**
+  String get linkToItemHint;
+
+  /// No description provided for @linkToItemRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Recently changed'**
+  String get linkToItemRecent;
+
+  /// No description provided for @linkedFrom2.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Linked from 1:} other{Linked from {count}:}}'**
+  String linkedFrom2(int count);
+
+  /// No description provided for @todayDefineIt.
+  ///
+  /// In en, this message translates to:
+  /// **'Define it: add subtasks or a completion condition'**
+  String get todayDefineIt;
+
+  /// No description provided for @todayGroupDone.
+  ///
+  /// In en, this message translates to:
+  /// **'{done}/{total} done'**
+  String todayGroupDone(int done, int total);
+
+  /// No description provided for @conditionChecklistProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Checklist {done}/{total}'**
+  String conditionChecklistProgress(int done, int total);
+
+  /// No description provided for @conditionCounterProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}/{target}'**
+  String conditionCounterProgress(int count, int target);
+
+  /// No description provided for @conditionTimerProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes}/{target} min'**
+  String conditionTimerProgress(int minutes, int target);
+
+  /// No description provided for @completionCounter.
+  ///
+  /// In en, this message translates to:
+  /// **'Counter'**
+  String get completionCounter;
+
+  /// No description provided for @completionTimer.
+  ///
+  /// In en, this message translates to:
+  /// **'Timer'**
+  String get completionTimer;
+
+  /// No description provided for @completionCounterState.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} / {target}'**
+  String completionCounterState(int count, int target);
+
+  /// No description provided for @completionTimerState.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} of {target} min'**
+  String completionTimerState(int minutes, int target);
+
+  /// No description provided for @completionCountUp.
+  ///
+  /// In en, this message translates to:
+  /// **'1'**
+  String get completionCountUp;
+
+  /// No description provided for @completionCountDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo one'**
+  String get completionCountDown;
+
+  /// No description provided for @completionCounterAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Count to'**
+  String get completionCounterAsk;
+
+  /// No description provided for @completionTimerAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Time to spend'**
+  String get completionTimerAsk;
+
+  /// No description provided for @requirementAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Completion condition'**
+  String get requirementAdd;
+
+  /// No description provided for @requirementCheckbox.
+  ///
+  /// In en, this message translates to:
+  /// **'Checkbox'**
+  String get requirementCheckbox;
+
+  /// No description provided for @requirementCheckboxAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Checkbox'**
+  String get requirementCheckboxAsk;
+
+  /// No description provided for @requirementRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove requirement'**
+  String get requirementRemove;
+
+  /// No description provided for @addTaskAndOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'New task under this, and open it'**
+  String get addTaskAndOpen;
+
+  /// Shown under the title of an untitled item; its controls are locked until it has one.
+  ///
+  /// In en, this message translates to:
+  /// **'Give it a title to continue'**
+  String get titleFirst;
+
+  /// Tag picker button, disabled until a name is typed.
+  ///
+  /// In en, this message translates to:
+  /// **'New tag'**
+  String get tagPickerNew;
+
+  /// Tag picker button: adds the typed name as a new tag.
+  ///
+  /// In en, this message translates to:
+  /// **'New tag #{name}'**
+  String tagPickerNewNamed(String name);
+
+  /// Tag picker button when the typed name is an existing tag.
+  ///
+  /// In en, this message translates to:
+  /// **'Add #{name}'**
+  String tagPickerAddNamed(String name);
+
+  /// Task page row label.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get rowTags;
+
+  /// Label before the value chip, sharing the Tags row.
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get rowValue;
+
+  /// Task page row label for dates, time slots and repeats.
+  ///
+  /// In en, this message translates to:
+  /// **'When'**
+  String get rowWhen;
+
+  /// Task page row label for estimate, tracked time and the timer.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get rowTime;
+
+  /// Task page row label.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get rowDescription;
+
+  /// Clickable placeholder in the Description row.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a description…'**
+  String get descriptionPlaceholder;
+
+  /// Tooltip of the + in the Tags row.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a tag'**
+  String get tagAddTooltip;
+
+  /// Tooltip of the + for a value.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a value'**
+  String get valueAddTooltip;
+
+  /// Tooltip of the + in the When row.
+  ///
+  /// In en, this message translates to:
+  /// **'Set date & time'**
+  String get addDateTimeTooltip;
+
+  /// Tooltip of the estimate button in the Time row.
+  ///
+  /// In en, this message translates to:
+  /// **'Set an estimate'**
+  String get estimateAddTooltip;
+
+  /// Tooltip of the collapsed notes strip.
+  ///
+  /// In en, this message translates to:
+  /// **'Show notes & files'**
+  String get notesShow;
+
+  /// Tooltip of the button that collapses the notes column.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide notes & files'**
+  String get notesHide;
+
+  /// Snack bar after leaving an untitled, empty item.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed an empty item'**
+  String get emptyItemRemoved;
+
+  /// Button by the Items field on a task with a completion condition.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a checkbox'**
+  String get addCheckbox;
+
+  /// Checkbox line menu item.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get checkboxDelete;
+
+  /// Title of the rename dialog for a checkbox line.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename checkbox'**
+  String get checkboxRename;
+
+  /// Snack bar after deleting a checkbox line.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted “{title}”'**
+  String checkboxDeleted(String title);
+
+  /// Checkbox line menu item.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get checkboxRenameMenu;
+
+  /// Tooltip of the + button on Today.
+  ///
+  /// In en, this message translates to:
+  /// **'New task for today'**
+  String get todayNewTask;
 }
 
 class _AppLocalizationsDelegate

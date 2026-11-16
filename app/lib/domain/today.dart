@@ -5,6 +5,7 @@ import 'package:drift/drift.dart';
 
 import '../data/database.dart';
 import '../sync/change_writer.dart';
+import 'completion.dart';
 import 'ids.dart';
 import 'node_repository.dart';
 import 'repeat_rule.dart';
@@ -88,22 +89,26 @@ class TodaySettings {
   );
 }
 
-/// One item on Today.
+/// One concrete task on Today (§6.7.1).
 class TodayItem {
   const TodayItem({
     required this.node,
     required this.source,
     required this.done,
+    required this.condition,
     this.start,
     this.overdueDays = 0,
   });
 
   final Node node;
 
-  /// Why it's here; a picked item that also qualifies on its own shows
-  /// that reason instead.
+  /// Why it's here: its own reason, or that of the item above it that
+  /// brought it (a routine, a due project, a pick).
   final TodaySource source;
   final bool done;
+
+  /// Its requirements and how far along they are (none: "Define it").
+  final RequirementsState condition;
 
   /// For an event: when it starts today (local).
   final DateTime? start;
@@ -112,15 +117,24 @@ class TodayItem {
   final int overdueDays;
 }
 
+/// Tasks shown together on Today: those sharing a parent are attached
+/// under it ([parent] set); a task on its own has [parent] null.
+class TodayBlock {
+  const TodayBlock(this.parent, this.items);
+  final Node? parent;
+  final List<TodayItem> items;
+}
+
 /// Today's list, and picks from earlier days that were left unfinished.
 class TodayList {
-  const TodayList(this.day, this.items, this.leftOver);
+  const TodayList(this.day, this.blocks, this.leftOver);
   final DateTime day;
-  final List<TodayItem> items;
+  final List<TodayBlock> blocks;
 
   /// Picked on an earlier day, not done, not yet kept or dropped.
   final List<Node> leftOver;
 
+  List<TodayItem> get items => [for (final b in blocks) ...b.items];
   int get doneCount => items.where((i) => i.done).length;
 }
 
@@ -297,9 +311,12 @@ class TodayService {
 
   // ------------------------------------------------------------------ build
 
-  /// Today's list for [now]'s local day: what Today adds by itself (per
-  /// [settings]), plus picks, minus what was removed, in the dragged order
-  /// (the rest after: overdue, due, events by time, routines, active).
+  /// Today's list for [now]'s local day (§6.7, §6.7.1). Only concrete
+  /// tasks are listed: an item that's due, repeating, picked or active
+  /// brings its concrete tasks (itself, if it is one). Kinds come from
+  /// [settings]; removed tasks stay off for the day. Dragged tasks come
+  /// first in their order, then the rest (overdue, due, events, routines,
+  /// active, picks), and tasks sharing a parent are attached under it.
   Future<TodayList> build({DateTime? now}) async {
     final at = now ?? DateTime.now();
     final today = DateTime(at.year, at.month, at.day);
@@ -311,12 +328,6 @@ class TodayService {
         if (r.hidden) r.nodeId,
     };
 
-    final auto = <String, TodayItem>{};
-    void offer(TodayItem i) {
-      if (!prefs.includes(i.source) || hidden.contains(i.node.id)) return;
-      auto.putIfAbsent(i.node.id, () => i);
-    }
-
     final live =
         await (_db.select(_db.nodes)..where(
               (n) =>
@@ -325,6 +336,7 @@ class TodayService {
                   n.type.equals(NodeType.note.name).not(),
             ))
             .get();
+    final byId = {for (final n in live) n.id: n};
     bool completedToday(Node n) {
       final c = n.completedAt?.toLocal();
       return c != null &&
@@ -332,81 +344,72 @@ class TodayService {
           c.isBefore(today.add(const Duration(days: 1)));
     }
 
+    // Reasons, on items at any level.
+    final reasons = <String, TodayItem>{};
+    void offer(
+      Node n,
+      TodaySource source, {
+      DateTime? start,
+      int overdueDays = 0,
+    }) {
+      if (!prefs.includes(source) || hidden.contains(n.id)) return;
+      reasons.putIfAbsent(
+        n.id,
+        () => TodayItem(
+          node: n,
+          source: source,
+          done: false,
+          condition: const RequirementsState(done: false),
+          start: start,
+          overdueDays: overdueDays,
+        ),
+      );
+    }
+
     for (final n in live) {
-      // Items inside a repeat come with it, not on their own.
       final rule = n.rrule == null ? null : RepeatRule.parse(n.rrule!);
-      if (rule != null && rule.occursOn(today, seriesStart(n))) {
-        final done = await _nodes.occurrenceDone(n, key);
-        offer(
-          TodayItem(
-            node: n,
-            source: n.startAt != null ? TodaySource.event : TodaySource.routine,
-            done: done,
+      if (rule != null) {
+        if (rule.occursOn(today, seriesStart(n))) {
+          offer(
+            n,
+            n.startAt != null ? TodaySource.event : TodaySource.routine,
             start: n.startAt == null
                 ? null
                 : _sameTime(today, n.startAt!.toLocal()),
-          ),
-        );
+          );
+        }
         continue;
       }
-      if (rule != null) continue;
-      final finished = isFinished(n.status);
-      if (finished && !completedToday(n)) continue;
-
+      if (isFinished(n.status) && !completedToday(n)) continue;
       if (n.dueDate case final due?) {
         final d = parseDateKey(due);
         if (d == today) {
+          offer(n, TodaySource.dueToday);
+        } else if (d.isBefore(today) && !isFinished(n.status)) {
           offer(
-            TodayItem(node: n, source: TodaySource.dueToday, done: finished),
-          );
-        } else if (d.isBefore(today) && !finished) {
-          offer(
-            TodayItem(
-              node: n,
-              source: TodaySource.overdue,
-              done: false,
-              overdueDays: today.difference(d).inDays,
-            ),
+            n,
+            TodaySource.overdue,
+            overdueDays: today.difference(d).inDays,
           );
         }
       }
       if (n.startAt case final s?) {
         final local = s.toLocal();
         if (DateTime(local.year, local.month, local.day) == today) {
-          offer(
-            TodayItem(
-              node: n,
-              source: TodaySource.event,
-              done: finished,
-              start: local,
-            ),
-          );
+          offer(n, TodaySource.event, start: local);
         }
       }
-      if (n.status == NodeStatus.active) {
-        offer(TodayItem(node: n, source: TodaySource.active, done: false));
-      }
+      if (n.status == NodeStatus.active) offer(n, TodaySource.active);
     }
-
-    // Picks (and auto items that were dragged into place).
-    final byId = {for (final n in live) n.id: n};
-    final ordered = <TodayItem>[];
-    final seen = <String>{};
     for (final r in rows) {
-      if (r.hidden || !seen.add(r.nodeId)) continue;
       final n = byId[r.nodeId];
-      if (n == null) continue;
-      ordered.add(
-        auto[r.nodeId] ??
-            TodayItem(
-              node: n,
-              source: TodaySource.picked,
-              done: await _doneToday(n, today),
-            ),
-      );
+      if (!r.hidden && n != null) offer(n, TodaySource.picked);
     }
 
-    int rank(TodayItem i) => switch (i.source) {
+    // Each reason brings its concrete tasks.
+    final items = <String, TodayItem>{};
+    final order = <String>[];
+    int rank(TodaySource s) => switch (s) {
       TodaySource.overdue => 0,
       TodaySource.dueToday => 1,
       TodaySource.event => 2,
@@ -414,33 +417,86 @@ class TodayService {
       TodaySource.active => 4,
       TodaySource.picked => 5,
     };
-    final rest =
-        [
-          for (final i in auto.values)
-            if (!seen.contains(i.node.id)) i,
-        ]..sort((a, b) {
-          final r = rank(a).compareTo(rank(b));
-          if (r != 0) return r;
-          if (a.start != null && b.start != null) {
-            return a.start!.compareTo(b.start!);
-          }
-          return a.node.title.toLowerCase().compareTo(
-            b.node.title.toLowerCase(),
-          );
-        });
+    final sortedReasons = reasons.values.toList()
+      ..sort((a, b) {
+        final r = rank(a.source).compareTo(rank(b.source));
+        if (r != 0) return r;
+        if (a.start != null && b.start != null) {
+          return a.start!.compareTo(b.start!);
+        }
+        return a.node.title.toLowerCase().compareTo(b.node.title.toLowerCase());
+      });
+    for (final reason in sortedReasons) {
+      for (final task in await _nodes.completion.concreteTasks(reason.node)) {
+        if (hidden.contains(task.id) || items.containsKey(task.id)) continue;
+        final state = await _nodes.completion.state(task.id, today: today);
+        final repeats = state.occurrence != null;
+        if (!repeats && isFinished(task.status) && !completedToday(task)) {
+          continue;
+        }
+        final own = task.id == reason.node.id ? reason : reasons[task.id];
+        items[task.id] = TodayItem(
+          node: task,
+          source: own?.source ?? reason.source,
+          done: state.done,
+          condition: state,
+          start: own?.start,
+          overdueDays: own?.overdueDays ?? 0,
+        );
+        order.add(task.id);
+      }
+    }
 
-    // Left over: earlier picks, unfinished, not on today already.
-    final onToday = {...seen, ...auto.keys};
+    // Dragged order first, then the rest as found.
+    final dragged = [
+      for (final r in rows)
+        if (!r.hidden && items.containsKey(r.nodeId)) r.nodeId,
+    ];
+    final seen = <String>{};
+    final ids = [
+      for (final id in [...dragged, ...order])
+        if (seen.add(id)) id,
+    ];
+
+    // Tasks sharing a parent are attached under it, where the first is.
+    final byParent = <String, int>{};
+    for (final id in ids) {
+      final p = items[id]!.node.parentId;
+      if (p != null) byParent[p] = (byParent[p] ?? 0) + 1;
+    }
+    final blocks = <TodayBlock>[];
+    final grouped = <String, TodayBlock>{};
+    for (final id in ids) {
+      final item = items[id]!;
+      final p = item.node.parentId;
+      if (p != null && (byParent[p] ?? 0) > 1 && byId[p] != null) {
+        final block = grouped[p];
+        if (block == null) {
+          final b = TodayBlock(byId[p], [item]);
+          grouped[p] = b;
+          blocks.add(b);
+        } else {
+          block.items.add(item);
+        }
+      } else {
+        blocks.add(TodayBlock(null, [item]));
+      }
+    }
+
+    // Left over: earlier picks of concrete tasks, unfinished, not on today.
     final leftOver = <Node>[];
     final leftSeen = <String>{};
     for (final r in await _leftOverRows(key)) {
       final n = byId[r.nodeId];
-      if (n == null || onToday.contains(n.id) || !leftSeen.add(n.id)) continue;
+      if (n == null || items.containsKey(n.id) || !leftSeen.add(n.id)) {
+        continue;
+      }
       if (hidden.contains(n.id) || isFinished(n.status)) continue;
+      if (!await _nodes.completion.isConcrete(n)) continue;
       leftOver.add(n);
     }
 
-    return TodayList(today, [...ordered, ...rest], leftOver);
+    return TodayList(today, blocks, leftOver);
   }
 
   /// Re-builds when items, completions or Today's rows change.
@@ -452,15 +508,12 @@ class TodayService {
           _db.occurrenceCompletions,
           _db.todayEntries,
           _db.userSettings,
+          _db.counterTicks,
+          _db.timeEntries,
         },
       )
       .watch()
       .asyncMap((_) => build());
-
-  Future<bool> _doneToday(Node n, DateTime today) async {
-    final occ = await _nodes.occurrenceStatus(n.id, today: today);
-    return occ != null ? occ.done : isFinished(n.status);
-  }
 
   static DateTime _sameTime(DateTime day, DateTime t) =>
       DateTime(day.year, day.month, day.day, t.hour, t.minute);
@@ -487,6 +540,8 @@ class TodayService {
       if (skip.contains(n.id) || r.attachment != null) continue;
       // Items inside a repeat come with it.
       if (n.rrule == null && await _nodes.repeatSource(n) != null) continue;
+      // Only concrete tasks (§6.7.1).
+      if (!await _nodes.completion.isConcrete(n)) continue;
       candidates.add(n);
     }
     if (candidates.isEmpty) return null;

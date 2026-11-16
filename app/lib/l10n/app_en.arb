@@ -1294,5 +1294,202 @@
   "todayAutoDue": "Due today",
   "todayAutoOverdue": "Overdue",
   "todayAutoEvents": "Events today",
-  "todayAutoActive": "In progress (Active)"
+  "todayAutoActive": "In progress (Active)",
+  "mdLinkItem": "Link to a note or item ([[)",
+  "linkToItemTitle": "Link to a note or item",
+  "linkToItemHint": "Search titles and text",
+  "linkToItemRecent": "Recently changed",
+  "linkedFrom2": "{count, plural, =1{Linked from 1:} other{Linked from {count}:}}",
+  "@linkedFrom2": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "todayDefineIt": "Define it: add subtasks or a completion condition",
+  "todayGroupDone": "{done}/{total} done",
+  "@todayGroupDone": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "conditionChecklistProgress": "Checklist {done}/{total}",
+  "@conditionChecklistProgress": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "conditionCounterProgress": "{count}/{target}",
+  "@conditionCounterProgress": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  "conditionTimerProgress": "{minutes}/{target} min",
+  "@conditionTimerProgress": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  "completionCounter": "Counter",
+  "completionTimer": "Timer",
+  "completionCounterState": "{count} / {target}",
+  "@completionCounterState": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  "completionTimerState": "{minutes} of {target} min",
+  "@completionTimerState": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  "completionCountUp": "1",
+  "completionCountDown": "Undo one",
+  "completionCounterAsk": "Count to",
+  "completionTimerAsk": "Time to spend",
+  "requirementAdd": "Completion condition",
+  "requirementCheckbox": "Checkbox",
+  "requirementCheckboxAsk": "Checkbox",
+  "requirementRemove": "Remove requirement",
+  "addTaskAndOpen": "New task under this, and open it",
+  "titleFirst": "Give it a title to continue",
+  "@titleFirst": {
+    "description": "Shown under the title of an untitled item; its controls are locked until it has one."
+  },
+  "tagPickerNew": "New tag",
+  "@tagPickerNew": {
+    "description": "Tag picker button, disabled until a name is typed."
+  },
+  "tagPickerNewNamed": "New tag #{name}",
+  "@tagPickerNewNamed": {
+    "description": "Tag picker button: adds the typed name as a new tag.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tagPickerAddNamed": "Add #{name}",
+  "@tagPickerAddNamed": {
+    "description": "Tag picker button when the typed name is an existing tag.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "rowTags": "Tags",
+  "@rowTags": {
+    "description": "Task page row label."
+  },
+  "rowValue": "Value",
+  "@rowValue": {
+    "description": "Label before the value chip, sharing the Tags row."
+  },
+  "rowWhen": "When",
+  "@rowWhen": {
+    "description": "Task page row label for dates, time slots and repeats."
+  },
+  "rowTime": "Time",
+  "@rowTime": {
+    "description": "Task page row label for estimate, tracked time and the timer."
+  },
+  "rowDescription": "Description",
+  "@rowDescription": {
+    "description": "Task page row label."
+  },
+  "descriptionPlaceholder": "Add a description…",
+  "@descriptionPlaceholder": {
+    "description": "Clickable placeholder in the Description row."
+  },
+  "tagAddTooltip": "Add a tag",
+  "@tagAddTooltip": {
+    "description": "Tooltip of the + in the Tags row."
+  },
+  "valueAddTooltip": "Add a value",
+  "@valueAddTooltip": {
+    "description": "Tooltip of the + for a value."
+  },
+  "addDateTimeTooltip": "Set date & time",
+  "@addDateTimeTooltip": {
+    "description": "Tooltip of the + in the When row."
+  },
+  "estimateAddTooltip": "Set an estimate",
+  "@estimateAddTooltip": {
+    "description": "Tooltip of the estimate button in the Time row."
+  },
+  "notesShow": "Show notes & files",
+  "@notesShow": {
+    "description": "Tooltip of the collapsed notes strip."
+  },
+  "notesHide": "Hide notes & files",
+  "@notesHide": {
+    "description": "Tooltip of the button that collapses the notes column."
+  },
+  "emptyItemRemoved": "Removed an empty item",
+  "@emptyItemRemoved": {
+    "description": "Snack bar after leaving an untitled, empty item."
+  },
+  "addCheckbox": "Add a checkbox",
+  "@addCheckbox": {
+    "description": "Button by the Items field on a task with a completion condition."
+  },
+  "checkboxDelete": "Delete",
+  "@checkboxDelete": {
+    "description": "Checkbox line menu item."
+  },
+  "checkboxRename": "Rename checkbox",
+  "@checkboxRename": {
+    "description": "Title of the rename dialog for a checkbox line."
+  },
+  "checkboxDeleted": "Deleted “{title}”",
+  "@checkboxDeleted": {
+    "description": "Snack bar after deleting a checkbox line.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "checkboxRenameMenu": "Rename",
+  "@checkboxRenameMenu": {
+    "description": "Checkbox line menu item."
+  },
+  "todayNewTask": "New task for today",
+  "@todayNewTask": {
+    "description": "Tooltip of the + button on Today."
+  }
 }

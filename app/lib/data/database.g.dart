@@ -310,6 +310,46 @@ class $NodesTable extends Nodes with TableInfo<$NodesTable, Node> {
     ),
     defaultValue: const Constant(false),
   );
+  @override
+  late final GeneratedColumnWithTypeConverter<CompletionKind?, String>
+  completion = GeneratedColumn<String>(
+    'completion',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  ).withConverter<CompletionKind?>($NodesTable.$convertercompletionn);
+  static const VerificationMeta _targetMeta = const VerificationMeta('target');
+  @override
+  late final GeneratedColumn<int> target = GeneratedColumn<int>(
+    'target',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _counterTargetMeta = const VerificationMeta(
+    'counterTarget',
+  );
+  @override
+  late final GeneratedColumn<int> counterTarget = GeneratedColumn<int>(
+    'counter_target',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _timerMinutesMeta = const VerificationMeta(
+    'timerMinutes',
+  );
+  @override
+  late final GeneratedColumn<int> timerMinutes = GeneratedColumn<int>(
+    'timer_minutes',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _progressOverrideMeta = const VerificationMeta(
     'progressOverride',
   );
@@ -383,6 +423,10 @@ class $NodesTable extends Nodes with TableInfo<$NodesTable, Node> {
     repeatStart,
     exclusiveChildren,
     sharedWithChildren,
+    completion,
+    target,
+    counterTarget,
+    timerMinutes,
     progressOverride,
     lifecycle,
     lifecycleAt,
@@ -581,6 +625,30 @@ class $NodesTable extends Nodes with TableInfo<$NodesTable, Node> {
         ),
       );
     }
+    if (data.containsKey('target')) {
+      context.handle(
+        _targetMeta,
+        target.isAcceptableOrUnknown(data['target']!, _targetMeta),
+      );
+    }
+    if (data.containsKey('counter_target')) {
+      context.handle(
+        _counterTargetMeta,
+        counterTarget.isAcceptableOrUnknown(
+          data['counter_target']!,
+          _counterTargetMeta,
+        ),
+      );
+    }
+    if (data.containsKey('timer_minutes')) {
+      context.handle(
+        _timerMinutesMeta,
+        timerMinutes.isAcceptableOrUnknown(
+          data['timer_minutes']!,
+          _timerMinutesMeta,
+        ),
+      );
+    }
     if (data.containsKey('progress_override')) {
       context.handle(
         _progressOverrideMeta,
@@ -735,6 +803,24 @@ class $NodesTable extends Nodes with TableInfo<$NodesTable, Node> {
         DriftSqlType.bool,
         data['${effectivePrefix}shared_with_children'],
       )!,
+      completion: $NodesTable.$convertercompletionn.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}completion'],
+        ),
+      ),
+      target: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}target'],
+      ),
+      counterTarget: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}counter_target'],
+      ),
+      timerMinutes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}timer_minutes'],
+      ),
       progressOverride: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}progress_override'],
@@ -769,6 +855,13 @@ class $NodesTable extends Nodes with TableInfo<$NodesTable, Node> {
       NullAwareTypeConverter.wrap($converterchildView);
   static TypeConverter<NodeStatus, String> $converterstatus =
       const TolerantEnumConverter(NodeStatus.values, NodeStatus.open);
+  static TypeConverter<CompletionKind, String> $convertercompletion =
+      const TolerantEnumConverter(
+        CompletionKind.values,
+        CompletionKind.markDone,
+      );
+  static TypeConverter<CompletionKind?, String?> $convertercompletionn =
+      NullAwareTypeConverter.wrap($convertercompletion);
   static JsonTypeConverter2<Lifecycle, String, String> $converterlifecycle =
       const EnumNameConverter<Lifecycle>(Lifecycle.values);
 }
@@ -843,6 +936,19 @@ class Node extends DataClass implements Insertable<Node> {
   /// if each had linked it. "Pinned" for all sub-items.
   final bool sharedWithChildren;
 
+  /// How it's completed (§6.7.1); null = not decided.
+  final CompletionKind? completion;
+
+  /// v0.20 only (one condition per task); replaced by [counterTarget] and
+  /// [timerMinutes] in v0.21. Kept, unused (additive-only, §7.5).
+  final int? target;
+
+  /// A counter requirement: the count to reach ("practice 4 problems").
+  final int? counterTarget;
+
+  /// A timer requirement: the minutes to track ("practice 30 min").
+  final int? timerMinutes;
+
   /// Progress set by hand (0–100), instead of counting done items (§6.16).
   final int? progressOverride;
 
@@ -882,6 +988,10 @@ class Node extends DataClass implements Insertable<Node> {
     this.repeatStart,
     required this.exclusiveChildren,
     required this.sharedWithChildren,
+    this.completion,
+    this.target,
+    this.counterTarget,
+    this.timerMinutes,
     this.progressOverride,
     required this.lifecycle,
     this.lifecycleAt,
@@ -952,6 +1062,20 @@ class Node extends DataClass implements Insertable<Node> {
     }
     map['exclusive_children'] = Variable<bool>(exclusiveChildren);
     map['shared_with_children'] = Variable<bool>(sharedWithChildren);
+    if (!nullToAbsent || completion != null) {
+      map['completion'] = Variable<String>(
+        $NodesTable.$convertercompletionn.toSql(completion),
+      );
+    }
+    if (!nullToAbsent || target != null) {
+      map['target'] = Variable<int>(target);
+    }
+    if (!nullToAbsent || counterTarget != null) {
+      map['counter_target'] = Variable<int>(counterTarget);
+    }
+    if (!nullToAbsent || timerMinutes != null) {
+      map['timer_minutes'] = Variable<int>(timerMinutes);
+    }
     if (!nullToAbsent || progressOverride != null) {
       map['progress_override'] = Variable<int>(progressOverride);
     }
@@ -1025,6 +1149,18 @@ class Node extends DataClass implements Insertable<Node> {
           : Value(repeatStart),
       exclusiveChildren: Value(exclusiveChildren),
       sharedWithChildren: Value(sharedWithChildren),
+      completion: completion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(completion),
+      target: target == null && nullToAbsent
+          ? const Value.absent()
+          : Value(target),
+      counterTarget: counterTarget == null && nullToAbsent
+          ? const Value.absent()
+          : Value(counterTarget),
+      timerMinutes: timerMinutes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(timerMinutes),
       progressOverride: progressOverride == null && nullToAbsent
           ? const Value.absent()
           : Value(progressOverride),
@@ -1072,6 +1208,10 @@ class Node extends DataClass implements Insertable<Node> {
       repeatStart: serializer.fromJson<String?>(json['repeatStart']),
       exclusiveChildren: serializer.fromJson<bool>(json['exclusiveChildren']),
       sharedWithChildren: serializer.fromJson<bool>(json['sharedWithChildren']),
+      completion: serializer.fromJson<CompletionKind?>(json['completion']),
+      target: serializer.fromJson<int?>(json['target']),
+      counterTarget: serializer.fromJson<int?>(json['counterTarget']),
+      timerMinutes: serializer.fromJson<int?>(json['timerMinutes']),
       progressOverride: serializer.fromJson<int?>(json['progressOverride']),
       lifecycle: $NodesTable.$converterlifecycle.fromJson(
         serializer.fromJson<String>(json['lifecycle']),
@@ -1112,6 +1252,10 @@ class Node extends DataClass implements Insertable<Node> {
       'repeatStart': serializer.toJson<String?>(repeatStart),
       'exclusiveChildren': serializer.toJson<bool>(exclusiveChildren),
       'sharedWithChildren': serializer.toJson<bool>(sharedWithChildren),
+      'completion': serializer.toJson<CompletionKind?>(completion),
+      'target': serializer.toJson<int?>(target),
+      'counterTarget': serializer.toJson<int?>(counterTarget),
+      'timerMinutes': serializer.toJson<int?>(timerMinutes),
       'progressOverride': serializer.toJson<int?>(progressOverride),
       'lifecycle': serializer.toJson<String>(
         $NodesTable.$converterlifecycle.toJson(lifecycle),
@@ -1150,6 +1294,10 @@ class Node extends DataClass implements Insertable<Node> {
     Value<String?> repeatStart = const Value.absent(),
     bool? exclusiveChildren,
     bool? sharedWithChildren,
+    Value<CompletionKind?> completion = const Value.absent(),
+    Value<int?> target = const Value.absent(),
+    Value<int?> counterTarget = const Value.absent(),
+    Value<int?> timerMinutes = const Value.absent(),
     Value<int?> progressOverride = const Value.absent(),
     Lifecycle? lifecycle,
     Value<DateTime?> lifecycleAt = const Value.absent(),
@@ -1185,6 +1333,12 @@ class Node extends DataClass implements Insertable<Node> {
     repeatStart: repeatStart.present ? repeatStart.value : this.repeatStart,
     exclusiveChildren: exclusiveChildren ?? this.exclusiveChildren,
     sharedWithChildren: sharedWithChildren ?? this.sharedWithChildren,
+    completion: completion.present ? completion.value : this.completion,
+    target: target.present ? target.value : this.target,
+    counterTarget: counterTarget.present
+        ? counterTarget.value
+        : this.counterTarget,
+    timerMinutes: timerMinutes.present ? timerMinutes.value : this.timerMinutes,
     progressOverride: progressOverride.present
         ? progressOverride.value
         : this.progressOverride,
@@ -1238,6 +1392,16 @@ class Node extends DataClass implements Insertable<Node> {
       sharedWithChildren: data.sharedWithChildren.present
           ? data.sharedWithChildren.value
           : this.sharedWithChildren,
+      completion: data.completion.present
+          ? data.completion.value
+          : this.completion,
+      target: data.target.present ? data.target.value : this.target,
+      counterTarget: data.counterTarget.present
+          ? data.counterTarget.value
+          : this.counterTarget,
+      timerMinutes: data.timerMinutes.present
+          ? data.timerMinutes.value
+          : this.timerMinutes,
       progressOverride: data.progressOverride.present
           ? data.progressOverride.value
           : this.progressOverride,
@@ -1282,6 +1446,10 @@ class Node extends DataClass implements Insertable<Node> {
           ..write('repeatStart: $repeatStart, ')
           ..write('exclusiveChildren: $exclusiveChildren, ')
           ..write('sharedWithChildren: $sharedWithChildren, ')
+          ..write('completion: $completion, ')
+          ..write('target: $target, ')
+          ..write('counterTarget: $counterTarget, ')
+          ..write('timerMinutes: $timerMinutes, ')
           ..write('progressOverride: $progressOverride, ')
           ..write('lifecycle: $lifecycle, ')
           ..write('lifecycleAt: $lifecycleAt, ')
@@ -1320,6 +1488,10 @@ class Node extends DataClass implements Insertable<Node> {
     repeatStart,
     exclusiveChildren,
     sharedWithChildren,
+    completion,
+    target,
+    counterTarget,
+    timerMinutes,
     progressOverride,
     lifecycle,
     lifecycleAt,
@@ -1357,6 +1529,10 @@ class Node extends DataClass implements Insertable<Node> {
           other.repeatStart == this.repeatStart &&
           other.exclusiveChildren == this.exclusiveChildren &&
           other.sharedWithChildren == this.sharedWithChildren &&
+          other.completion == this.completion &&
+          other.target == this.target &&
+          other.counterTarget == this.counterTarget &&
+          other.timerMinutes == this.timerMinutes &&
           other.progressOverride == this.progressOverride &&
           other.lifecycle == this.lifecycle &&
           other.lifecycleAt == this.lifecycleAt &&
@@ -1392,6 +1568,10 @@ class NodesCompanion extends UpdateCompanion<Node> {
   final Value<String?> repeatStart;
   final Value<bool> exclusiveChildren;
   final Value<bool> sharedWithChildren;
+  final Value<CompletionKind?> completion;
+  final Value<int?> target;
+  final Value<int?> counterTarget;
+  final Value<int?> timerMinutes;
   final Value<int?> progressOverride;
   final Value<Lifecycle> lifecycle;
   final Value<DateTime?> lifecycleAt;
@@ -1426,6 +1606,10 @@ class NodesCompanion extends UpdateCompanion<Node> {
     this.repeatStart = const Value.absent(),
     this.exclusiveChildren = const Value.absent(),
     this.sharedWithChildren = const Value.absent(),
+    this.completion = const Value.absent(),
+    this.target = const Value.absent(),
+    this.counterTarget = const Value.absent(),
+    this.timerMinutes = const Value.absent(),
     this.progressOverride = const Value.absent(),
     this.lifecycle = const Value.absent(),
     this.lifecycleAt = const Value.absent(),
@@ -1461,6 +1645,10 @@ class NodesCompanion extends UpdateCompanion<Node> {
     this.repeatStart = const Value.absent(),
     this.exclusiveChildren = const Value.absent(),
     this.sharedWithChildren = const Value.absent(),
+    this.completion = const Value.absent(),
+    this.target = const Value.absent(),
+    this.counterTarget = const Value.absent(),
+    this.timerMinutes = const Value.absent(),
     this.progressOverride = const Value.absent(),
     this.lifecycle = const Value.absent(),
     this.lifecycleAt = const Value.absent(),
@@ -1504,6 +1692,10 @@ class NodesCompanion extends UpdateCompanion<Node> {
     Expression<String>? repeatStart,
     Expression<bool>? exclusiveChildren,
     Expression<bool>? sharedWithChildren,
+    Expression<String>? completion,
+    Expression<int>? target,
+    Expression<int>? counterTarget,
+    Expression<int>? timerMinutes,
     Expression<int>? progressOverride,
     Expression<String>? lifecycle,
     Expression<DateTime>? lifecycleAt,
@@ -1540,6 +1732,10 @@ class NodesCompanion extends UpdateCompanion<Node> {
       if (exclusiveChildren != null) 'exclusive_children': exclusiveChildren,
       if (sharedWithChildren != null)
         'shared_with_children': sharedWithChildren,
+      if (completion != null) 'completion': completion,
+      if (target != null) 'target': target,
+      if (counterTarget != null) 'counter_target': counterTarget,
+      if (timerMinutes != null) 'timer_minutes': timerMinutes,
       if (progressOverride != null) 'progress_override': progressOverride,
       if (lifecycle != null) 'lifecycle': lifecycle,
       if (lifecycleAt != null) 'lifecycle_at': lifecycleAt,
@@ -1577,6 +1773,10 @@ class NodesCompanion extends UpdateCompanion<Node> {
     Value<String?>? repeatStart,
     Value<bool>? exclusiveChildren,
     Value<bool>? sharedWithChildren,
+    Value<CompletionKind?>? completion,
+    Value<int?>? target,
+    Value<int?>? counterTarget,
+    Value<int?>? timerMinutes,
     Value<int?>? progressOverride,
     Value<Lifecycle>? lifecycle,
     Value<DateTime?>? lifecycleAt,
@@ -1612,6 +1812,10 @@ class NodesCompanion extends UpdateCompanion<Node> {
       repeatStart: repeatStart ?? this.repeatStart,
       exclusiveChildren: exclusiveChildren ?? this.exclusiveChildren,
       sharedWithChildren: sharedWithChildren ?? this.sharedWithChildren,
+      completion: completion ?? this.completion,
+      target: target ?? this.target,
+      counterTarget: counterTarget ?? this.counterTarget,
+      timerMinutes: timerMinutes ?? this.timerMinutes,
       progressOverride: progressOverride ?? this.progressOverride,
       lifecycle: lifecycle ?? this.lifecycle,
       lifecycleAt: lifecycleAt ?? this.lifecycleAt,
@@ -1713,6 +1917,20 @@ class NodesCompanion extends UpdateCompanion<Node> {
     if (sharedWithChildren.present) {
       map['shared_with_children'] = Variable<bool>(sharedWithChildren.value);
     }
+    if (completion.present) {
+      map['completion'] = Variable<String>(
+        $NodesTable.$convertercompletionn.toSql(completion.value),
+      );
+    }
+    if (target.present) {
+      map['target'] = Variable<int>(target.value);
+    }
+    if (counterTarget.present) {
+      map['counter_target'] = Variable<int>(counterTarget.value);
+    }
+    if (timerMinutes.present) {
+      map['timer_minutes'] = Variable<int>(timerMinutes.value);
+    }
     if (progressOverride.present) {
       map['progress_override'] = Variable<int>(progressOverride.value);
     }
@@ -1764,6 +1982,10 @@ class NodesCompanion extends UpdateCompanion<Node> {
           ..write('repeatStart: $repeatStart, ')
           ..write('exclusiveChildren: $exclusiveChildren, ')
           ..write('sharedWithChildren: $sharedWithChildren, ')
+          ..write('completion: $completion, ')
+          ..write('target: $target, ')
+          ..write('counterTarget: $counterTarget, ')
+          ..write('timerMinutes: $timerMinutes, ')
           ..write('progressOverride: $progressOverride, ')
           ..write('lifecycle: $lifecycle, ')
           ..write('lifecycleAt: $lifecycleAt, ')
@@ -14523,6 +14745,628 @@ class UserSettingsCompanion extends UpdateCompanion<UserSetting> {
   }
 }
 
+class $CounterTicksTable extends CounterTicks
+    with TableInfo<$CounterTicksTable, CounterTick> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CounterTicksTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _spaceIdMeta = const VerificationMeta(
+    'spaceId',
+  );
+  @override
+  late final GeneratedColumn<String> spaceId = GeneratedColumn<String>(
+    'space_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdByMeta = const VerificationMeta(
+    'createdBy',
+  );
+  @override
+  late final GeneratedColumn<String> createdBy = GeneratedColumn<String>(
+    'created_by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedByMeta = const VerificationMeta(
+    'updatedBy',
+  );
+  @override
+  late final GeneratedColumn<String> updatedBy = GeneratedColumn<String>(
+    'updated_by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _hlcMeta = const VerificationMeta('hlc');
+  @override
+  late final GeneratedColumn<String> hlc = GeneratedColumn<String>(
+    'hlc',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
+  @override
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _nodeIdMeta = const VerificationMeta('nodeId');
+  @override
+  late final GeneratedColumn<String> nodeId = GeneratedColumn<String>(
+    'node_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _occurrenceDateMeta = const VerificationMeta(
+    'occurrenceDate',
+  );
+  @override
+  late final GeneratedColumn<String> occurrenceDate = GeneratedColumn<String>(
+    'occurrence_date',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _deltaMeta = const VerificationMeta('delta');
+  @override
+  late final GeneratedColumn<int> delta = GeneratedColumn<int>(
+    'delta',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    spaceId,
+    createdAt,
+    createdBy,
+    updatedBy,
+    hlc,
+    deleted,
+    nodeId,
+    occurrenceDate,
+    delta,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'counter_ticks';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CounterTick> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('space_id')) {
+      context.handle(
+        _spaceIdMeta,
+        spaceId.isAcceptableOrUnknown(data['space_id']!, _spaceIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_spaceIdMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('created_by')) {
+      context.handle(
+        _createdByMeta,
+        createdBy.isAcceptableOrUnknown(data['created_by']!, _createdByMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdByMeta);
+    }
+    if (data.containsKey('updated_by')) {
+      context.handle(
+        _updatedByMeta,
+        updatedBy.isAcceptableOrUnknown(data['updated_by']!, _updatedByMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedByMeta);
+    }
+    if (data.containsKey('hlc')) {
+      context.handle(
+        _hlcMeta,
+        hlc.isAcceptableOrUnknown(data['hlc']!, _hlcMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_hlcMeta);
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
+    }
+    if (data.containsKey('node_id')) {
+      context.handle(
+        _nodeIdMeta,
+        nodeId.isAcceptableOrUnknown(data['node_id']!, _nodeIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nodeIdMeta);
+    }
+    if (data.containsKey('occurrence_date')) {
+      context.handle(
+        _occurrenceDateMeta,
+        occurrenceDate.isAcceptableOrUnknown(
+          data['occurrence_date']!,
+          _occurrenceDateMeta,
+        ),
+      );
+    }
+    if (data.containsKey('delta')) {
+      context.handle(
+        _deltaMeta,
+        delta.isAcceptableOrUnknown(data['delta']!, _deltaMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_deltaMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CounterTick map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CounterTick(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      spaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}space_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      createdBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_by'],
+      )!,
+      updatedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_by'],
+      )!,
+      hlc: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}hlc'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
+      nodeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}node_id'],
+      )!,
+      occurrenceDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}occurrence_date'],
+      ),
+      delta: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}delta'],
+      )!,
+    );
+  }
+
+  @override
+  $CounterTicksTable createAlias(String alias) {
+    return $CounterTicksTable(attachedDatabase, alias);
+  }
+}
+
+class CounterTick extends DataClass implements Insertable<CounterTick> {
+  /// UUIDv7.
+  final String id;
+
+  /// The space this row belongs to (§5.0, D13).
+  final String spaceId;
+  final DateTime createdAt;
+
+  /// User ID of the creator.
+  final String createdBy;
+
+  /// User ID of whoever made the latest change.
+  final String updatedBy;
+
+  /// Hybrid logical clock stamp of the latest change (see `sync/hlc.dart`).
+  final String hlc;
+
+  /// Tombstone flag. Rows are never hard-deleted until compaction.
+  final bool deleted;
+  final String nodeId;
+  final String? occurrenceDate;
+  final int delta;
+  const CounterTick({
+    required this.id,
+    required this.spaceId,
+    required this.createdAt,
+    required this.createdBy,
+    required this.updatedBy,
+    required this.hlc,
+    required this.deleted,
+    required this.nodeId,
+    this.occurrenceDate,
+    required this.delta,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['space_id'] = Variable<String>(spaceId);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['created_by'] = Variable<String>(createdBy);
+    map['updated_by'] = Variable<String>(updatedBy);
+    map['hlc'] = Variable<String>(hlc);
+    map['deleted'] = Variable<bool>(deleted);
+    map['node_id'] = Variable<String>(nodeId);
+    if (!nullToAbsent || occurrenceDate != null) {
+      map['occurrence_date'] = Variable<String>(occurrenceDate);
+    }
+    map['delta'] = Variable<int>(delta);
+    return map;
+  }
+
+  CounterTicksCompanion toCompanion(bool nullToAbsent) {
+    return CounterTicksCompanion(
+      id: Value(id),
+      spaceId: Value(spaceId),
+      createdAt: Value(createdAt),
+      createdBy: Value(createdBy),
+      updatedBy: Value(updatedBy),
+      hlc: Value(hlc),
+      deleted: Value(deleted),
+      nodeId: Value(nodeId),
+      occurrenceDate: occurrenceDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(occurrenceDate),
+      delta: Value(delta),
+    );
+  }
+
+  factory CounterTick.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CounterTick(
+      id: serializer.fromJson<String>(json['id']),
+      spaceId: serializer.fromJson<String>(json['spaceId']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      createdBy: serializer.fromJson<String>(json['createdBy']),
+      updatedBy: serializer.fromJson<String>(json['updatedBy']),
+      hlc: serializer.fromJson<String>(json['hlc']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
+      nodeId: serializer.fromJson<String>(json['nodeId']),
+      occurrenceDate: serializer.fromJson<String?>(json['occurrenceDate']),
+      delta: serializer.fromJson<int>(json['delta']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'spaceId': serializer.toJson<String>(spaceId),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'createdBy': serializer.toJson<String>(createdBy),
+      'updatedBy': serializer.toJson<String>(updatedBy),
+      'hlc': serializer.toJson<String>(hlc),
+      'deleted': serializer.toJson<bool>(deleted),
+      'nodeId': serializer.toJson<String>(nodeId),
+      'occurrenceDate': serializer.toJson<String?>(occurrenceDate),
+      'delta': serializer.toJson<int>(delta),
+    };
+  }
+
+  CounterTick copyWith({
+    String? id,
+    String? spaceId,
+    DateTime? createdAt,
+    String? createdBy,
+    String? updatedBy,
+    String? hlc,
+    bool? deleted,
+    String? nodeId,
+    Value<String?> occurrenceDate = const Value.absent(),
+    int? delta,
+  }) => CounterTick(
+    id: id ?? this.id,
+    spaceId: spaceId ?? this.spaceId,
+    createdAt: createdAt ?? this.createdAt,
+    createdBy: createdBy ?? this.createdBy,
+    updatedBy: updatedBy ?? this.updatedBy,
+    hlc: hlc ?? this.hlc,
+    deleted: deleted ?? this.deleted,
+    nodeId: nodeId ?? this.nodeId,
+    occurrenceDate: occurrenceDate.present
+        ? occurrenceDate.value
+        : this.occurrenceDate,
+    delta: delta ?? this.delta,
+  );
+  CounterTick copyWithCompanion(CounterTicksCompanion data) {
+    return CounterTick(
+      id: data.id.present ? data.id.value : this.id,
+      spaceId: data.spaceId.present ? data.spaceId.value : this.spaceId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
+      updatedBy: data.updatedBy.present ? data.updatedBy.value : this.updatedBy,
+      hlc: data.hlc.present ? data.hlc.value : this.hlc,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+      nodeId: data.nodeId.present ? data.nodeId.value : this.nodeId,
+      occurrenceDate: data.occurrenceDate.present
+          ? data.occurrenceDate.value
+          : this.occurrenceDate,
+      delta: data.delta.present ? data.delta.value : this.delta,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CounterTick(')
+          ..write('id: $id, ')
+          ..write('spaceId: $spaceId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedBy: $updatedBy, ')
+          ..write('hlc: $hlc, ')
+          ..write('deleted: $deleted, ')
+          ..write('nodeId: $nodeId, ')
+          ..write('occurrenceDate: $occurrenceDate, ')
+          ..write('delta: $delta')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    spaceId,
+    createdAt,
+    createdBy,
+    updatedBy,
+    hlc,
+    deleted,
+    nodeId,
+    occurrenceDate,
+    delta,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CounterTick &&
+          other.id == this.id &&
+          other.spaceId == this.spaceId &&
+          other.createdAt == this.createdAt &&
+          other.createdBy == this.createdBy &&
+          other.updatedBy == this.updatedBy &&
+          other.hlc == this.hlc &&
+          other.deleted == this.deleted &&
+          other.nodeId == this.nodeId &&
+          other.occurrenceDate == this.occurrenceDate &&
+          other.delta == this.delta);
+}
+
+class CounterTicksCompanion extends UpdateCompanion<CounterTick> {
+  final Value<String> id;
+  final Value<String> spaceId;
+  final Value<DateTime> createdAt;
+  final Value<String> createdBy;
+  final Value<String> updatedBy;
+  final Value<String> hlc;
+  final Value<bool> deleted;
+  final Value<String> nodeId;
+  final Value<String?> occurrenceDate;
+  final Value<int> delta;
+  final Value<int> rowid;
+  const CounterTicksCompanion({
+    this.id = const Value.absent(),
+    this.spaceId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.updatedBy = const Value.absent(),
+    this.hlc = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.nodeId = const Value.absent(),
+    this.occurrenceDate = const Value.absent(),
+    this.delta = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CounterTicksCompanion.insert({
+    required String id,
+    required String spaceId,
+    required DateTime createdAt,
+    required String createdBy,
+    required String updatedBy,
+    required String hlc,
+    this.deleted = const Value.absent(),
+    required String nodeId,
+    this.occurrenceDate = const Value.absent(),
+    required int delta,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       spaceId = Value(spaceId),
+       createdAt = Value(createdAt),
+       createdBy = Value(createdBy),
+       updatedBy = Value(updatedBy),
+       hlc = Value(hlc),
+       nodeId = Value(nodeId),
+       delta = Value(delta);
+  static Insertable<CounterTick> custom({
+    Expression<String>? id,
+    Expression<String>? spaceId,
+    Expression<DateTime>? createdAt,
+    Expression<String>? createdBy,
+    Expression<String>? updatedBy,
+    Expression<String>? hlc,
+    Expression<bool>? deleted,
+    Expression<String>? nodeId,
+    Expression<String>? occurrenceDate,
+    Expression<int>? delta,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (spaceId != null) 'space_id': spaceId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (createdBy != null) 'created_by': createdBy,
+      if (updatedBy != null) 'updated_by': updatedBy,
+      if (hlc != null) 'hlc': hlc,
+      if (deleted != null) 'deleted': deleted,
+      if (nodeId != null) 'node_id': nodeId,
+      if (occurrenceDate != null) 'occurrence_date': occurrenceDate,
+      if (delta != null) 'delta': delta,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CounterTicksCompanion copyWith({
+    Value<String>? id,
+    Value<String>? spaceId,
+    Value<DateTime>? createdAt,
+    Value<String>? createdBy,
+    Value<String>? updatedBy,
+    Value<String>? hlc,
+    Value<bool>? deleted,
+    Value<String>? nodeId,
+    Value<String?>? occurrenceDate,
+    Value<int>? delta,
+    Value<int>? rowid,
+  }) {
+    return CounterTicksCompanion(
+      id: id ?? this.id,
+      spaceId: spaceId ?? this.spaceId,
+      createdAt: createdAt ?? this.createdAt,
+      createdBy: createdBy ?? this.createdBy,
+      updatedBy: updatedBy ?? this.updatedBy,
+      hlc: hlc ?? this.hlc,
+      deleted: deleted ?? this.deleted,
+      nodeId: nodeId ?? this.nodeId,
+      occurrenceDate: occurrenceDate ?? this.occurrenceDate,
+      delta: delta ?? this.delta,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (spaceId.present) {
+      map['space_id'] = Variable<String>(spaceId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (createdBy.present) {
+      map['created_by'] = Variable<String>(createdBy.value);
+    }
+    if (updatedBy.present) {
+      map['updated_by'] = Variable<String>(updatedBy.value);
+    }
+    if (hlc.present) {
+      map['hlc'] = Variable<String>(hlc.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
+    if (nodeId.present) {
+      map['node_id'] = Variable<String>(nodeId.value);
+    }
+    if (occurrenceDate.present) {
+      map['occurrence_date'] = Variable<String>(occurrenceDate.value);
+    }
+    if (delta.present) {
+      map['delta'] = Variable<int>(delta.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CounterTicksCompanion(')
+          ..write('id: $id, ')
+          ..write('spaceId: $spaceId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedBy: $updatedBy, ')
+          ..write('hlc: $hlc, ')
+          ..write('deleted: $deleted, ')
+          ..write('nodeId: $nodeId, ')
+          ..write('occurrenceDate: $occurrenceDate, ')
+          ..write('delta: $delta, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $ChangeLogTable extends ChangeLog
     with TableInfo<$ChangeLogTable, ChangeOp> {
   @override
@@ -15625,6 +16469,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ActivityTable activity = $ActivityTable(this);
   late final $TodayEntriesTable todayEntries = $TodayEntriesTable(this);
   late final $UserSettingsTable userSettings = $UserSettingsTable(this);
+  late final $CounterTicksTable counterTicks = $CounterTicksTable(this);
   late final $ChangeLogTable changeLog = $ChangeLogTable(this);
   late final $DevicesTable devices = $DevicesTable(this);
   late final Index nodesParentSort = Index(
@@ -15699,6 +16544,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'today_entries_date',
     'CREATE INDEX today_entries_date ON today_entries (date, sort_key)',
   );
+  late final Index counterTicksNode = Index(
+    'counter_ticks_node',
+    'CREATE INDEX counter_ticks_node ON counter_ticks (node_id, occurrence_date)',
+  );
   late final Index occurrenceCompletionsNode = Index(
     'occurrence_completions_node',
     'CREATE INDEX occurrence_completions_node ON occurrence_completions (node_id, occurrence_date)',
@@ -15740,6 +16589,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     activity,
     todayEntries,
     userSettings,
+    counterTicks,
     changeLog,
     devices,
     nodesParentSort,
@@ -15760,6 +16610,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     activityAt,
     activityNode,
     todayEntriesDate,
+    counterTicksNode,
     occurrenceCompletionsNode,
     changeLogHlc,
     changeLogField,
@@ -15822,6 +16673,10 @@ typedef $$NodesTableCreateCompanionBuilder = NodesCompanion Function({
   Value<String?> repeatStart,
   Value<bool> exclusiveChildren,
   Value<bool> sharedWithChildren,
+  Value<CompletionKind?> completion,
+  Value<int?> target,
+  Value<int?> counterTarget,
+  Value<int?> timerMinutes,
   Value<int?> progressOverride,
   Value<Lifecycle> lifecycle,
   Value<DateTime?> lifecycleAt,
@@ -15857,6 +16712,10 @@ typedef $$NodesTableUpdateCompanionBuilder = NodesCompanion Function({
   Value<String?> repeatStart,
   Value<bool> exclusiveChildren,
   Value<bool> sharedWithChildren,
+  Value<CompletionKind?> completion,
+  Value<int?> target,
+  Value<int?> counterTarget,
+  Value<int?> timerMinutes,
   Value<int?> progressOverride,
   Value<Lifecycle> lifecycle,
   Value<DateTime?> lifecycleAt,
@@ -16012,6 +16871,27 @@ class $$NodesTableFilterComposer extends Composer<_$AppDatabase, $NodesTable> {
 
   ColumnFilters<bool> get sharedWithChildren => $composableBuilder(
     column: $table.sharedWithChildren,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<CompletionKind?, CompletionKind, String>
+  get completion => $composableBuilder(
+    column: $table.completion,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  ColumnFilters<int> get target => $composableBuilder(
+    column: $table.target,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get counterTarget => $composableBuilder(
+    column: $table.counterTarget,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get timerMinutes => $composableBuilder(
+    column: $table.timerMinutes,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -16186,6 +17066,26 @@ class $$NodesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get completion => $composableBuilder(
+    column: $table.completion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get target => $composableBuilder(
+    column: $table.target,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get counterTarget => $composableBuilder(
+    column: $table.counterTarget,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get timerMinutes => $composableBuilder(
+    column: $table.timerMinutes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get progressOverride => $composableBuilder(
     column: $table.progressOverride,
     builder: (column) => ColumnOrderings(column),
@@ -16314,6 +17214,25 @@ class $$NodesTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumnWithTypeConverter<CompletionKind?, String> get completion =>
+      $composableBuilder(
+        column: $table.completion,
+        builder: (column) => column,
+      );
+
+  GeneratedColumn<int> get target =>
+      $composableBuilder(column: $table.target, builder: (column) => column);
+
+  GeneratedColumn<int> get counterTarget => $composableBuilder(
+    column: $table.counterTarget,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get timerMinutes => $composableBuilder(
+    column: $table.timerMinutes,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<int> get progressOverride => $composableBuilder(
     column: $table.progressOverride,
     builder: (column) => column,
@@ -16389,6 +17308,10 @@ class $$NodesTableTableManager
                 Value<String?> repeatStart = const Value.absent(),
                 Value<bool> exclusiveChildren = const Value.absent(),
                 Value<bool> sharedWithChildren = const Value.absent(),
+                Value<CompletionKind?> completion = const Value.absent(),
+                Value<int?> target = const Value.absent(),
+                Value<int?> counterTarget = const Value.absent(),
+                Value<int?> timerMinutes = const Value.absent(),
                 Value<int?> progressOverride = const Value.absent(),
                 Value<Lifecycle> lifecycle = const Value.absent(),
                 Value<DateTime?> lifecycleAt = const Value.absent(),
@@ -16423,6 +17346,10 @@ class $$NodesTableTableManager
                 repeatStart: repeatStart,
                 exclusiveChildren: exclusiveChildren,
                 sharedWithChildren: sharedWithChildren,
+                completion: completion,
+                target: target,
+                counterTarget: counterTarget,
+                timerMinutes: timerMinutes,
                 progressOverride: progressOverride,
                 lifecycle: lifecycle,
                 lifecycleAt: lifecycleAt,
@@ -16459,6 +17386,10 @@ class $$NodesTableTableManager
                 Value<String?> repeatStart = const Value.absent(),
                 Value<bool> exclusiveChildren = const Value.absent(),
                 Value<bool> sharedWithChildren = const Value.absent(),
+                Value<CompletionKind?> completion = const Value.absent(),
+                Value<int?> target = const Value.absent(),
+                Value<int?> counterTarget = const Value.absent(),
+                Value<int?> timerMinutes = const Value.absent(),
                 Value<int?> progressOverride = const Value.absent(),
                 Value<Lifecycle> lifecycle = const Value.absent(),
                 Value<DateTime?> lifecycleAt = const Value.absent(),
@@ -16493,6 +17424,10 @@ class $$NodesTableTableManager
                 repeatStart: repeatStart,
                 exclusiveChildren: exclusiveChildren,
                 sharedWithChildren: sharedWithChildren,
+                completion: completion,
+                target: target,
+                counterTarget: counterTarget,
+                timerMinutes: timerMinutes,
                 progressOverride: progressOverride,
                 lifecycle: lifecycle,
                 lifecycleAt: lifecycleAt,
@@ -22714,6 +23649,312 @@ typedef $$UserSettingsTableProcessedTableManager =
       UserSetting,
       PrefetchHooks Function()
     >;
+typedef $$CounterTicksTableCreateCompanionBuilder =
+    CounterTicksCompanion Function({
+      required String id,
+      required String spaceId,
+      required DateTime createdAt,
+      required String createdBy,
+      required String updatedBy,
+      required String hlc,
+      Value<bool> deleted,
+      required String nodeId,
+      Value<String?> occurrenceDate,
+      required int delta,
+      Value<int> rowid,
+    });
+typedef $$CounterTicksTableUpdateCompanionBuilder =
+    CounterTicksCompanion Function({
+      Value<String> id,
+      Value<String> spaceId,
+      Value<DateTime> createdAt,
+      Value<String> createdBy,
+      Value<String> updatedBy,
+      Value<String> hlc,
+      Value<bool> deleted,
+      Value<String> nodeId,
+      Value<String?> occurrenceDate,
+      Value<int> delta,
+      Value<int> rowid,
+    });
+
+class $$CounterTicksTableFilterComposer
+    extends Composer<_$AppDatabase, $CounterTicksTable> {
+  $$CounterTicksTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get spaceId => $composableBuilder(
+    column: $table.spaceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedBy => $composableBuilder(
+    column: $table.updatedBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get hlc => $composableBuilder(
+    column: $table.hlc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nodeId => $composableBuilder(
+    column: $table.nodeId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get occurrenceDate => $composableBuilder(
+    column: $table.occurrenceDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get delta => $composableBuilder(
+    column: $table.delta,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$CounterTicksTableOrderingComposer
+    extends Composer<_$AppDatabase, $CounterTicksTable> {
+  $$CounterTicksTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get spaceId => $composableBuilder(
+    column: $table.spaceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedBy => $composableBuilder(
+    column: $table.updatedBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get hlc => $composableBuilder(
+    column: $table.hlc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nodeId => $composableBuilder(
+    column: $table.nodeId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get occurrenceDate => $composableBuilder(
+    column: $table.occurrenceDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get delta => $composableBuilder(
+    column: $table.delta,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CounterTicksTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CounterTicksTable> {
+  $$CounterTicksTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get spaceId =>
+      $composableBuilder(column: $table.spaceId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get createdBy =>
+      $composableBuilder(column: $table.createdBy, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedBy =>
+      $composableBuilder(column: $table.updatedBy, builder: (column) => column);
+
+  GeneratedColumn<String> get hlc =>
+      $composableBuilder(column: $table.hlc, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+
+  GeneratedColumn<String> get nodeId =>
+      $composableBuilder(column: $table.nodeId, builder: (column) => column);
+
+  GeneratedColumn<String> get occurrenceDate => $composableBuilder(
+    column: $table.occurrenceDate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get delta =>
+      $composableBuilder(column: $table.delta, builder: (column) => column);
+}
+
+class $$CounterTicksTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CounterTicksTable,
+          CounterTick,
+          $$CounterTicksTableFilterComposer,
+          $$CounterTicksTableOrderingComposer,
+          $$CounterTicksTableAnnotationComposer,
+          $$CounterTicksTableCreateCompanionBuilder,
+          $$CounterTicksTableUpdateCompanionBuilder,
+          (
+            CounterTick,
+            BaseReferences<_$AppDatabase, $CounterTicksTable, CounterTick>,
+          ),
+          CounterTick,
+          PrefetchHooks Function()
+        > {
+  $$CounterTicksTableTableManager(_$AppDatabase db, $CounterTicksTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CounterTicksTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CounterTicksTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CounterTicksTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> spaceId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<String> createdBy = const Value.absent(),
+                Value<String> updatedBy = const Value.absent(),
+                Value<String> hlc = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<String> nodeId = const Value.absent(),
+                Value<String?> occurrenceDate = const Value.absent(),
+                Value<int> delta = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CounterTicksCompanion(
+                id: id,
+                spaceId: spaceId,
+                createdAt: createdAt,
+                createdBy: createdBy,
+                updatedBy: updatedBy,
+                hlc: hlc,
+                deleted: deleted,
+                nodeId: nodeId,
+                occurrenceDate: occurrenceDate,
+                delta: delta,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String spaceId,
+                required DateTime createdAt,
+                required String createdBy,
+                required String updatedBy,
+                required String hlc,
+                Value<bool> deleted = const Value.absent(),
+                required String nodeId,
+                Value<String?> occurrenceDate = const Value.absent(),
+                required int delta,
+                Value<int> rowid = const Value.absent(),
+              }) => CounterTicksCompanion.insert(
+                id: id,
+                spaceId: spaceId,
+                createdAt: createdAt,
+                createdBy: createdBy,
+                updatedBy: updatedBy,
+                hlc: hlc,
+                deleted: deleted,
+                nodeId: nodeId,
+                occurrenceDate: occurrenceDate,
+                delta: delta,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$CounterTicksTable, CounterTick>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $CounterTicksTable,
+                    CounterTick
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$CounterTicksTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CounterTicksTable,
+      CounterTick,
+      $$CounterTicksTableFilterComposer,
+      $$CounterTicksTableOrderingComposer,
+      $$CounterTicksTableAnnotationComposer,
+      $$CounterTicksTableCreateCompanionBuilder,
+      $$CounterTicksTableUpdateCompanionBuilder,
+      (
+        CounterTick,
+        BaseReferences<_$AppDatabase, $CounterTicksTable, CounterTick>,
+      ),
+      CounterTick,
+      PrefetchHooks Function()
+    >;
 typedef $$ChangeLogTableCreateCompanionBuilder = ChangeLogCompanion Function({
   required String opId,
   required String spaceId,
@@ -23289,6 +24530,8 @@ class $AppDatabaseManager {
       $$TodayEntriesTableTableManager(_db, _db.todayEntries);
   $$UserSettingsTableTableManager get userSettings =>
       $$UserSettingsTableTableManager(_db, _db.userSettings);
+  $$CounterTicksTableTableManager get counterTicks =>
+      $$CounterTicksTableTableManager(_db, _db.counterTicks);
   $$ChangeLogTableTableManager get changeLog =>
       $$ChangeLogTableTableManager(_db, _db.changeLog);
   $$DevicesTableTableManager get devices =>

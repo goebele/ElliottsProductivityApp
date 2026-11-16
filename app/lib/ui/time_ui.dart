@@ -8,6 +8,7 @@ import '../domain/review.dart' show formatMinutes;
 import '../domain/time_tracking.dart';
 import '../l10n/app_localizations.dart';
 import '../providers.dart';
+import 'property_rows.dart';
 
 /// Estimates, tracked time and progress on an item (DESIGN.md §6.15–16).
 
@@ -38,9 +39,12 @@ final timeEntriesProvider = StreamProvider.family<List<TimeEntry>, String>((
 /// "⏳ Est. 1h" (or "+ Estimate") and "⏱ 25m of 1h" chips, with the totals
 /// for the items under it when they have any.
 class TimeChips extends ConsumerWidget {
-  const TimeChips({super.key, required this.node});
+  const TimeChips({super.key, required this.node, this.trailing = const []});
 
   final Node node;
+
+  /// After the chips, before the +: the timer's ▶ on the task page.
+  final List<Widget> trailing;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -49,25 +53,27 @@ class TimeChips extends ConsumerWidget {
     final estimate = node.estimateMinutes;
     Future<NodeRepository> repo() => ref.read(nodeRepositoryProvider.future);
 
+    // The task page's "Time" row: estimate, tracked time (click for the
+    // entries), the items' roll-up, the timer, and + for an estimate.
     return Wrap(
-      spacing: 8,
-      runSpacing: 8,
+      spacing: 6,
+      runSpacing: 6,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        if (estimate == null)
-          ActionChip(
-            avatar: const Icon(Icons.hourglass_empty, size: 18),
-            label: Text(l10n.estimateAdd),
-            onPressed: () => _editEstimate(context, ref),
-          )
-        else
-          InputChip(
-            avatar: const Icon(Icons.hourglass_bottom, size: 18),
-            label: Text(l10n.estimateIs(formatMinutes(estimate))),
-            deleteButtonTooltipMessage: l10n.remove,
-            onPressed: () => _editEstimate(context, ref),
-            onDeleted: () async => (await repo()).setEstimate(node.id, null),
+        if (estimate != null)
+          HoverDeleteChip(
+            builder: (x) => InputChip(
+              visualDensity: VisualDensity.compact,
+              avatar: const Icon(Icons.hourglass_bottom, size: 18),
+              label: Text(l10n.estimateIs(formatMinutes(estimate))),
+              deleteIcon: x,
+              deleteButtonTooltipMessage: l10n.remove,
+              onPressed: () => _editEstimate(context, ref),
+              onDeleted: () async => (await repo()).setEstimate(node.id, null),
+            ),
           ),
         ActionChip(
+          visualDensity: VisualDensity.compact,
           avatar: const Icon(Icons.timer_outlined, size: 18),
           label: Text(
             r.ownTracked == 0
@@ -87,6 +93,7 @@ class TimeChips extends ConsumerWidget {
         ),
         if (r.childEstimates > 0 || r.childTracked > 0)
           Chip(
+            visualDensity: VisualDensity.compact,
             avatar: const Icon(Icons.account_tree_outlined, size: 18),
             label: Text(
               l10n.rollupItems(
@@ -94,6 +101,13 @@ class TimeChips extends ConsumerWidget {
                 formatMinutes(r.childEstimates),
               ),
             ),
+          ),
+        ...trailing,
+        if (estimate == null)
+          RowAddButton(
+            tooltip: l10n.estimateAddTooltip,
+            icon: Icons.hourglass_empty,
+            onPressed: () => _editEstimate(context, ref),
           ),
       ],
     );

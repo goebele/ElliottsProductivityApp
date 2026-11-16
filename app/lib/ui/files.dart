@@ -188,6 +188,7 @@ Future<void> attachFiles(
     ?..hideCurrentSnackBar()
     ..showSnackBar(
       SnackBar(
+        persist: false,
         content: Text(
           added.length == 1
               ? l10n.fileAttached(files.first.name)
@@ -376,7 +377,10 @@ class FilesList extends ConsumerWidget {
                       if (!await pasteAndAttach(context, ref, nodeId) &&
                           context.mounted) {
                         ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                          SnackBar(content: Text(l10n.fileNoImageToPaste)),
+                          SnackBar(
+                            persist: false,
+                            content: Text(l10n.fileNoImageToPaste),
+                          ),
                         );
                       }
                     },
@@ -508,7 +512,9 @@ Future<void> openInDefaultApp(
   final copy = blobs.tempCopy(a.contentHash, a.filename, Directory.systemTemp);
   final result = await openFileExternally(copy.path, a.mime);
   if (!result) {
-    messenger?.showSnackBar(SnackBar(content: Text(l10n.fileNoApp)));
+    messenger?.showSnackBar(
+      SnackBar(persist: false, content: Text(l10n.fileNoApp)),
+    );
   }
 }
 

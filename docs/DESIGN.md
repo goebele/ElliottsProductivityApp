@@ -1,6 +1,37 @@
 # Elliott's Productivity App — Design Doc
 
-**Status:** Draft v0.18 · **Last updated:** 2026-11-09 · **Owners:** Elliott, Claude
+**Status:** Draft v0.22 · **Last updated:** 2026-11-09 · **Owners:** Elliott, Claude
+
+> **v0.22 (review U3–U5):** The task page has **labelled rows** (Tags
+> with the value, When, Time, Description), each with its own +; the
+> status is a chip after the title; Notes & files is a panel on the right
+> below the title; "+ Completion condition" sits under the items, and the
+> view switch only shows for checkboxes (tasks are cards with a tick
+> box). Untitled items are locked until titled, blank ones go to Trash
+> when left, and the wide detail pane animates (§6.1).
+
+> **v0.21 (review U2):** The task page puts **information first** (title;
+> values, tags, dates, time; progress; description), then **one row of
+> controls**, then **Items**. **Requirements live in Items**: checkboxes
+> (its items), plus at most one counter row and one timer row, added with
+> **+ Requirement**; "Mark done" is gone (one checkbox does the same).
+> The **type selector is removed** for now (type may fold into tags). The
+> **+** by the Items field now makes the item and opens it (§6.1, §6.7.1).
+
+> **v0.20 (review U1):** **Today shows only concrete tasks**, and every
+> task gets a **completion condition**: Mark done, Checklist (its items are
+> the boxes), Counter (count to N) or Timer (track N minutes). A task with
+> no condition shows on Today as "Define it". A due or repeating parent
+> brings its concrete tasks, attached under it ("Workout" with Pushups,
+> Cardio, Stretches). On the task page a **Completion** section holds the
+> Done button and the timer (§6.7.1).
+
+> **v0.19:** **Links between notes and items** are ordinary Markdown links
+> with the app's own address, `[Packing ideas](epa://node/<id>)`, inserted
+> from a searchable picker (toolbar button, or type `[[`). Clicking one opens
+> it in the app; web links work as before. Each link is recorded as a
+> `links` row, so the target shows "Linked from" and a future **map of
+> linked notes** can be drawn from them (§6.3).
 
 > **v0.18:** A **review pass (M6.5)** comes before LAN sync: a UX
 > walk-through of every screen, a review of everything sync will lock in,
@@ -503,6 +534,48 @@ change-log compaction and Trash purges.
   time spent, values (explicit and inherited, shown separately), progress,
   markdown note, links, attachments, and the children (shown in the node's
   [child view](#613-child-views)).
+- **Task page layout (v0.22, review U5):**
+  1. Breadcrumbs (nothing on a top-level item), then the title with its
+     **status as a chip** right after it ("Open ▾", coloured by status),
+     and ⋮ at the end. On phones the app bar has only Back (the title is
+     right below).
+  2. **Labelled rows**, each with its own small **+** at the end:
+     - **Tags:** tag chips.
+     - **Value:** its own row (names can be long; usually one, often
+       none); its + goes once one is set.
+     - **When:** deadline, time slot and repeat chips; a calendar button
+       (Show in calendar) once it has dates; + opens the dates dialog.
+     - **Time:** estimate, tracked time (click for the entries), the
+       items' roll-up, the ▶ timer/focus; + sets an estimate.
+     - **Description:** the text (click to edit), or "Add a description…".
+  3. Progress (for parents), "Linked from", then **Items**.
+  4. **Notes & files** (wide screens): a panel on the right, **below the
+     title**, open by default, with its count and a › to collapse it to a
+     thin strip (badge with the count). Narrow: a section under Items.
+  - On desktop a chip's ✕ shows only while it's hovered or focused (it
+    keeps its room, so nothing moves); phones always show it.
+  - **Leaving a blank item** (no title, text, dates, estimate, condition,
+    children, files, tags, values, time or reminders) moves it to Trash,
+    with "Removed an empty item" and Undo. Notes too.
+  - The **+** at the start of the Items field is a button: it makes the
+    item (from what's typed, or untitled) and opens it. Enter still adds
+    without leaving.
+  - **An untitled item is locked:** everything below the title (chips,
+    controls, Items, notes) is greyed out and can't be used until it has
+    a title, with "Give it a title to continue" under the title field
+    (which has focus). The title row's status menu and ⋮ stay usable, so
+    it can still be deleted. Notes aren't locked.
+  - **Transitions (wide layout):** the detail pane fades between pages;
+    opening an item below the current one slides it in from the right,
+    going up to an ancestor slides from the left, like pages on phones.
+  - **Items view:** tasks under an item are always **cards**, each with a
+    tick box. A task's **checkboxes** show as a **checklist** or as
+    **steps** (the switch only shows for them, §6.7.1). "+ Completion condition" sits **under** the
+    add field, while the task has no tasks under it.
+  - **Type** (goal, project, task, idea) has **no selector on the page**
+    any more: it changes nothing yet. Being considered: folding type into
+    tags (e.g. a `#goal` or `#project` tag) instead of a field. The
+    column stays; new items are tasks; notes are unaffected.
 - **Done button (v0.7):** a labelled **Done** button at the far end of the
   title row, away from the title. It only completes: open, active and waiting
   go to done. Pressing it plays a short burst (and a haptic tap on phones)
@@ -594,8 +667,8 @@ Example: working on *Test New Feature*, you can reach *Implement Feature*
   text. Notes are separate `note` items under it, any number of them, so they
   can be moved, searched and linked like any item. They show in the notes
   column (§6.1).
-- Markdown subset: headings, bold and italic, lists, checkboxes, code, links,
-  and `[[node links]]`.
+- Markdown subset: headings, bold and italic, lists, checkboxes, code and
+  links. Links to items and notes are ordinary links (v0.19, below).
 - Editor: a plain-text editor with a toolbar and a live preview toggle.
   **Built (v0.7):** toolbar for bold, italic, heading (`## `), bulleted and
   numbered lists, link and code (inline, or fenced across lines); each
@@ -603,8 +676,33 @@ Example: working on *Test New Feature*, you can reach *Implement Feature*
   description and the notes column render Markdown; card previews (panels,
   note cards) show the text without markup. Task-list checkboxes render
   read-only. Links open in the browser (http, https, mailto only).
-  `[[node links]]`, backlinks and "Convert checkboxes to items" come with
-  linking.
+  "Convert checkboxes to items" comes later.
+- **Links to items and notes (v0.19):** standard Markdown inline links with
+  the app's address scheme, `[any text](epa://node/<id>)`. The id (a
+  UUIDv7) never changes, so renames and moves don't break links, and the
+  text stays whatever was written. Outside the app (Copy as Markdown,
+  exported files) the text still reads normally.
+  - **Inserting:** the editor toolbar's **Link to a note or item** button,
+    or typing `[[`, opens a picker: search titles and text, or choose from
+    recently changed items; Enter takes the first. The link goes around
+    the selected text, or uses the title. Cancelling a `[[` keeps the
+    brackets. The ordinary **Link** button still inserts `[text](https://)`.
+  - **Opening:** clicking one in a note, a description or a peek opens it
+    in the app, with Back returning to where the link was (the breadcrumb
+    shows "via"). http/https/mailto links open in the browser as before.
+  - **Tracking:** every save re-reads the text: each linked item is one
+    `links` row (`target_kind = node`, `origin = inline`) from the item or
+    note whose text it is; links in code are ignored, as are links to
+    itself. Removing the link from the text tombstones the row.
+  - **Backlinks:** an item or note page shows **Linked from N:** with a chip
+    per live item or note whose text links to it (hover peeks).
+- **Later: a map of linked notes.** A view drawing notes (and items) as
+  dots and their links as lines, in the spirit of Obsidian's graph view but
+  much simpler: open it for one item to see what it links to and what
+  links to it, a hop or two out, or for everything under an item; click a
+  dot to open it, drag to rearrange, and filter by tag or value. Built
+  from the `links` rows above (text links and "Link from above"), so no
+  new data is needed; a simple force layout is enough at first.
 - **Note pages (v0.7):** a note opens formatted and read-only with an
   **Edit** button (a new, empty note opens in its editor). Editing shows
   **Save** (or Esc), which returns to the formatted view; clicking the text
@@ -831,6 +929,9 @@ on the list every day, but only one exercise is suggested.
     optionally items with status Active. ⚙ chooses which (routines, due,
     overdue and events by default), saved as a personal setting
     (`user_settings`, key `today.sources`).
+  - **New here:** the **+** button at the bottom right makes a top-level
+    task, adds it to Today and opens it to be named (left blank, it goes
+    to Trash like any blank item).
   - **Your picks:** ⋮ → **Add to Today** on any item (and Remove from
     Today). ✕ on an entry takes it off today's list (with Undo); for an
     automatic one this hides it for that day only.
@@ -853,6 +954,62 @@ on the list every day, but only one exercise is suggested.
   tag, value or high-level item and have Today fill it with concrete
   tasks from under it, up to the block's length by estimate; and saved
   filters for Pick one for me.
+
+#### 6.7.1 Concrete tasks and completion conditions (v0.20)
+Today only lists things you can actually do now.
+
+- **A concrete task** is an item with no items under it, or one whose items
+  are its checklist. A parent with tasks under it isn't concrete: it's
+  done through them. Notes are never tasks; the items of a checklist are
+  its checkboxes, not tasks of their own.
+- **Requirements (v0.21, replacing v0.20's single condition):** what has
+  to happen for a task to be done, shown **in its Items**:
+  - **Checkboxes:** its items. Done when every one is ticked; un-ticking
+    one reopens it. Stored as child rows (so they sync one by one), but
+    **not tasks** (v0.22, U6): a line has no page (clicking it ticks it),
+    isn't in the tree (its task shows no children), can't hold anything,
+    and search finds its task instead. **Right-click or long-press** a
+    line to **Rename** or **Delete** it (to Trash, with Undo).
+  - **A condition or tasks, never both:** a task with tasks under it
+    can't get a condition (+ Completion condition is hidden; the service
+    refuses), and nothing with tasks under it or a condition of its own
+    can be moved or linked into a task with a condition. On such a task
+    the Items field and its + add lines.
+  - **Counter** (one at most): count to a target, "practice 4 problems"
+    (`nodes.counter_target`): **+1** and **−**; counts are add-only
+    `counter_ticks` rows (+1 or −1) summed, so two devices counting at
+    once both count.
+  - **Timer** (one at most): track a number of minutes, "practice 30 min"
+    (`nodes.timer_minutes`), with ▶.
+  - A task with any requirement is in "requirements mode"
+    (`nodes.completion = checklist`): its items are its checkboxes, the
+    Items list shows the counter and timer rows above them, and the field
+    adds checkboxes. It's done when **all** its requirements are met, and
+    finishes (or reopens) by itself.
+  - **No requirements yet:** the task is to be defined. On Today it reads
+    **"Define it: add subtasks or a completion condition"**.
+  - **Mark done is gone:** one checkbox does the same ("a list of one").
+    A checkbox's own page has the Done button.
+  - Repeating tasks count per occurrence (counter and timer start again
+    each day; boxes use their occurrence completions).
+- **Adding them:** **+ Completion condition** under the Items field
+  (v0.22; was "+ Requirement" in the header) (Checkbox,
+  Counter, Timer; counter and timer ask for the target), shown while the
+  task has no subtasks. Click a counter or timer row's numbers to change
+  the target; its ✕ removes it. Removing the last requirement puts the
+  task back to undecided.
+- **On Today:** a due, repeating, active or picked item brings its
+  concrete tasks (itself if it is one). Tasks sharing a parent are
+  attached under it in one card: the parent's title, why it's there and
+  "1/3 done", then each task with its condition's icon and progress
+  ("Checklist 2/6", "1/4", "10/30 min", or "Define it"). Its ✕ takes the
+  whole group off for the day; dragging moves the group. Pick one for me
+  and left-over picks only offer concrete tasks.
+- **Data:** schema v14 added `nodes.completion`, `nodes.target` and
+  `counter_ticks`; **v15** adds `nodes.counter_target` and
+  `nodes.timer_minutes` (one of each per task). `completion` now only
+  marks requirements mode (`checklist`); `target` is kept unused
+  (additive-only, §7.5).
 
 ### 6.8 Quick-capture inbox (low friction)
 - **Windows:** a global hotkey (default `Ctrl+Alt+Space`) opens a small
@@ -1090,7 +1247,9 @@ is drawn, and you can always drill into a child.
   skipped, and so is a `#` right after a letter, digit, `/`, `(` or `&`
   (URL fragments, `[x](#anchor)`). Deleting the text removes the tag.
 - **UI (v0.9):** under the title, chips for the item's tags, then **+ Tag**
-  (type a name, existing tags are suggested, Enter adds). Picker tags have
+  (type a name, existing tags are suggested, Enter adds; a **New tag
+  #name** button beside Done does the same without Enter, reading
+  **Add #name** when that tag already exists). Picker tags have
   ✕; tags from the text don't (their tooltip says to edit the text).
   Clicking a tag searches for it.
 - **Favourites (v0.10):** starred tags are the common categories (#work,
@@ -1462,7 +1621,14 @@ navigation (bottom bar, pages, sheets).
 
 | ID | Screen | Issue | Proposal | Decision | State |
 |----|--------|-------|----------|----------|-------|
-| U1 | | | | | open |
+| U1 | Today | A scheduled parent appeared alongside its scheduled children; Today mixed plans with doable work. | Only concrete tasks on Today, grouped under a shared parent; every task gets a completion condition; a Completion section on the task page (§6.7.1). | Built as proposed (v0.20). | done |
+| U2 | Task page | Cluttered: information and controls mixed; type selector that does nothing; completion in its own card; Mark done redundant; the Items **+** looked tappable but wasn't. | Information on top, one controls row, then Items; requirements in Items (+ Requirement); drop Mark done and the type selector; **+** makes and opens the item. | Built as proposed (v0.21). | done |
+| U3 | New task feedback (Windows) | After the Items **+** made and opened a task nothing showed the switch, so the **+** got tapped again, making several. | Lock an untitled item's controls until it has a title; animate the detail pane (slide deeper/up, fade otherwise). | Built as proposed (v0.21). | done |
+| U4 | Tag picker | Adding a typed tag needed Enter; no visible button for it. | A second button beside Done: "New tag #name" (or "Add #name" for an existing tag). | Built as proposed (v0.21). | done |
+| U5 | Task page space | Controls in one long row; Requirement floating in the Items header; a view switch that only matters for checkboxes; notes toggle tucked top-right; empty breadcrumb gap; lots of Untitled items. | Labelled rows each with its +; value shares the Tags row; condition under the items; switch only for checkboxes; notes panel right, below the title; status chip; ✕ on hover; blank items to Trash on leaving. | Built as proposed (v0.22). | done |
+| U6 | Checkbox lines, phone rows | Lines could be opened, showed in the tree as tasks and take children (which Today never showed); the value squeezed onto the Tags row on phones; the phone app bar repeated the title. | Lines aren't tasks: no page, not in the tree, no children, menu to rename/delete; a condition and tasks are exclusive; Value gets its own row; app bar only has Back. | Built as proposed (v0.22). The Done button for a checkbox's page is gone with the page. | done |
+| U7 | Small fixes | Today had no way to make a task (phones have no tree beside it); the checkbox view switch offered cards; Undo messages stayed up forever (Flutter keeps a snack bar with an action open unless told not to). | Today gets a **+** button: a new task, added to Today, opened to be named. Checkbox views: checklist or steps. Every snack bar times out. | Built as proposed (v0.22). | done |
+| U8 | | | | | open |
 
 ### 14.2 Lock-in review (draft)
 What M7 makes hard to change, and what needs a decision before it.
@@ -1479,6 +1645,8 @@ What M7 makes hard to change, and what needs a decision before it.
 | L8 | Shared vs personal | Check each table and column against §5.0 once more: e.g. `progress_override` and `estimate_minutes` are shared (on the node), `reminders`, `time_entries`, `today_entries`, `activity`, `user_settings` personal; tag favourites/colour live on personal tags. | Confirm or move before M7. | open |
 | L9 | Activity | Add-only rows grow forever and sync to every device. | Keep, but exclude from compaction (as §7.4 says) and consider a per-row size check (title snapshots only). | open |
 | L10 | Local-only state | Paused timer, notes-column open, filters, zoom, peek pin are per device and never sync. | Confirm that's wanted (pause especially: pausing on the PC isn't seen on the phone). | open |
+| L12 | Text links | `[text](epa://node/<id>)` links in notes create `links` rows (`origin = inline`); two devices editing the same note can each add a row for the same link. | Covered by L1 (id from the pair). The text is the source of truth: rows are re-derived on every save. | decided |
+| L13 | Counters | Counter progress must survive two devices counting at once. | Add-only `counter_ticks` rows summed (built v0.20); ticks are never edited, only added. | decided |
 | L11 | Migrations | Until now local data could be wiped; from the first real sync, every schema change needs a tested migration. | From M7 on, migrations are kept; the migration test already covers every version. | open |
 
 ### 14.3 Code health (draft)

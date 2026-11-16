@@ -152,3 +152,53 @@ const _blockTags = {
   'br',
   'hr',
 };
+
+// ------------------------------------------------------------ item links
+
+/// Links to items and notes are ordinary Markdown links with the app's own
+/// address scheme: `[Packing ideas](epa://node/<id>)` (§6.3). The text is
+/// yours to word; the id keeps the link working through renames and moves.
+const nodeLinkScheme = 'epa';
+
+String nodeLinkUrl(String id) => '$nodeLinkScheme://node/$id';
+
+/// The item id an `epa://node/<id>` address points to, or null.
+String? nodeIdFromUrl(String? url) {
+  final uri = url == null ? null : Uri.tryParse(url);
+  if (uri == null || uri.scheme != nodeLinkScheme || uri.host != 'node') {
+    return null;
+  }
+  final id = uri.pathSegments.firstOrNull;
+  return id == null || id.isEmpty ? null : id;
+}
+
+final _codeSpans = RegExp(r'```[\s\S]*?```|`[^`\n]*`');
+final _nodeLink = RegExp(r'\]\(\s*epa://node/([0-9A-Za-z-]+)\s*(?:"[^"]*")?\)');
+
+/// The ids of every item linked from [markdown], each once, in order. Code
+/// spans and blocks are skipped.
+List<String> nodeLinkIds(String markdown) {
+  final plain = markdown.replaceAll(_codeSpans, ' ');
+  final seen = <String>{};
+  return [
+    for (final m in _nodeLink.allMatches(plain))
+      if (seen.add(m.group(1)!)) m.group(1)!,
+  ];
+}
+
+/// Inserts a link to item [id]: the selected text becomes the link text,
+/// or [title] if nothing is selected. The cursor ends after the link.
+TextEdit insertNodeLink(
+  TextEdit e, {
+  required String id,
+  required String title,
+}) {
+  final selected = e.text.substring(e.start, e.end);
+  final label = (selected.isEmpty ? title : selected)
+      .replaceAll('[', r'\[')
+      .replaceAll(']', r'\]');
+  final inserted = '[${label.isEmpty ? 'link' : label}](${nodeLinkUrl(id)})';
+  final text = e.text.replaceRange(e.start, e.end, inserted);
+  final end = e.start + inserted.length;
+  return TextEdit(text, end, end);
+}

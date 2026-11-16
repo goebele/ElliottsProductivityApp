@@ -11,6 +11,7 @@ import '../data/database.dart';
 import '../l10n/app_localizations.dart';
 import '../providers.dart';
 import 'files.dart';
+import 'prompt_dialog.dart';
 
 /// Markup (DESIGN.md §6.4): strokes, highlighter and text labels drawn
 /// over an image, and highlighted ranges in a text file. Every mark is its
@@ -251,29 +252,7 @@ class _ImageMarkupViewState extends ConsumerState<ImageMarkupView> {
 
   Future<void> _label(Offset n) async {
     final l10n = AppLocalizations.of(context);
-    final controller = TextEditingController();
-    final text = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.markupLabelTitle),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          onSubmitted: (v) => Navigator.pop(context, v),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text),
-            child: Text(l10n.save),
-          ),
-        ],
-      ),
-    );
-    controller.dispose();
+    final text = await promptText(context, title: l10n.markupLabelTitle);
     if (text == null || text.trim().isEmpty) return;
     final repo = (await ref.read(nodeRepositoryProvider.future)).files;
     _mine.add(
@@ -686,7 +665,9 @@ Future<void> saveBytesAs(
   final messenger = ScaffoldMessenger.maybeOf(context);
   final uri = await saveFileDialog(filename, bytes, mime);
   if (uri != null) {
-    messenger?.showSnackBar(SnackBar(content: Text(l10n.fileSaved)));
+    messenger?.showSnackBar(
+      SnackBar(persist: false, content: Text(l10n.fileSaved)),
+    );
   }
 }
 

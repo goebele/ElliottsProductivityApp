@@ -191,6 +191,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
       ?..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
+          persist: false,
           content: Text(l10n.calendarAdded(l10n.titleOrUntitled(title))),
           action: SnackBarAction(
             label: l10n.peekOpen,
@@ -237,7 +238,9 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
     final nodes = await repo.prefs.icsExportNodes();
     if (!mounted) return;
     if (nodes.isEmpty) {
-      messenger?.showSnackBar(SnackBar(content: Text(l10n.icsNoneChosen)));
+      messenger?.showSnackBar(
+        SnackBar(persist: false, content: Text(l10n.icsNoneChosen)),
+      );
       return;
     }
     await saveBytesAs(

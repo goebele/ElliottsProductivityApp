@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../l10n/app_localizations.dart';
 import '../platform/reminder_notifier.dart';
 import '../providers.dart';
-import 'labels.dart';
 import 'attachment_page.dart';
 import 'calendar_page.dart';
 import 'review_page.dart';
@@ -132,13 +131,24 @@ class _WideLayout extends ConsumerWidget {
   const _WideLayout();
 
   Future<void> _open(WidgetRef ref, String id) async {
+    final repo = await ref.read(nodeRepositoryProvider.future);
+    final ancestors = await repo.ancestors(id);
+    // Slide in from the right going deeper, from the left going up.
+    final previous = ref.read(selectedNodeProvider);
+    var direction = 0;
+    if (previous != null && previous != id) {
+      if (ancestors.any((a) => a.id == previous)) {
+        direction = 1;
+      } else if ((await repo.ancestors(previous)).any((a) => a.id == id)) {
+        direction = -1;
+      }
+    }
+    ref.read(paneDirectionProvider.notifier).set(direction);
     ref.read(removedViewProvider.notifier).show(null);
     ref.read(sidePageProvider.notifier).show(null);
     ref.read(openAttachmentProvider.notifier).open(null);
     ref.read(selectedNodeProvider.notifier).select(id);
     // Reveal the node in the tree.
-    final repo = await ref.read(nodeRepositoryProvider.future);
-    final ancestors = await repo.ancestors(id);
     ref
         .read(expandedNodesProvider.notifier)
         .expandAll(ancestors.map((a) => a.id));
@@ -151,6 +161,13 @@ class _WideLayout extends ConsumerWidget {
     final sidePage = ref.watch(sidePageProvider);
     final attachment = ref.watch(openAttachmentProvider);
     final pinned = ref.watch(pinnedPeekProvider);
+    final direction = ref.watch(paneDirectionProvider);
+    final pageKey = switch ((sidePage, attachment, removedView)) {
+      (_, final a?, _) => 'file:${a.id}',
+      (final p?, _, _) => 'page:${p.name}',
+      (_, _, final r?) => 'removed:${r.name}',
+      _ => selected == null ? 'today' : 'node:$selected',
+    };
     void open(String id) => _open(ref, id);
     void leave(String? parentId) => parentId == null
         ? ref.read(selectedNodeProvider.notifier).select(null)
@@ -195,31 +212,36 @@ class _WideLayout extends ConsumerWidget {
               const VerticalDivider(width: 1),
               Expanded(
                 child: _Pane(
-                  child: sidePage == SidePage.calendarPage && attachment == null
-                      ? CalendarPage(onOpen: open)
-                      : sidePage == SidePage.reviewPage && attachment == null
-                      ? ReviewPage(onOpen: open)
-                      : attachment != null
-                      ? AttachmentPage(
-                          key: ValueKey(attachment.id),
-                          attachmentId: attachment.id,
-                          via: attachment.via,
-                          onOpen: open,
-                          onBack: open,
-                        )
-                      : sidePage == SidePage.valuesPage
-                      ? ValuesPage(onOpen: open)
-                      : sidePage == SidePage.tagsPage
-                      ? const TagsPage()
-                      : removedView != null
-                      ? RemovedList(which: removedView, onOpen: open)
-                      : selected == null
-                      ? TodayPage(onOpen: open)
-                      : NodeDetail(
-                          nodeId: selected,
-                          onOpen: open,
-                          onLeave: leave,
-                        ),
+                  child: _PaneSwitcher(
+                    pageKey: pageKey,
+                    direction: pageKey.startsWith('node:') ? direction : 0,
+                    child:
+                        sidePage == SidePage.calendarPage && attachment == null
+                        ? CalendarPage(onOpen: open)
+                        : sidePage == SidePage.reviewPage && attachment == null
+                        ? ReviewPage(onOpen: open)
+                        : attachment != null
+                        ? AttachmentPage(
+                            key: ValueKey(attachment.id),
+                            attachmentId: attachment.id,
+                            via: attachment.via,
+                            onOpen: open,
+                            onBack: open,
+                          )
+                        : sidePage == SidePage.valuesPage
+                        ? ValuesPage(onOpen: open)
+                        : sidePage == SidePage.tagsPage
+                        ? const TagsPage()
+                        : removedView != null
+                        ? RemovedList(which: removedView, onOpen: open)
+                        : selected == null
+                        ? TodayPage(onOpen: open)
+                        : NodeDetail(
+                            nodeId: selected,
+                            onOpen: open,
+                            onLeave: leave,
+                          ),
+                  ),
                 ),
               ),
               // A pinned peek (§6.1.1) stays beside whatever is open.
@@ -234,6 +256,57 @@ class _WideLayout extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// The detail pane's page changes with a short fade; opening an item
+/// below the current one slides it in from the right, going up from the
+/// left, as pages do on phones (so a newly made item visibly arrives).
+class _PaneSwitcher extends StatelessWidget {
+  const _PaneSwitcher({
+    required this.pageKey,
+    required this.direction,
+    required this.child,
+  });
+
+  final String pageKey;
+  final int direction;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final key = ValueKey(pageKey);
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 240),
+      reverseDuration: const Duration(milliseconds: 140),
+      layoutBuilder: (current, previous) =>
+          Stack(fit: StackFit.expand, children: [...previous, ?current]),
+      transitionBuilder: (child, animation) {
+        // The page leaving just fades, and can't be clicked meanwhile.
+        if (child.key != key) {
+          return IgnorePointer(
+            child: FadeTransition(opacity: animation, child: child),
+          );
+        }
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+        );
+        return FadeTransition(
+          opacity: curved,
+          child: direction == 0
+              ? child
+              : SlideTransition(
+                  position: Tween(
+                    begin: Offset(0.08 * direction, 0),
+                    end: Offset.zero,
+                  ).animate(curved),
+                  child: child,
+                ),
+        );
+      },
+      child: KeyedSubtree(key: key, child: child),
     );
   }
 }
@@ -383,12 +456,10 @@ class _NodePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final node = ref.watch(nodeProvider(nodeId)).value;
+    // The page shows the title (and where it is) right below: the bar only
+    // needs Back.
     return Scaffold(
-      appBar: AppBar(
-        title: Text(node == null ? '' : l10n.titleOrUntitled(node.title)),
-      ),
+      appBar: AppBar(toolbarHeight: 48),
       body: CalendarOpener(
         open: () => openCalendarPage(context),
         child: AttachmentOpener(

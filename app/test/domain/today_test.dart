@@ -62,7 +62,7 @@ void main() {
         'Taxes:overdue',
         'Rent:dueToday',
         'Call:event',
-        'Gym:routine',
+        'Warm up:routine',
       ]);
       final list = await nodes.today.build();
       expect(list.items.first.overdueDays, 2);
@@ -176,10 +176,9 @@ void main() {
       );
       picked.add(n!.title);
     }
-    expect(picked, {'Gym', 'Run'});
+    expect(picked, {'Run'}); // Gym has items: only Run is concrete.
 
     await nodes.today.add(run);
-    await nodes.today.add(gym);
     expect(
       await nodes.today.pickOne(filters: SearchFilters(valueIds: {health})),
       isNull,

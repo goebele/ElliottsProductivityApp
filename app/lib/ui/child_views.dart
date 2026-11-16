@@ -1,13 +1,18 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/database.dart';
 import '../domain/markdown_format.dart';
+import '../domain/completion.dart';
 import '../domain/node_repository.dart';
 import '../l10n/app_localizations.dart';
 import '../providers.dart';
+import 'completion_ui.dart';
 import 'labels.dart';
 import 'peek.dart';
+import 'prompt_dialog.dart';
 import 'time_ui.dart';
 import 'tree_pane.dart';
 import 'tree_providers.dart';
@@ -42,13 +47,35 @@ class _ChildrenSectionState extends ConsumerState<ChildrenSection> {
 
   Future<NodeRepository> get _repo => ref.read(nodeRepositoryProvider.future);
 
+  /// Enter in the field: a checkbox on a task with requirements, else a
+  /// task under it.
   Future<void> _add(String title) async {
     if (title.trim().isEmpty) return;
     _addController.clear();
     _addFocus.requestFocus();
-    await (await _repo).create(title: title.trim(), parentId: widget.parent.id);
+    final repo = await _repo;
+    if (CompletionService.hasRequirements(widget.parent)) {
+      await repo.completion.addCheckbox(widget.parent.id, title.trim());
+    } else {
+      await repo.create(title: title.trim(), parentId: widget.parent.id);
+    }
     // Show the new child in the tree too.
     ref.read(expandedNodesProvider.notifier).expandAll([widget.parent.id]);
+  }
+
+  /// The button by the field: makes a task (from what's typed, if
+  /// anything) and opens it. On a task with a completion condition it adds
+  /// the typed line as a checkbox instead: lines have no page (§6.7.1).
+  Future<void> _addAndOpen() async {
+    if (CompletionService.hasRequirements(widget.parent)) {
+      return _add(_addController.text);
+    }
+    final title = _addController.text.trim();
+    _addController.clear();
+    final repo = await _repo;
+    final id = await repo.create(title: title, parentId: widget.parent.id);
+    ref.read(expandedNodesProvider.notifier).expandAll([widget.parent.id]);
+    widget.onOpen(id);
   }
 
   @override
@@ -62,7 +89,15 @@ class _ChildrenSectionState extends ConsumerState<ChildrenSection> {
       for (final c in ref.watch(childrenProvider(parentId)).value ?? const [])
         if (exclusive == null || !c.isShortcut) c,
     ];
-    final view = widget.parent.childView ?? ChildView.panels;
+    // A task with requirements shows its items as checkboxes, under its
+    // counter and timer (§6.7.1); one with tasks under it is a parent.
+    // Checkboxes show as a checklist or as steps; tasks are always cards.
+    final requirements = CompletionService.hasRequirements(widget.parent);
+    final view = !requirements
+        ? ChildView.panels
+        : widget.parent.childView == ChildView.steps
+        ? ChildView.steps
+        : ChildView.checklist;
 
     Widget handle(int index) => ReorderableDragStartListener(
       index: index,
@@ -84,6 +119,15 @@ class _ChildrenSectionState extends ConsumerState<ChildrenSection> {
         : -1;
     Widget rowContent(int i, NodeWithChildCount entry) {
       void open() {
+        // A checkbox line has no page: clicking it ticks it (in steps,
+        // only the next one, or one already done).
+        if (requirements) {
+          final d = done(entry.node);
+          if (view != ChildView.steps || d || i == nextStep) {
+            unawaited(_setDone(ref, entry.node, !d));
+          }
+          return;
+        }
         ref
             .read(openedViaProvider.notifier)
             .opening(
@@ -132,34 +176,37 @@ class _ChildrenSectionState extends ConsumerState<ChildrenSection> {
 
     Widget row(int i, NodeWithChildCount entry) => KeyedSubtree(
       key: ValueKey(entry.key),
-      child: PeekTarget(
-        nodeId: entry.node.id,
-        onOpen: widget.onOpen,
-        child: rowContent(i, entry),
-      ),
+      child: requirements
+          // Lines: no peek; long-press or right-click to rename or delete.
+          ? _LineMenu(
+              line: entry.node,
+              parentId: parentId,
+              child: rowContent(i, entry),
+            )
+          : PeekTarget(
+              nodeId: entry.node.id,
+              onOpen: widget.onOpen,
+              child: rowContent(i, entry),
+            ),
     );
 
+    final hasTasks = !requirements && children.any((c) => !c.isShortcut);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
+        // Wraps on narrow screens rather than overflowing.
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          runSpacing: 4,
           children: [
-            Expanded(
-              child: Text(
-                l10n.childrenHeading,
-                style: theme.textTheme.titleMedium,
-              ),
-            ),
-            if (exclusive == null)
+            Text(l10n.childrenHeading, style: theme.textTheme.titleMedium),
+            if (exclusive == null && requirements && children.isNotEmpty)
               SegmentedButton<ChildView>(
                 showSelectedIcon: false,
                 style: const ButtonStyle(visualDensity: VisualDensity.compact),
                 segments: [
-                  ButtonSegment(
-                    value: ChildView.panels,
-                    icon: const Icon(Icons.view_agenda_outlined),
-                    tooltip: l10n.viewPanels,
-                  ),
                   ButtonSegment(
                     value: ChildView.checklist,
                     icon: const Icon(Icons.checklist),
@@ -179,6 +226,7 @@ class _ChildrenSectionState extends ConsumerState<ChildrenSection> {
         ),
         const SizedBox(height: 8),
         if (exclusive != null) _ExclusiveCard(status: exclusive),
+        if (requirements) RequirementRows(node: widget.parent),
         ReorderableListView(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -206,12 +254,112 @@ class _ChildrenSectionState extends ConsumerState<ChildrenSection> {
           focusNode: _addFocus,
           decoration: InputDecoration(
             hintText: l10n.addChildHint,
-            prefixIcon: const Icon(Icons.add),
+            prefixIcon: IconButton(
+              tooltip: requirements ? l10n.addCheckbox : l10n.addTaskAndOpen,
+              icon: const Icon(Icons.add_circle_outline),
+              onPressed: _addAndOpen,
+            ),
             border: InputBorder.none,
           ),
           onSubmitted: _add,
         ),
+        // Under the items: what makes this task done (§6.7.1). A task with
+        // tasks under it is a parent, done through them.
+        if (!hasTasks && exclusive == null)
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: AddRequirementButton(node: widget.parent),
+          ),
       ],
+    );
+  }
+}
+
+/// A checkbox line's menu, on right-click or long-press: Rename, Delete.
+/// Deleting moves it to Trash, with Undo; the task re-checks whether it's
+/// done either way.
+class _LineMenu extends ConsumerWidget {
+  const _LineMenu({
+    required this.line,
+    required this.parentId,
+    required this.child,
+  });
+
+  final Node line;
+  final String parentId;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    Future<void> show(Offset at) async {
+      final l10n = AppLocalizations.of(context);
+      final messenger = ScaffoldMessenger.maybeOf(context);
+      final container = ProviderScope.containerOf(context, listen: false);
+      final overlay =
+          Overlay.of(context).context.findRenderObject()! as RenderBox;
+      final choice = await showMenu<String>(
+        context: context,
+        position: RelativeRect.fromRect(
+          at & const Size(1, 1),
+          Offset.zero & overlay.size,
+        ),
+        items: [
+          PopupMenuItem(
+            value: 'rename',
+            child: ListTile(
+              leading: const Icon(Icons.edit_outlined),
+              title: Text(l10n.checkboxRenameMenu),
+            ),
+          ),
+          PopupMenuItem(
+            value: 'delete',
+            child: ListTile(
+              leading: const Icon(Icons.delete_outline),
+              title: Text(l10n.checkboxDelete),
+            ),
+          ),
+        ],
+      );
+      if (choice == null || !context.mounted) return;
+      final repo = await container.read(nodeRepositoryProvider.future);
+      if (choice == 'rename') {
+        if (!context.mounted) return;
+        final title = await promptText(
+          context,
+          title: l10n.checkboxRename,
+          initial: line.title,
+        );
+        if (title != null && title.trim().isNotEmpty) {
+          await repo.rename(line.id, title.trim());
+        }
+        return;
+      }
+      await repo.trash(line.id);
+      await repo.completion.evaluate(parentId);
+      messenger
+        ?..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            persist: false,
+            content: Text(
+              l10n.checkboxDeleted(l10n.titleOrUntitled(line.title)),
+            ),
+            action: SnackBarAction(
+              label: l10n.undo,
+              onPressed: () async {
+                await repo.restore(line.id);
+                await repo.completion.evaluate(parentId);
+              },
+            ),
+          ),
+        );
+    }
+
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onSecondaryTapUp: (d) => show(d.globalPosition),
+      onLongPressStart: (d) => show(d.globalPosition),
+      child: child,
     );
   }
 }
@@ -281,12 +429,20 @@ class _Panel extends ConsumerWidget {
           child: Opacity(
             opacity: finished ? 0.6 : 1,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 4, 12),
+              padding: const EdgeInsets.fromLTRB(8, 8, 4, 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
+                      // Tasks are always cards now (§6.1), so a card can be
+                      // ticked done (this occurrence, when it repeats).
+                      Checkbox(
+                        visualDensity: VisualDensity.compact,
+                        value: finished,
+                        onChanged: (checked) =>
+                            _setDone(ref, node, checked == true),
+                      ),
                       Icon(
                         nodeIcon(node) ?? nodeTypeIcon(node.type),
                         size: 20,

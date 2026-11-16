@@ -135,6 +135,7 @@ Future<bool> removeNode(
     ?..hideCurrentSnackBar()
     ..showSnackBar(
       SnackBar(
+        persist: false,
         content: Text(
           kind == Removal.archive
               ? l10n.archivedItem(title)
@@ -167,6 +168,7 @@ Future<void> restoreGroup(
     ?..hideCurrentSnackBar()
     ..showSnackBar(
       SnackBar(
+        persist: false,
         content: Text(
           movedToTop ? l10n.restoredToTop(title) : l10n.restoredItem(title),
         ),
@@ -186,7 +188,9 @@ Future<void> addShortcut(BuildContext context, WidgetRef ref, Node node) async {
   try {
     placementId = await repo.addPlacement(node.id, parentId);
   } on Exception {
-    messenger?.showSnackBar(SnackBar(content: Text(l10n.cantMoveThere)));
+    messenger?.showSnackBar(
+      SnackBar(persist: false, content: Text(l10n.cantMoveThere)),
+    );
     return;
   }
   if (parentId != null) {
@@ -197,6 +201,7 @@ Future<void> addShortcut(BuildContext context, WidgetRef ref, Node node) async {
     ?..hideCurrentSnackBar()
     ..showSnackBar(
       SnackBar(
+        persist: false,
         content: Text(
           l10n.alsoShownIn(
             parent == null ? l10n.topLevel : l10n.titleOrUntitled(parent.title),

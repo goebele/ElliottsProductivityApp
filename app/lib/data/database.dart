@@ -30,6 +30,7 @@ part 'database.g.dart';
     Activity,
     TodayEntries,
     UserSettings,
+    CounterTicks,
     ChangeLog,
     Devices,
   ],
@@ -53,7 +54,7 @@ class AppDatabase extends _$AppDatabase {
   /// `dart run drift_dev schema dump lib/data/database.dart drift_schemas/`
   /// and `dart run drift_dev schema generate drift_schemas/ test/generated_migrations/`.
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 15;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -161,6 +162,32 @@ class AppDatabase extends _$AppDatabase {
       // Before v2 the nodes table is created whole, with this column.
       if (from >= 2 && from < 12) {
         await m.addColumn(nodes, nodes.progressOverride);
+      }
+      if (from < 14) {
+        await m.createTable(counterTicks);
+        await m.createIndex(counterTicksNode);
+      }
+      if (from >= 2 && from < 14) {
+        await m.addColumn(nodes, nodes.completion);
+        await m.addColumn(nodes, nodes.target);
+      }
+      if (from >= 2 && from < 15) {
+        await m.addColumn(nodes, nodes.counterTarget);
+        await m.addColumn(nodes, nodes.timerMinutes);
+      }
+      if (from == 14) {
+        // v0.21: requirements instead of one condition. A counter or timer
+        // keeps its target; "mark done" is gone (one checkbox does it).
+        await customStatement(
+          "UPDATE nodes SET counter_target = target WHERE completion = 'counter'",
+        );
+        await customStatement(
+          "UPDATE nodes SET timer_minutes = target WHERE completion = 'timer'",
+        );
+        await customStatement(
+          "UPDATE nodes SET completion = NULL "
+          "WHERE completion IN ('counter', 'timer', 'markDone')",
+        );
       }
     },
   );

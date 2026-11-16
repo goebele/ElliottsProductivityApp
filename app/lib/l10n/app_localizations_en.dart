@@ -1627,4 +1627,169 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get todayAutoActive => 'In progress (Active)';
+
+  @override
+  String get mdLinkItem => 'Link to a note or item ([[)';
+
+  @override
+  String get linkToItemTitle => 'Link to a note or item';
+
+  @override
+  String get linkToItemHint => 'Search titles and text';
+
+  @override
+  String get linkToItemRecent => 'Recently changed';
+
+  @override
+  String linkedFrom2(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Linked from $count:',
+      one: 'Linked from 1:',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get todayDefineIt =>
+      'Define it: add subtasks or a completion condition';
+
+  @override
+  String todayGroupDone(int done, int total) {
+    return '$done/$total done';
+  }
+
+  @override
+  String conditionChecklistProgress(int done, int total) {
+    return 'Checklist $done/$total';
+  }
+
+  @override
+  String conditionCounterProgress(int count, int target) {
+    return '$count/$target';
+  }
+
+  @override
+  String conditionTimerProgress(int minutes, int target) {
+    return '$minutes/$target min';
+  }
+
+  @override
+  String get completionCounter => 'Counter';
+
+  @override
+  String get completionTimer => 'Timer';
+
+  @override
+  String completionCounterState(int count, int target) {
+    return '$count / $target';
+  }
+
+  @override
+  String completionTimerState(int minutes, int target) {
+    return '$minutes of $target min';
+  }
+
+  @override
+  String get completionCountUp => '1';
+
+  @override
+  String get completionCountDown => 'Undo one';
+
+  @override
+  String get completionCounterAsk => 'Count to';
+
+  @override
+  String get completionTimerAsk => 'Time to spend';
+
+  @override
+  String get requirementAdd => 'Completion condition';
+
+  @override
+  String get requirementCheckbox => 'Checkbox';
+
+  @override
+  String get requirementCheckboxAsk => 'Checkbox';
+
+  @override
+  String get requirementRemove => 'Remove requirement';
+
+  @override
+  String get addTaskAndOpen => 'New task under this, and open it';
+
+  @override
+  String get titleFirst => 'Give it a title to continue';
+
+  @override
+  String get tagPickerNew => 'New tag';
+
+  @override
+  String tagPickerNewNamed(String name) {
+    return 'New tag #$name';
+  }
+
+  @override
+  String tagPickerAddNamed(String name) {
+    return 'Add #$name';
+  }
+
+  @override
+  String get rowTags => 'Tags';
+
+  @override
+  String get rowValue => 'Value';
+
+  @override
+  String get rowWhen => 'When';
+
+  @override
+  String get rowTime => 'Time';
+
+  @override
+  String get rowDescription => 'Description';
+
+  @override
+  String get descriptionPlaceholder => 'Add a description…';
+
+  @override
+  String get tagAddTooltip => 'Add a tag';
+
+  @override
+  String get valueAddTooltip => 'Add a value';
+
+  @override
+  String get addDateTimeTooltip => 'Set date & time';
+
+  @override
+  String get estimateAddTooltip => 'Set an estimate';
+
+  @override
+  String get notesShow => 'Show notes & files';
+
+  @override
+  String get notesHide => 'Hide notes & files';
+
+  @override
+  String get emptyItemRemoved => 'Removed an empty item';
+
+  @override
+  String get addCheckbox => 'Add a checkbox';
+
+  @override
+  String get checkboxDelete => 'Delete';
+
+  @override
+  String get checkboxRename => 'Rename checkbox';
+
+  @override
+  String checkboxDeleted(String title) {
+    return 'Deleted “$title”';
+  }
+
+  @override
+  String get checkboxRenameMenu => 'Rename';
+
+  @override
+  String get todayNewTask => 'New task for today';
 }

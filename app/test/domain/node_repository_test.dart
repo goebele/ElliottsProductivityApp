@@ -717,4 +717,39 @@ void main() {
       );
     },
   );
+
+  test('epa:// links in text become link rows; backlinks follow', () async {
+    final a = await nodes.create(title: 'Packing', type: NodeType.note);
+    final b = await nodes.create(title: 'Budget', type: NodeType.note);
+    final c = await nodes.create(
+      title: 'Trip plan',
+      bodyMd: 'See [packing](epa://node/$a) and [me](epa://node/PLACEHOLDER)',
+    );
+    // A link to itself is ignored.
+    await nodes.setBody(
+      c,
+      'See [packing](epa://node/$a), [budget](epa://node/$b), [me](epa://node/$c) '
+      'and `[x](epa://node/$b)`',
+    );
+    Future<List<String>> from(String id) async => [
+      for (final n in await nodes.watchLinkedFrom(id).first) n.title,
+    ];
+    expect(await from(a), ['Trip plan']);
+    expect(await from(b), ['Trip plan']);
+    expect(await from(c), isEmpty);
+
+    // Removing the link from the text removes the row.
+    await nodes.setBody(c, 'Only [budget](epa://node/$b)');
+    expect(await from(a), isEmpty);
+    expect(await from(b), ['Trip plan']);
+
+    // Ordinary web links make no rows.
+    await nodes.setBody(c, '[web](https://example.com)');
+    expect(await from(b), isEmpty);
+
+    // Archived sources don't count as backlinks.
+    await nodes.setBody(c, '[budget](epa://node/$b)');
+    await nodes.archive(c);
+    expect(await from(b), isEmpty);
+  });
 }

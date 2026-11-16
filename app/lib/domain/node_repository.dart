@@ -7,8 +7,10 @@ import '../data/database.dart';
 import '../sync/change_writer.dart';
 import 'attachment_repository.dart';
 import 'calendar.dart';
+import 'completion.dart';
 import 'exclusive_picker.dart';
 import 'ids.dart';
+import 'markdown_format.dart';
 import 'repeat_rule.dart';
 import 'review.dart';
 import 'search.dart';
@@ -276,6 +278,9 @@ class NodeRepository {
     spaceId: personalSpaceId,
   );
 
+  /// Completion conditions (§6.7.1).
+  late final completion = CompletionService(_db, _writer, this);
+
   /// Today (§6.7), personal.
   late final today = TodayService(_db, _writer, this, spaceId: personalSpaceId);
 
@@ -445,6 +450,7 @@ class NodeRepository {
     final spaceId = parentId == null
         ? personalSpaceId
         : (await _require(parentId)).spaceId;
+    if (parentId != null) await _checkStructure(parentId);
     final id = newId();
     await _writer.insert(
       _db.nodes,
@@ -465,6 +471,7 @@ class NodeRepository {
     if (title.contains('#') || bodyMd.contains('#')) {
       await tags.syncInline(id, title, bodyMd);
     }
+    if (bodyMd.contains('epa://')) await syncTextLinks(id, bodyMd);
     if (type.isItem) await activity.record(id, ActivityAction.created);
     return id;
   }
@@ -476,6 +483,9 @@ class NodeRepository {
     if (changes.title.present || changes.bodyMd.present) {
       final node = await get(id);
       if (node != null) await tags.syncInline(id, node.title, node.bodyMd);
+      if (node != null && changes.bodyMd.present) {
+        await syncTextLinks(id, node.bodyMd);
+      }
     }
   }
 
@@ -568,6 +578,93 @@ class NodeRepository {
 
   /// How long trashed items are kept before they are purged (§6.11).
   static const trashDays = 30;
+
+  // ------------------------------------------------------------ text links
+
+  /// Keeps [nodeId]'s links to other items in step with the
+  /// `[text](epa://node/<id>)` links in its text (§6.3): one `links` row
+  /// (`target_kind = node`, `origin = inline`) per linked item. These rows
+  /// are what backlinks, and later a map of linked notes, read.
+  Future<void> syncTextLinks(String nodeId, String bodyMd) =>
+      _db.transaction(() async {
+        final wanted = {
+          for (final id in nodeLinkIds(bodyMd))
+            if (id != nodeId) id,
+        };
+        final rows =
+            await (_db.select(_db.links)..where(
+                  (l) =>
+                      l.fromNodeId.equals(nodeId) &
+                      l.targetKind.equals(LinkKind.node.name) &
+                      l.origin.equals(LinkOrigin.inline.name) &
+                      l.deleted.equals(false),
+                ))
+                .get();
+        final have = <String>{};
+        for (final r in rows) {
+          final target = r.targetId;
+          if (target != null && wanted.contains(target) && have.add(target)) {
+            continue;
+          }
+          await _writer.update(
+            _db.links,
+            r.id,
+            const LinksCompanion(deleted: Value(true)),
+          );
+        }
+        final missing = wanted.difference(have);
+        if (missing.isEmpty) return;
+        final from = await _require(nodeId);
+        for (final target in missing) {
+          await _writer.insert(
+            _db.links,
+            LinksCompanion(
+              id: Value(newId()),
+              spaceId: Value(from.spaceId),
+              fromNodeId: Value(nodeId),
+              targetKind: const Value(LinkKind.node),
+              targetId: Value(target),
+              origin: const Value(LinkOrigin.inline),
+              deleted: const Value(false),
+            ),
+          );
+        }
+      });
+
+  /// Live items and notes whose text links to [nodeId] ("Linked from").
+  Stream<List<Node>> watchLinkedFrom(String nodeId) {
+    final q =
+        _db.select(_db.nodes).join([
+            innerJoin(_db.links, _db.links.fromNodeId.equalsExp(_db.nodes.id)),
+          ])
+          ..where(
+            _db.links.targetKind.equals(LinkKind.node.name) &
+                _db.links.targetId.equals(nodeId) &
+                _db.links.deleted.equals(false) &
+                _db.nodes.deleted.equals(false) &
+                _db.nodes.lifecycle.equals(Lifecycle.live.name),
+          )
+          ..orderBy([OrderingTerm(expression: _db.nodes.title)]);
+    return q.watch().map((rows) {
+      final seen = <String>{};
+      return [
+        for (final r in rows)
+          if (seen.add(r.readTable(_db.nodes).id)) r.readTable(_db.nodes),
+      ];
+    });
+  }
+
+  /// Live items and notes, most recently changed first (for pickers).
+  Future<List<Node>> recent({int limit = 20}) =>
+      (_db.select(_db.nodes)
+            ..where(
+              (n) =>
+                  n.deleted.equals(false) &
+                  n.lifecycle.equals(Lifecycle.live.name),
+            )
+            ..orderBy([(n) => OrderingTerm.desc(n.hlc)])
+            ..limit(limit))
+          .get();
 
   /// Live repeating items.
   Future<List<Node>> repeating() =>
@@ -713,6 +810,45 @@ class NodeRepository {
   Future<void> trash(String id, {DateTime? now}) async {
     await _remove(id, Lifecycle.trashed, now);
     await activity.record(id, ActivityAction.trashed, at: now);
+  }
+
+  /// True when [id] is a live item or note with nothing in it: no title,
+  /// text, dates, estimate or completion condition, and nothing under or on
+  /// it (children, files, tags, values, tracked time, reminders). Leaving
+  /// such an item moves it to Trash (§6.1).
+  Future<bool> isBlank(String id) async {
+    final n = await get(id);
+    if (n == null ||
+        n.deleted ||
+        n.lifecycle != Lifecycle.live ||
+        n.title.trim().isNotEmpty ||
+        n.bodyMd.trim().isNotEmpty ||
+        n.dueDate != null ||
+        n.startAt != null ||
+        n.rrule != null ||
+        n.estimateMinutes != null ||
+        n.completion != null ||
+        n.counterTarget != null ||
+        n.timerMinutes != null) {
+      return false;
+    }
+    final row = await _db
+        .customSelect(
+          'SELECT '
+          '(SELECT COUNT(*) FROM nodes WHERE parent_id = ?1 AND deleted = 0)'
+          ' + (SELECT COUNT(*) FROM attachments'
+          ' WHERE node_id = ?1 AND deleted = 0)'
+          ' + (SELECT COUNT(*) FROM node_tags WHERE node_id = ?1 AND deleted = 0)'
+          ' + (SELECT COUNT(*) FROM node_values'
+          ' WHERE node_id = ?1 AND deleted = 0)'
+          ' + (SELECT COUNT(*) FROM time_entries'
+          ' WHERE node_id = ?1 AND deleted = 0)'
+          ' + (SELECT COUNT(*) FROM reminders WHERE node_id = ?1 AND deleted = 0)'
+          ' AS uses',
+          variables: [Variable.withString(id)],
+        )
+        .getSingle();
+    return row.read<int>('uses') == 0;
   }
 
   Future<void> _remove(String id, Lifecycle to, DateTime? now) async {
@@ -1015,6 +1151,28 @@ class NodeRepository {
     );
   }
 
+  /// A task has a completion condition or tasks under it, never both
+  /// (§6.7.1): under a task with a condition, items are its checkbox
+  /// lines, which hold nothing themselves. Throws if putting something
+  /// under [parentId] (or moving [moving] there) would break that.
+  Future<void> _checkStructure(String parentId, {String? moving}) async {
+    if (await completion.isCheckbox(await _require(parentId))) {
+      throw const PlacementNotAllowedException(
+        'A checkbox line holds nothing.',
+      );
+    }
+    final parent = await _require(parentId);
+    if (moving == null || !CompletionService.hasRequirements(parent)) return;
+    final node = await _require(moving);
+    if (node.type == NodeType.note) return;
+    final hasItems = (await children(moving)).any((c) => c.type.isItem);
+    if (hasItems || CompletionService.hasRequirements(node)) {
+      throw const PlacementNotAllowedException(
+        'Only a plain line can become a checkbox.',
+      );
+    }
+  }
+
   Future<void> _checkPlacement(Node node, String? parentId) async {
     if (node.type == NodeType.note) {
       throw const PlacementNotAllowedException('Notes have no shortcuts.');
@@ -1035,6 +1193,12 @@ class NodeRepository {
       if (parent.type == NodeType.note) {
         throw const PlacementNotAllowedException('Notes hold no items.');
       }
+      if (CompletionService.hasRequirements(parent)) {
+        throw const PlacementNotAllowedException(
+          'A task with a completion condition holds only its checkboxes.',
+        );
+      }
+      await _checkStructure(parentId);
     }
   }
 
@@ -1360,7 +1524,14 @@ class NodeRepository {
     } else {
       await setStatus(id, done ? NodeStatus.done : NodeStatus.open);
     }
+    // A ticked checkbox may finish (or reopen) its checklist.
+    final parentId = (await get(id))?.parentId;
+    if (parentId != null) await completion.evaluate(parentId, today: today);
   }
+
+  /// Whether [nodeId] has a completion row for the occurrence on [day].
+  Future<bool> hasCompletion(String nodeId, DateTime day) async =>
+      await _completion(nodeId, dateKey(day)) != null;
 
   /// [occurrenceStatus], live; [today] is read on each emission.
   Stream<OccurrenceStatus?> watchOccurrence(
@@ -1485,6 +1656,7 @@ class NodeRepository {
         throw MoveWouldCreateCycleException(id, newParentId);
       }
       await _require(newParentId);
+      await _checkStructure(newParentId, moving: id);
     }
     // TODO(sharing): moving across spaces re-tags the subtree (§11.5).
     await _db.transaction(() async {

@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../data/database.dart';
+import 'completion.dart';
 import 'node_repository.dart';
 import 'search_query.dart';
 
@@ -138,6 +139,17 @@ class SearchService {
         n.id: n,
     };
 
+    // Checkbox lines aren't items of their own (§6.7.1): a line that
+    // matches finds its task instead.
+    final lineOf = <String, String>{
+      for (final n in nodes.values)
+        if (n.type.isItem &&
+            n.parentId != null &&
+            nodes[n.parentId] != null &&
+            CompletionService.hasRequirements(nodes[n.parentId]!))
+          n.id: n.parentId!,
+    };
+
     // Text first: FTS rank order. Otherwise every item, by title.
     List<String> candidates;
     if (query.hasText) {
@@ -153,12 +165,16 @@ class SearchService {
             readsFrom: {_db.nodes},
           )
           .get();
+      final seen = <String>{};
       candidates = [
         for (final r in rows)
-          if (nodes.containsKey(r.read<String>('id'))) r.read<String>('id'),
+          if (nodes.containsKey(r.read<String>('id')))
+            if (lineOf[r.read<String>('id')] ?? r.read<String>('id')
+                case final id when seen.add(id))
+              id,
       ];
     } else {
-      candidates = nodes.keys.toList()
+      candidates = nodes.keys.where((id) => !lineOf.containsKey(id)).toList()
         ..sort(
           (a, b) => nodes[a]!.title.toLowerCase().compareTo(
             nodes[b]!.title.toLowerCase(),

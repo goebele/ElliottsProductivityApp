@@ -18,9 +18,9 @@ int _noteCount(WidgetRef ref, String parentId) =>
     (ref.watch(linkedNotesProvider(parentId)).value?.length ?? 0) +
     (ref.watch(linkedFilesProvider(parentId)).value?.length ?? 0);
 
-/// "Notes (n)" button that opens or closes the notes column (wide layout).
-class NotesToggle extends ConsumerWidget {
-  const NotesToggle({super.key, required this.parentId});
+/// The notes column, collapsed: a thin strip with the count; click to open.
+class NotesStrip extends ConsumerWidget {
+  const NotesStrip({super.key, required this.parentId});
 
   final String parentId;
 
@@ -28,11 +28,24 @@ class NotesToggle extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final count = _noteCount(ref, parentId);
-    final open = ref.watch(notesColumnOpenProvider);
-    return TextButton.icon(
-      icon: Icon(open ? Icons.sticky_note_2 : Icons.sticky_note_2_outlined),
-      label: Text(l10n.notesToggle(count)),
-      onPressed: () => ref.read(notesColumnOpenProvider.notifier).toggle(),
+    return InkWell(
+      onTap: () => ref.read(notesColumnOpenProvider.notifier).toggle(),
+      child: Tooltip(
+        message: l10n.notesShow,
+        child: SizedBox(
+          width: 44,
+          child: Column(
+            children: [
+              const SizedBox(height: 12),
+              Badge(
+                isLabelVisible: count > 0,
+                label: Text('$count'),
+                child: const Icon(Icons.sticky_note_2_outlined),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -40,20 +53,37 @@ class NotesToggle extends ConsumerWidget {
 /// The column beside an item listing its notes (DESIGN.md §6.1, v0.5).
 /// Below them, notes from above: linked or shared down by ancestors (§6.10).
 /// Its files (§6.4) sit between the two.
-class NotesColumn extends StatelessWidget {
+class NotesColumn extends ConsumerWidget {
   const NotesColumn({super.key, required this.parentId, required this.onOpen});
 
   final String parentId;
   final OpenNode onOpen;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+      padding: const EdgeInsets.fromLTRB(16, 4, 8, 24),
       children: [
-        Text(l10n.notesHeading, style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 8),
+        Row(
+          children: [
+            const Icon(Icons.sticky_note_2_outlined, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                l10n.notesToggle(_noteCount(ref, parentId)),
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            IconButton(
+              tooltip: l10n.notesHide,
+              icon: const Icon(Icons.chevron_right),
+              onPressed: () =>
+                  ref.read(notesColumnOpenProvider.notifier).toggle(),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
         NotesList(parentId: parentId, onOpen: onOpen),
         FilesList(nodeId: parentId),
         LinkedNotesList(childId: parentId, onOpen: onOpen),

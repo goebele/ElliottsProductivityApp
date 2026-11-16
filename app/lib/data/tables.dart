@@ -30,6 +30,22 @@ enum NodeStatus { open, active, waiting, done, dropped }
 
 enum ChildView { panels, checklist, steps }
 
+/// How you'll know a task is done (§6.7.1). Null = not decided yet, so on
+/// Today the task is to decide: break it down or pick one of these.
+enum CompletionKind {
+  /// The Done button.
+  markDone,
+
+  /// Done when every one of its items (its checkboxes) is ticked.
+  checklist,
+
+  /// Done when a count reaches [Nodes.target] ("practice 4 problems").
+  counter,
+
+  /// Done when tracked time reaches [Nodes.target] minutes.
+  timer,
+}
+
 enum Lifecycle { live, archived, trashed }
 
 /// Stores an enum by name, and reads names it does not know (written by a
@@ -145,6 +161,26 @@ class Nodes extends Table with SyncColumns {
   /// if each had linked it. "Pinned" for all sub-items.
   BoolColumn get sharedWithChildren =>
       boolean().withDefault(const Constant(false))();
+
+  /// How it's completed (§6.7.1); null = not decided.
+  TextColumn get completion => text()
+      .map(
+        const TolerantEnumConverter(
+          CompletionKind.values,
+          CompletionKind.markDone,
+        ),
+      )
+      .nullable()();
+
+  /// v0.20 only (one condition per task); replaced by [counterTarget] and
+  /// [timerMinutes] in v0.21. Kept, unused (additive-only, §7.5).
+  IntColumn get target => integer().nullable()();
+
+  /// A counter requirement: the count to reach ("practice 4 problems").
+  IntColumn get counterTarget => integer().nullable()();
+
+  /// A timer requirement: the minutes to track ("practice 30 min").
+  IntColumn get timerMinutes => integer().nullable()();
 
   /// Progress set by hand (0–100), instead of counting done items (§6.16).
   IntColumn get progressOverride => integer().nullable()();
@@ -406,6 +442,16 @@ class TodayEntries extends Table with SyncColumns {
 class UserSettings extends Table with SyncColumns {
   TextColumn get key => text()();
   TextColumn get value => text()();
+}
+
+/// Shared (§6.7.1): one step on a counter ("+1", or "-1" to undo). Counts
+/// are sums of rows, so two devices counting at once both count. For a
+/// repeating task, [occurrenceDate] says which occurrence.
+@TableIndex(name: 'counter_ticks_node', columns: {#nodeId, #occurrenceDate})
+class CounterTicks extends Table with SyncColumns {
+  TextColumn get nodeId => text()();
+  TextColumn get occurrenceDate => text().nullable()();
+  IntColumn get delta => integer()();
 }
 
 /// Completions of repeating items and their descendants (§5.2, D11, D24).

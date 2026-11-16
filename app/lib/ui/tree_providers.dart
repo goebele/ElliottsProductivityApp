@@ -122,7 +122,7 @@ final notesColumnOpenProvider = NotifierProvider<NotesColumnOpen, bool>(
 
 class NotesColumnOpen extends Notifier<bool> {
   @override
-  bool build() => false;
+  bool build() => true;
 
   void toggle() => state = !state;
 }
@@ -137,6 +137,19 @@ class SelectedNode extends Notifier<String?> {
   String? build() => null;
 
   void select(String? id) => state = id;
+}
+
+/// Which way the last move in the wide layout's detail pane went, for its
+/// slide: 1 deeper (a child), -1 up (an ancestor), 0 elsewhere (fade only).
+final paneDirectionProvider = NotifierProvider<PaneDirection, int>(
+  PaneDirection.new,
+);
+
+class PaneDirection extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void set(int direction) => state = direction;
 }
 
 /// Which tree rows are expanded. Per device, in memory for now.

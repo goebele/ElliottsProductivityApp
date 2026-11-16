@@ -187,6 +187,7 @@ class TimeRepository {
         at: at,
       );
     }
+    await _nodes.completion.evaluate(r.nodeId);
     return (_db.select(
       _db.timeEntries,
     )..where((e) => e.id.equals(r.id))).getSingle();
@@ -223,6 +224,7 @@ class TimeRepository {
         at: end,
       );
     }
+    await _nodes.completion.evaluate(nodeId);
     return id;
   }
 
@@ -231,27 +233,44 @@ class TimeRepository {
     DateTime? start,
     DateTime? end,
     String? note,
-  }) => _writer.update(
-    _db.timeEntries,
-    id,
-    TimeEntriesCompanion(
-      startedAt: start == null ? const Value.absent() : Value(start.toUtc()),
-      endedAt: end == null ? const Value.absent() : Value(end.toUtc()),
-      note: note == null ? const Value.absent() : Value(note),
-    ),
-  );
+  }) async {
+    await _writer.update(
+      _db.timeEntries,
+      id,
+      TimeEntriesCompanion(
+        startedAt: start == null ? const Value.absent() : Value(start.toUtc()),
+        endedAt: end == null ? const Value.absent() : Value(end.toUtc()),
+        note: note == null ? const Value.absent() : Value(note),
+      ),
+    );
+    await _reevaluate(id);
+  }
 
-  Future<void> delete(String id) => _writer.update(
-    _db.timeEntries,
-    id,
-    const TimeEntriesCompanion(deleted: Value(true)),
-  );
+  Future<void> delete(String id) async {
+    await _writer.update(
+      _db.timeEntries,
+      id,
+      const TimeEntriesCompanion(deleted: Value(true)),
+    );
+    await _reevaluate(id);
+  }
 
-  Future<void> restore(String id) => _writer.update(
-    _db.timeEntries,
-    id,
-    const TimeEntriesCompanion(deleted: Value(false)),
-  );
+  Future<void> restore(String id) async {
+    await _writer.update(
+      _db.timeEntries,
+      id,
+      const TimeEntriesCompanion(deleted: Value(false)),
+    );
+    await _reevaluate(id);
+  }
+
+  /// A timer condition may be met, or no longer met, after a change.
+  Future<void> _reevaluate(String entryId) async {
+    final e = await (_db.select(
+      _db.timeEntries,
+    )..where((t) => t.id.equals(entryId))).getSingleOrNull();
+    if (e != null) await _nodes.completion.evaluate(e.nodeId);
+  }
 
   SimpleSelectStatement<$TimeEntriesTable, TimeEntry> _ofQuery(String nodeId) =>
       _db.select(_db.timeEntries)

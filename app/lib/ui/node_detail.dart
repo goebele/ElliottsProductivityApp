@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,11 +16,13 @@ import 'labels.dart';
 import 'node_add_ons.dart';
 import 'linked_notes.dart';
 import 'markdown.dart';
+import 'node_links.dart';
 import 'notes_column.dart';
 import 'peek.dart';
+import 'property_rows.dart';
 import 'tags.dart';
-import 'time_ui.dart';
 import 'timer.dart';
+import 'time_ui.dart';
 import 'values.dart';
 import 'removal.dart';
 import 'tree_pane.dart';
@@ -90,6 +94,66 @@ class _DetailState extends ConsumerState<_Detail> {
   /// database (so the view never flashes the old text).
   String? _savedNote;
 
+  /// The title as typed. An item without a title has its controls locked
+  /// until it gets one (§6.1), so a fresh item is named before anything
+  /// else happens to it (and "+" can't be tapped again and again).
+  late final _titleController = TextEditingController(text: widget.node.title)
+    ..addListener(_titleChanged);
+  late bool _titled = widget.node.title.trim().isNotEmpty;
+
+  void _titleChanged() {
+    final titled = _titleController.text.trim().isNotEmpty;
+    if (titled != _titled) setState(() => _titled = titled);
+  }
+
+  /// Kept for dispose, where context can't be used: leaving a blank item
+  /// moves it to Trash, with Undo (§6.1).
+  ScaffoldMessengerState? _messenger;
+  Future<NodeRepository>? _repoFuture;
+  late AppLocalizations _l10n;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _messenger = ScaffoldMessenger.maybeOf(context);
+    _repoFuture ??= ref.read(nodeRepositoryProvider.future);
+    _l10n = AppLocalizations.of(context);
+  }
+
+  Future<void> _dropIfBlank() async {
+    final id = widget.node.id;
+    final messenger = _messenger;
+    final l10n = _l10n;
+    try {
+      final repo = await _repoFuture!;
+      if (!await repo.isBlank(id)) return;
+      await repo.trash(id);
+      messenger
+        ?..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            persist: false,
+            content: Text(l10n.emptyItemRemoved),
+            action: SnackBarAction(
+              label: l10n.undo,
+              onPressed: () => repo.restore(id),
+            ),
+          ),
+        );
+    } catch (_) {
+      // The app is closing (the database is gone): nothing to tidy.
+    }
+  }
+
+  @override
+  void dispose() {
+    if (_titleController.text.trim().isEmpty) unawaited(_dropIfBlank());
+    _titleController.removeListener(_titleChanged);
+    super.dispose();
+    // AutosaveField saves on dispose with this controller; drop it after.
+    _titleController.dispose();
+  }
+
   void _saveNote() => setState(() {
     _savedNote = _noteEditor.currentState?.text;
     _editingNote = false;
@@ -107,22 +171,59 @@ class _DetailState extends ConsumerState<_Detail> {
     nodeId: widget.node.id,
     child: LayoutBuilder(
       builder: (context, constraints) {
-        final side = constraints.maxWidth >= _sideColumnWidth;
         final node = widget.node;
-        final main = _main(context, sideColumn: side);
-        if (node.type == NodeType.note ||
-            !side ||
-            !ref.watch(notesColumnOpenProvider)) {
-          return main;
+        final isNote = node.type == NodeType.note;
+        final side = !isNote && constraints.maxWidth >= _sideColumnWidth;
+        const pad = EdgeInsets.fromLTRB(24, 8, 24, 32);
+        final header = _header(context);
+        if (isNote) {
+          return ListView(
+            padding: pad,
+            children: [...header, ..._noteBody(context)],
+          );
         }
-        return Row(
+        final body = _Locked(
+          locked: !_titled,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: _itemBody(context, sideColumn: side),
+          ),
+        );
+        // Narrow: one scrolling page, notes at the bottom.
+        if (!side) {
+          return ListView(padding: pad, children: [...header, body]);
+        }
+        // Wide: the title across the top; below it the item on the left and
+        // its notes and files on the right (§6.1).
+        return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(child: main),
-            const VerticalDivider(width: 1),
-            SizedBox(
-              width: 300,
-              child: NotesColumn(parentId: node.id, onOpen: widget.onOpen),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 8, 16, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: header,
+              ),
+            ),
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+                      children: [body],
+                    ),
+                  ),
+                  _Locked(
+                    locked: !_titled,
+                    child: _NotesPanel(
+                      parentId: node.id,
+                      onOpen: widget.onOpen,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         );
@@ -137,6 +238,15 @@ class _DetailState extends ConsumerState<_Detail> {
     return via != null && via.link && via.nodeId == node.id
         ? via.parentId
         : null;
+  }
+
+  /// A link in the text to another item or note: open it, with Back
+  /// returning here.
+  void _openLinked(String id) {
+    ref
+        .read(openedViaProvider.notifier)
+        .opening(id, viaParent: widget.node.id, link: true);
+    widget.onOpen(id);
   }
 
   /// The formatted note; clicking it edits.
@@ -157,237 +267,300 @@ class _DetailState extends ConsumerState<_Detail> {
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 )
-              : MarkdownView(body),
+              : MarkdownView(body, onOpenNode: _openLinked),
         ),
       ),
     );
   }
 
-  Widget _main(BuildContext context, {required bool sideColumn}) {
+  /// Breadcrumbs (a note's bar), the title with its status, and the lock
+  /// hint for an untitled item.
+  List<Widget> _header(BuildContext context) {
     final node = widget.node;
     final onOpen = widget.onOpen;
     final isNote = node.type == NodeType.note;
-    final descriptionShown = _editingDescription || node.bodyMd.isNotEmpty;
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-      children: [
-        if (node.lifecycle != Lifecycle.live) RemovedBanner(node: node),
+    final title = AutosaveField(
+      value: node.title,
+      controller: _titleController,
+      autofocus: node.title.isEmpty,
+      style: theme.textTheme.headlineSmall?.copyWith(
+        decoration: isFinished(node.status) && !isNote
+            ? TextDecoration.lineThrough
+            : null,
+      ),
+      decoration: InputDecoration(
+        hintText: l10n.titleHint,
+        border: InputBorder.none,
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(vertical: 8),
+      ),
+      onSave: (title) async => (await _repo(ref)).rename(node.id, title),
+    );
+    return [
+      if (node.lifecycle != Lifecycle.live) RemovedBanner(node: node),
+      _Breadcrumbs(nodeId: node.id, onOpen: onOpen),
+      if (isNote) ...[
+        const SizedBox(height: 8),
         Row(
           children: [
+            // Takes the room left by Edit/Save; a long title is cut short.
             Expanded(
-              child: _Breadcrumbs(nodeId: node.id, onOpen: onOpen),
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                // Opened from an item it is linked into: back there.
+                child: switch (_openedFromLink(node) ?? node.parentId) {
+                  final back? => _BackToParent(
+                    parentId: back,
+                    onBack: () => widget.onLeave(back),
+                  ),
+                  null => null,
+                },
+              ),
             ),
-            if (!isNote && sideColumn) NotesToggle(parentId: node.id),
+            if (node.parentId != null)
+              IconButton(
+                tooltip: node.sharedWithChildren
+                    ? l10n.stopSharing
+                    : l10n.shareWithAll,
+                isSelected: node.sharedWithChildren,
+                icon: const Icon(Icons.push_pin_outlined),
+                selectedIcon: const Icon(Icons.push_pin),
+                onPressed: () async =>
+                    (await _repo(ref))
+                        .setNoteShared(node.id, !node.sharedWithChildren),
+              ),
+            if (_editingNote)
+              FilledButton.icon(
+                icon: const Icon(Icons.check),
+                label: Text(l10n.noteSave),
+                onPressed: _saveNote,
+              )
+            else
+              FilledButton.tonalIcon(
+                icon: const Icon(Icons.edit_outlined),
+                label: Text(l10n.noteEdit),
+                onPressed: () => setState(() => _editingNote = true),
+              ),
           ],
         ),
-        if (isNote) ...[
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              // Takes the room left by Edit/Save; a long title is cut short.
-              Expanded(
-                child: Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  // Opened from an item it is linked into: back there.
-                  child: switch (_openedFromLink(node) ?? node.parentId) {
-                    final back? => _BackToParent(
-                      parentId: back,
-                      onBack: () => widget.onLeave(back),
-                    ),
-                    null => null,
-                  },
-                ),
+        const SizedBox(height: 4),
+      ],
+      // The title, then its status as a chip right after it; ⋮ at the end.
+      Row(
+        children: [
+          if (isNote)
+            Expanded(child: title)
+          else ...[
+            Flexible(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minWidth: 120),
+                child: IntrinsicWidth(child: title),
               ),
-              if (node.parentId != null)
-                IconButton(
-                  tooltip: node.sharedWithChildren
-                      ? l10n.stopSharing
-                      : l10n.shareWithAll,
-                  isSelected: node.sharedWithChildren,
-                  icon: const Icon(Icons.push_pin_outlined),
-                  selectedIcon: const Icon(Icons.push_pin),
-                  onPressed: () async =>
-                      (await _repo(ref))
-                          .setNoteShared(node.id, !node.sharedWithChildren),
-                ),
-              if (_editingNote)
-                FilledButton.icon(
-                  icon: const Icon(Icons.check),
-                  label: Text(l10n.noteSave),
-                  onPressed: _saveNote,
-                )
-              else
-                FilledButton.tonalIcon(
-                  icon: const Icon(Icons.edit_outlined),
-                  label: Text(l10n.noteEdit),
-                  onPressed: () => setState(() => _editingNote = true),
-                ),
-            ],
-          ),
+            ),
+            const SizedBox(width: 8),
+            StatusChip(node: node),
+            const Spacer(),
+          ],
+          NodeMenu(node: node, onLeave: widget.onLeave),
         ],
-        const SizedBox(height: 8),
-        LayoutBuilder(
-          builder: (context, c) {
-            final title = AutosaveField(
-              value: node.title,
-              autofocus: node.title.isEmpty,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                decoration: isFinished(node.status) && !isNote
-                    ? TextDecoration.lineThrough
-                    : null,
-              ),
-              decoration: InputDecoration(
-                hintText: l10n.titleHint,
-                border: InputBorder.none,
-              ),
-              onSave: (title) async =>
-                  (await _repo(ref)).rename(node.id, title),
-            );
-            final actions = [
-              if (!isNote) ...[
-                TimerButton(node: node),
-                StatusMenuButton(node: node),
-                const SizedBox(width: 24),
-                DoneButton(node: node),
-              ],
-              NodeMenu(node: node, onLeave: widget.onLeave),
-            ];
-            // Narrow (phones): the buttons go on their own row.
-            if (c.maxWidth < 560 && !isNote) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  title,
-                  Row(
+      ),
+      if (!isNote)
+        AnimatedSize(
+          duration: const Duration(milliseconds: 180),
+          child: _titled
+              ? const SizedBox(width: double.infinity)
+              : Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
                     children: [
-                      actions[0],
-                      actions[1],
-                      const Spacer(),
-                      ...actions.skip(3),
+                      Icon(
+                        Icons.lock_outline,
+                        size: 16,
+                        color: theme.colorScheme.primary,
+                      ),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          l10n.titleFirst,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
-                ],
-              );
-            }
-            return Row(
-              children: [
-                Expanded(child: title),
-                ...actions,
-              ],
-            );
+                ),
+        ),
+      const SizedBox(height: 8),
+    ];
+  }
+
+  /// A note: its tags, its text, and where it's linked.
+  List<Widget> _noteBody(BuildContext context) {
+    final node = widget.node;
+    final onOpen = widget.onOpen;
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    return [
+      TagChips(node: node),
+      const SizedBox(height: 16),
+      // A note is its text: always shown, nothing else to add.
+      if (_editingNote)
+        CallbackShortcuts(
+          bindings: {
+            const SingleActivator(LogicalKeyboardKey.escape): _saveNote,
           },
-        ),
-        if (!isNote) ...[
-          const SizedBox(height: 4),
-          ValueChips(node: node, onOpen: onOpen),
-        ],
-        const SizedBox(height: 6),
-        TagChips(node: node),
-        if (!isNote) ...[
-          const SizedBox(height: 6),
-          TimeChips(node: node),
-          ProgressRow(node: node),
-        ],
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            DropdownMenu<NodeType>(
-              key: ValueKey(node.type),
-              label: Text(l10n.fieldType),
-              initialSelection: node.type,
-              leadingIcon: Icon(nodeTypeIcon(node.type)),
-              dropdownMenuEntries: [
-                for (final t in NodeType.values)
-                  DropdownMenuEntry(
-                    value: t,
-                    label: l10n.nodeType(t),
-                    leadingIcon: Icon(nodeTypeIcon(t)),
-                  ),
-              ],
-              onSelected: (t) async {
-                if (t != null && t != node.type) {
-                  await (await _repo(ref)).setType(node.id, t);
-                }
-              },
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        if (isNote)
-          // A note is its text: always shown, nothing else to add.
-          _editingNote
-              ? CallbackShortcuts(
-                  bindings: {
-                    const SingleActivator(LogicalKeyboardKey.escape): _saveNote,
-                  },
-                  child: MarkdownEditor(
-                    key: _noteEditor,
-                    value: node.bodyMd,
-                    minLines: 10,
-                    autofocus: node.title.isNotEmpty,
-                    hint: l10n.noteBodyHint,
-                    onSave: (body) async =>
-                        (await _repo(ref)).setBody(node.id, body),
-                  ),
-                )
-              : _noteView(node, l10n, theme),
-        if (isNote)
-          LinkedIntoRow(note: node, onOpen: onOpen)
-        else ...[
-          NodeAddOns(
-            node: node,
-            descriptionShown: descriptionShown,
-            onAddDescription: () => setState(() => _editingDescription = true),
+          child: MarkdownEditor(
+            key: _noteEditor,
+            value: node.bodyMd,
+            minLines: 10,
+            autofocus: node.title.isNotEmpty,
+            hint: l10n.noteBodyHint,
+            onSave: (body) async => (await _repo(ref)).setBody(node.id, body),
           ),
-          if (_editingDescription) ...[
-            const SizedBox(height: 16),
-            CallbackShortcuts(
-              bindings: {
-                const SingleActivator(LogicalKeyboardKey.escape): () =>
-                    setState(() => _editingDescription = false),
-              },
-              child: MarkdownEditor(
-                value: node.bodyMd,
-                autofocus: true,
-                hint: l10n.descriptionHint,
-                onSave: (body) async =>
-                    (await _repo(ref)).setBody(node.id, body),
-                trailing: IconButton(
-                  tooltip: l10n.closeDescription,
-                  icon: const Icon(Icons.close),
-                  onPressed: () => setState(() => _editingDescription = false),
+        )
+      else
+        _noteView(node, l10n, theme),
+      LinkedIntoRow(note: node, onOpen: onOpen),
+      LinkedFromRow(nodeId: node.id, onOpen: onOpen),
+    ];
+  }
+
+  /// An item, below its title: labelled rows (tags and value, when, time,
+  /// description), progress, then its items; notes at the bottom when
+  /// there's no room beside (§6.1). Locked while it has no title.
+  List<Widget> _itemBody(BuildContext context, {required bool sideColumn}) {
+    final node = widget.node;
+    final onOpen = widget.onOpen;
+    final l10n = AppLocalizations.of(context);
+    void editDescription() => setState(() => _editingDescription = true);
+    return [
+      PropertyRow(
+        label: l10n.rowTags,
+        child: TagChips(node: node, addAsIcon: true),
+      ),
+      // Values can be long: a row of their own.
+      PropertyRow(
+        label: l10n.rowValue,
+        child: ValueChips(node: node, onOpen: onOpen),
+      ),
+      PropertyRow(
+        label: l10n.rowWhen,
+        child: NodeAddOns(node: node),
+      ),
+      PropertyRow(
+        label: l10n.rowTime,
+        child: TimeChips(
+          node: node,
+          trailing: [TimerButton(node: node)],
+        ),
+      ),
+      PropertyRow(
+        label: l10n.rowDescription,
+        child: _editingDescription
+            ? CallbackShortcuts(
+                bindings: {
+                  const SingleActivator(LogicalKeyboardKey.escape): () =>
+                      setState(() => _editingDescription = false),
+                },
+                child: MarkdownEditor(
+                  value: node.bodyMd,
+                  autofocus: true,
+                  hint: l10n.descriptionHint,
+                  onSave: (body) async =>
+                      (await _repo(ref)).setBody(node.id, body),
+                  trailing: IconButton(
+                    tooltip: l10n.closeDescription,
+                    icon: const Icon(Icons.close),
+                    onPressed: () =>
+                        setState(() => _editingDescription = false),
+                  ),
                 ),
-              ),
-            ),
-          ] else if (node.bodyMd.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Tooltip(
-              message: l10n.editDescription,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(4),
-                onTap: () => setState(() => _editingDescription = true),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: MarkdownView(node.bodyMd),
+              )
+            : node.bodyMd.isNotEmpty
+            ? Tooltip(
+                message: l10n.editDescription,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(4),
+                  onTap: editDescription,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 8,
+                    ),
+                    child: MarkdownView(node.bodyMd, onOpenNode: _openLinked),
+                  ),
                 ),
+              )
+            : RowPlaceholder(
+                text: l10n.descriptionPlaceholder,
+                onTap: editDescription,
               ),
-            ),
-          ],
-          const SizedBox(height: 24),
-          ChildrenSection(parent: node, onOpen: onOpen),
-          if (!sideColumn) ...[
-            const SizedBox(height: 16),
-            NotesSection(parentId: node.id, onOpen: onOpen),
-          ],
-        ],
+      ),
+      ProgressRow(node: node),
+      LinkedFromRow(nodeId: node.id, onOpen: onOpen),
+      const SizedBox(height: 20),
+      ChildrenSection(parent: node, onOpen: onOpen),
+      if (!sideColumn) ...[
+        const SizedBox(height: 16),
+        NotesSection(parentId: node.id, onOpen: onOpen),
       ],
+    ];
+  }
+}
+
+/// The notes and files column on the right of a wide item page, below its
+/// title. Collapses to a thin strip that still shows how many there are.
+class _NotesPanel extends ConsumerWidget {
+  const _NotesPanel({required this.parentId, required this.onOpen});
+
+  final String parentId;
+  final OpenNode onOpen;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final open = ref.watch(notesColumnOpenProvider);
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 180),
+      alignment: AlignmentDirectional.centerEnd,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const VerticalDivider(width: 1),
+          if (open)
+            SizedBox(
+              width: 300,
+              child: NotesColumn(parentId: parentId, onOpen: onOpen),
+            )
+          else
+            NotesStrip(parentId: parentId),
+        ],
+      ),
     );
   }
+}
+
+/// Greys out and disables its child while [locked], fading between.
+class _Locked extends StatelessWidget {
+  const _Locked({required this.locked, required this.child});
+
+  final bool locked;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => IgnorePointer(
+    ignoring: locked,
+    child: ExcludeFocus(
+      excluding: locked,
+      child: AnimatedOpacity(
+        opacity: locked ? 0.35 : 1,
+        duration: const Duration(milliseconds: 180),
+        child: child,
+      ),
+    ),
+  );
 }
 
 class _Breadcrumbs extends ConsumerStatefulWidget {

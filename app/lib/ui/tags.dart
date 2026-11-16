@@ -6,6 +6,7 @@ import '../domain/inline_tags.dart';
 import '../domain/tag_repository.dart';
 import '../l10n/app_localizations.dart';
 import '../providers.dart';
+import 'property_rows.dart';
 import 'search_pane.dart';
 import 'values.dart' show valueColors;
 
@@ -44,9 +45,23 @@ final nodeTagsProvider = StreamProvider.family<List<NodeTagEntry>, String>((
 /// "#travel #weekend [+ Tag]". Clicking a tag searches for it. Tags from
 /// the item's text have no ✕: edit the text to remove them.
 class TagChips extends ConsumerWidget {
-  const TagChips({super.key, required this.node});
+  const TagChips({
+    super.key,
+    required this.node,
+    this.showChips = true,
+    this.showAdd = true,
+    this.addAsIcon = false,
+  });
 
   final Node node;
+
+  /// The task page's Tags row: a small + instead of "+ Tag".
+  final bool addAsIcon;
+
+  /// The tags (information) and "+ Tag" (a control), shown apart on the
+  /// task page.
+  final bool showChips;
+  final bool showAdd;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -57,30 +72,42 @@ class TagChips extends ConsumerWidget {
       runSpacing: 6,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        for (final t in tags)
-          InputChip(
+        for (final t in showChips ? tags : const <NodeTagEntry>[])
+          HoverDeleteChip(
+            builder: (x) => InputChip(
+              visualDensity: VisualDensity.compact,
+              avatar: tagDot(t.tag),
+              label: Text('#${t.tag.name}'),
+              tooltip: t.inline ? l10n.tagFromText : l10n.tagSearch,
+              onPressed: () =>
+                  ref.read(searchTextProvider.notifier).set('#${t.tag.name}'),
+              deleteIcon: x,
+              deleteButtonTooltipMessage: l10n.tagRemove,
+              onDeleted: t.inline
+                  ? null
+                  : () async =>
+                        (await ref.read(nodeRepositoryProvider.future)).tags
+                            .remove(node.id, t.tag.id),
+            ),
+          ),
+        if (showAdd && addAsIcon)
+          RowAddButton(
+            tooltip: l10n.tagAddTooltip,
+            onPressed: () => showDialog<void>(
+              context: context,
+              builder: (context) => _TagPicker(node: node),
+            ),
+          )
+        else if (showAdd)
+          ActionChip(
             visualDensity: VisualDensity.compact,
-            avatar: tagDot(t.tag),
-            label: Text('#${t.tag.name}'),
-            tooltip: t.inline ? l10n.tagFromText : l10n.tagSearch,
-            onPressed: () =>
-                ref.read(searchTextProvider.notifier).set('#${t.tag.name}'),
-            deleteButtonTooltipMessage: l10n.tagRemove,
-            onDeleted: t.inline
-                ? null
-                : () async =>
-                      (await ref.read(nodeRepositoryProvider.future)).tags
-                          .remove(node.id, t.tag.id),
+            avatar: const Icon(Icons.add, size: 16),
+            label: Text(l10n.tagAdd),
+            onPressed: () => showDialog<void>(
+              context: context,
+              builder: (context) => _TagPicker(node: node),
+            ),
           ),
-        ActionChip(
-          visualDensity: VisualDensity.compact,
-          avatar: const Icon(Icons.add, size: 16),
-          label: Text(l10n.tagAdd),
-          onPressed: () => showDialog<void>(
-            context: context,
-            builder: (context) => _TagPicker(node: node),
-          ),
-        ),
       ],
     );
   }
@@ -100,6 +127,28 @@ class _TagPicker extends ConsumerStatefulWidget {
 
 class _TagPickerState extends ConsumerState<_TagPicker> {
   String? _error;
+  final _field = TextEditingController();
+  final _focus = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    // The "New tag" button follows what's typed.
+    _field.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _field.dispose();
+    _focus.dispose();
+    super.dispose();
+  }
+
+  /// Adds what's typed as a tag (made new if no tag has that name).
+  Future<void> _addTyped() async {
+    if (await _add(_field.text)) _field.clear();
+    _focus.requestFocus();
+  }
 
   Future<bool> _add(String name) async {
     if (name.trim().isEmpty) return false;
@@ -133,6 +182,10 @@ class _TagPickerState extends ConsumerState<_TagPicker> {
       for (final t in on)
         if (!t.tag.favorite) t,
     ];
+    final typed = switch (_field.text.replaceFirst(RegExp('^#+'), '').trim()) {
+      '' => null,
+      final t => t,
+    };
 
     return AlertDialog(
       title: Text(l10n.tagPickerTitle),
@@ -166,6 +219,8 @@ class _TagPickerState extends ConsumerState<_TagPicker> {
               const SizedBox(height: 12),
             ],
             Autocomplete<String>(
+              textEditingController: _field,
+              focusNode: _focus,
               optionsBuilder: (value) {
                 final q = value.text
                     .replaceFirst(RegExp('^#+'), '')
@@ -189,10 +244,7 @@ class _TagPickerState extends ConsumerState<_TagPicker> {
                       hintText: l10n.tagPickerHint,
                       errorText: _error,
                     ),
-                    onSubmitted: (text) async {
-                      if (await _add(text)) controller.clear();
-                      focus.requestFocus();
-                    },
+                    onSubmitted: (_) => _addTyped(),
                   ),
             ),
             if (others.isNotEmpty) ...[
@@ -218,6 +270,18 @@ class _TagPickerState extends ConsumerState<_TagPicker> {
         ),
       ),
       actions: [
+        // Adds the typed text as a tag, without needing Enter.
+        TextButton.icon(
+          icon: const Icon(Icons.add),
+          label: Text(
+            typed == null
+                ? l10n.tagPickerNew
+                : all.any((t) => t.name.toLowerCase() == typed.toLowerCase())
+                ? l10n.tagPickerAddNamed(typed)
+                : l10n.tagPickerNewNamed(typed),
+          ),
+          onPressed: typed == null ? null : _addTyped,
+        ),
         FilledButton(
           onPressed: () => Navigator.pop(context),
           child: Text(l10n.done),

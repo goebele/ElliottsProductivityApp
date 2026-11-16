@@ -115,7 +115,11 @@ class ReminderNotifier {
       now,
       now.add(ReminderRepository.horizon),
     );
-    await _plugin.cancelAllPendingNotifications();
+    // One by one: "cancel all pending" isn't implemented on Windows, and
+    // cancelAll would also clear shown ones (the running timer's).
+    for (final pending in await _plugin.pendingNotificationRequests()) {
+      await _plugin.cancel(id: pending.id);
+    }
     final android = _plugin
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin

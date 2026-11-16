@@ -41,16 +41,69 @@ class TodayPage extends ConsumerWidget {
     final locale = Localizations.localeOf(context).toString();
     final list = ref.watch(todayProvider).value;
     final items = list?.items ?? const <TodayItem>[];
+    final blocks = list?.blocks ?? const <TodayBlock>[];
 
+    // Blocks move whole; the order is saved per task.
     Future<void> reorder(int from, int to) async {
-      final ids = [for (final i in items) i.node.id];
-      final moved = ids.removeAt(from);
-      ids.insert(to.clamp(0, ids.length), moved);
-      await (await ref.read(nodeRepositoryProvider.future)).today.reorder(ids);
+      final order = [...blocks];
+      final moved = order.removeAt(from);
+      order.insert(to.clamp(0, order.length), moved);
+      await (await ref.read(nodeRepositoryProvider.future)).today.reorder([
+        for (final b in order)
+          for (final i in b.items) i.node.id,
+      ]);
     }
 
+    // "+": a new task, on Today, opened to be named (§6.7).
+    Future<void> newTask() async {
+      final repo = await ref.read(nodeRepositoryProvider.future);
+      final id = await repo.create(title: '');
+      await repo.today.add(id);
+      onOpen(id);
+    }
+
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: _list(
+            context,
+            ref,
+            l10n,
+            theme,
+            locale,
+            list,
+            items,
+            blocks,
+            reorder,
+          ),
+        ),
+        PositionedDirectional(
+          end: 16,
+          bottom: 16,
+          child: FloatingActionButton(
+            tooltip: l10n.todayNewTask,
+            onPressed: newTask,
+            child: const Icon(Icons.add),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _list(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+    ThemeData theme,
+    String locale,
+    TodayList? list,
+    List<TodayItem> items,
+    List<TodayBlock> blocks,
+    Future<void> Function(int, int) reorder,
+  ) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+      // Room at the bottom for the + button.
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 96),
       children: [
         Row(
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -110,10 +163,10 @@ class TodayPage extends ConsumerWidget {
           buildDefaultDragHandles: false,
           onReorderItem: reorder,
           children: [
-            for (final (i, item) in items.indexed)
-              _TodayRow(
-                key: ValueKey(item.node.id),
-                item: item,
+            for (final (i, block) in blocks.indexed)
+              _TodayBlockCard(
+                key: ValueKey(block.parent?.id ?? block.items.first.node.id),
+                block: block,
                 index: i,
                 onOpen: onOpen,
               ),
@@ -124,15 +177,17 @@ class TodayPage extends ConsumerWidget {
   }
 }
 
-class _TodayRow extends ConsumerWidget {
-  const _TodayRow({
+/// One block: a task on its own, or tasks attached under their parent
+/// ("Workout" with Pushups, Cardio, Stretches).
+class _TodayBlockCard extends ConsumerWidget {
+  const _TodayBlockCard({
     super.key,
-    required this.item,
+    required this.block,
     required this.index,
     required this.onOpen,
   });
 
-  final TodayItem item;
+  final TodayBlock block;
   final int index;
   final OpenNode onOpen;
 
@@ -140,100 +195,215 @@ class _TodayRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final n = item.node;
-    final why = switch (item.source) {
-      TodaySource.overdue => l10n.todayOverdue(item.overdueDays),
-      TodaySource.dueToday => l10n.todayDue,
-      TodaySource.event =>
-        item.start == null
-            ? l10n.calendarEvent
-            : l10n.todayAt(TimeOfDay.fromDateTime(item.start!).format(context)),
-      TodaySource.routine => l10n.calendarRepeat,
-      TodaySource.active => l10n.statusActive,
-      TodaySource.picked => l10n.todayPicked,
-    };
-    final icon = switch (item.source) {
-      TodaySource.overdue => Icons.flag,
-      TodaySource.dueToday => Icons.flag_outlined,
-      TodaySource.event => Icons.event,
-      TodaySource.routine => Icons.repeat,
-      TodaySource.active => Icons.play_circle_outline,
-      TodaySource.picked => Icons.wb_sunny_outlined,
-    };
-    final ancestors = ref.watch(ancestorsProvider(n.id)).value ?? const [];
+    final parent = block.parent;
+    final handle = ReorderableDragStartListener(
+      index: index,
+      child: Tooltip(
+        message: l10n.reorderHandle,
+        child: const Padding(
+          padding: EdgeInsets.all(8),
+          child: Icon(Icons.drag_indicator),
+        ),
+      ),
+    );
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 6),
-      child: PeekTarget(
-        nodeId: n.id,
-        onOpen: onOpen,
-        child: ListTile(
-          leading: Icon(
-            item.done ? Icons.check_circle : icon,
-            color: item.done
-                ? theme.colorScheme.primary
-                : item.source == TodaySource.overdue
-                ? theme.colorScheme.error
-                : null,
+    Future<void> remove(List<TodayItem> items, String title) async {
+      final messenger = ScaffoldMessenger.maybeOf(context);
+      final today = (await ref.read(nodeRepositoryProvider.future)).today;
+      for (final i in items) {
+        await today.remove(i.node.id);
+      }
+      messenger
+        ?..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            persist: false,
+            content: Text(l10n.todayRemoved(title)),
+            action: SnackBarAction(
+              label: l10n.undo,
+              onPressed: () async {
+                for (final i in items) {
+                  await today.add(i.node.id);
+                }
+              },
+            ),
           ),
-          title: Text(
-            l10n.titleOrUntitled(n.title),
-            style: item.done
-                ? TextStyle(
-                    decoration: TextDecoration.lineThrough,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  )
-                : null,
-          ),
-          subtitle: Text(
-            [
-              why,
-              if (ancestors.isNotEmpty)
-                ancestors.map((a) => l10n.titleOrUntitled(a.title)).join(' › '),
-            ].join(' · '),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
+        );
+    }
+
+    if (parent == null) {
+      final item = block.items.single;
+      return Card(
+        margin: const EdgeInsets.only(bottom: 6),
+        child: _TodayTaskTile(
+          item: item,
+          onOpen: onOpen,
+          showPath: true,
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               IconButton(
                 tooltip: l10n.todayRemove,
                 icon: const Icon(Icons.close),
-                onPressed: () async {
-                  final messenger = ScaffoldMessenger.maybeOf(context);
-                  final today = (await ref.read(nodeRepositoryProvider.future))
-                      .today;
-                  await today.remove(n.id);
-                  messenger
-                    ?..hideCurrentSnackBar()
-                    ..showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          l10n.todayRemoved(l10n.titleOrUntitled(n.title)),
-                        ),
-                        action: SnackBarAction(
-                          label: l10n.undo,
-                          onPressed: () => today.add(n.id),
-                        ),
-                      ),
-                    );
-                },
+                onPressed: () =>
+                    remove([item], l10n.titleOrUntitled(item.node.title)),
               ),
-              ReorderableDragStartListener(
-                index: index,
-                child: Tooltip(
-                  message: l10n.reorderHandle,
-                  child: const Padding(
-                    padding: EdgeInsets.all(8),
-                    child: Icon(Icons.drag_indicator),
-                  ),
-                ),
-              ),
+              handle,
             ],
           ),
-          onTap: () => onOpen(n.id),
         ),
+      );
+    }
+
+    final done = block.items.where((i) => i.done).length;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 6),
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            PeekTarget(
+              nodeId: parent.id,
+              onOpen: onOpen,
+              child: ListTile(
+                dense: true,
+                title: Text(
+                  l10n.titleOrUntitled(parent.title),
+                  style: theme.textTheme.titleSmall,
+                ),
+                subtitle: Text(
+                  [
+                    _why(context, block.items.first),
+                    l10n.todayGroupDone(done, block.items.length),
+                  ].join(' · '),
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      tooltip: l10n.todayRemove,
+                      icon: const Icon(Icons.close),
+                      onPressed: () => remove(
+                        block.items,
+                        l10n.titleOrUntitled(parent.title),
+                      ),
+                    ),
+                    handle,
+                  ],
+                ),
+                onTap: () => onOpen(parent.id),
+              ),
+            ),
+            for (final item in block.items)
+              Padding(
+                padding: const EdgeInsets.only(left: 24),
+                child: _TodayTaskTile(item: item, onOpen: onOpen),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Why a task is on Today: "Overdue · 2 days", "Due today", "At 9:00"…
+String _why(BuildContext context, TodayItem item) {
+  final l10n = AppLocalizations.of(context);
+  return switch (item.source) {
+    TodaySource.overdue => l10n.todayOverdue(item.overdueDays),
+    TodaySource.dueToday => l10n.todayDue,
+    TodaySource.event =>
+      item.start == null
+          ? l10n.calendarEvent
+          : l10n.todayAt(TimeOfDay.fromDateTime(item.start!).format(context)),
+    TodaySource.routine => l10n.calendarRepeat,
+    TodaySource.active => l10n.statusActive,
+    TodaySource.picked => l10n.todayPicked,
+  };
+}
+
+/// A concrete task: its condition's icon and progress ("Checklist 2/6",
+/// "1/4", "10/30 min"), or "Define it" when it has none yet.
+class _TodayTaskTile extends ConsumerWidget {
+  const _TodayTaskTile({
+    required this.item,
+    required this.onOpen,
+    this.showPath = false,
+    this.trailing,
+  });
+
+  final TodayItem item;
+  final OpenNode onOpen;
+  final bool showPath;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final n = item.node;
+    final c = item.condition;
+    final undefined = c.undefined && !item.done;
+    // One part per requirement: "Checklist 2/6 · 1/4 · 10/30 min".
+    final parts = [
+      if (c.boxes case final b?)
+        l10n.conditionChecklistProgress(b.value, b.target),
+      if (c.counter case final k?)
+        l10n.conditionCounterProgress(k.value, k.target),
+      if (c.timer case final t?) l10n.conditionTimerProgress(t.value, t.target),
+    ];
+    final icon = undefined
+        ? Icons.edit_note
+        : c.timer != null && c.boxes == null && c.counter == null
+        ? Icons.timer_outlined
+        : c.counter != null && c.boxes == null
+        ? Icons.exposure_plus_1
+        : Icons.checklist;
+    final progress = undefined ? l10n.todayDefineIt : parts.join(' · ');
+    final ancestors = showPath
+        ? ref.watch(ancestorsProvider(n.id)).value ?? const []
+        : const [];
+
+    return PeekTarget(
+      nodeId: n.id,
+      onOpen: onOpen,
+      child: ListTile(
+        dense: !showPath,
+        leading: Icon(
+          item.done ? Icons.check_circle : icon,
+          color: item.done
+              ? theme.colorScheme.primary
+              : undefined
+              ? theme.colorScheme.tertiary
+              : item.source == TodaySource.overdue
+              ? theme.colorScheme.error
+              : null,
+        ),
+        title: Text(
+          l10n.titleOrUntitled(n.title),
+          style: item.done
+              ? TextStyle(
+                  decoration: TextDecoration.lineThrough,
+                  color: theme.colorScheme.onSurfaceVariant,
+                )
+              : null,
+        ),
+        subtitle: Text(
+          [
+            if (progress.isNotEmpty) progress,
+            if (showPath) _why(context, item),
+            if (ancestors.isNotEmpty)
+              ancestors.map((a) => l10n.titleOrUntitled(a.title)).join(' › '),
+          ].join(' · '),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: undefined
+              ? TextStyle(color: theme.colorScheme.tertiary)
+              : null,
+        ),
+        trailing: trailing,
+        onTap: () => onOpen(n.id),
       ),
     );
   }
@@ -500,9 +670,8 @@ class TodayMenuItem extends ConsumerWidget {
       // The menu (and this item) is gone by the time this runs: use the
       // container, not this widget's ref.
       onPressed: () async {
-        final today = (await container.read(
-          nodeRepositoryProvider.future,
-        )).today;
+        final today = (await container.read(nodeRepositoryProvider.future))
+            .today;
         on ? await today.remove(node.id) : await today.add(node.id);
       },
       child: Text(on ? l10n.todayRemoveItem : l10n.todayAddItem),

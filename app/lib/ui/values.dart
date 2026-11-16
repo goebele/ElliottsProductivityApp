@@ -9,6 +9,7 @@ import '../providers.dart';
 import 'labels.dart';
 import 'markdown.dart';
 import 'peek.dart';
+import 'property_rows.dart';
 import 'tree_pane.dart';
 
 /// Core values (DESIGN.md §6.2): the Values page, and the value chips on an
@@ -121,53 +122,57 @@ class ValueChips extends ConsumerWidget {
               ),
             )
           else
-            InputChip(
-              visualDensity: VisualDensity.compact,
-              avatar: Icon(
-                valueIcon(e.value),
-                size: 16,
-                color: valueColor(e.value, theme),
+            HoverDeleteChip(
+              builder: (x) => InputChip(
+                visualDensity: VisualDensity.compact,
+                avatar: Icon(
+                  valueIcon(e.value),
+                  size: 16,
+                  color: valueColor(e.value, theme),
+                ),
+                label: Text(e.value.name),
+                deleteIcon: x,
+                deleteButtonTooltipMessage: l10n.valueRemove,
+                onDeleted: () async =>
+                    (await ref.read(nodeRepositoryProvider.future)).values
+                        .untie(node.id, e.value.id),
               ),
-              label: Text(e.value.name),
-              deleteButtonTooltipMessage: l10n.valueRemove,
-              onDeleted: () async =>
-                  (await ref.read(nodeRepositoryProvider.future)).values
-                      .untie(node.id, e.value.id),
             ),
-        MenuAnchor(
-          menuChildren: [
-            for (final v in all)
-              CheckboxMenuButton(
-                value: own.contains(v.id),
-                onChanged: (on) async {
-                  final repo = await ref.read(nodeRepositoryProvider.future);
-                  on == true
-                      ? await repo.values.tie(node.id, v.id)
-                      : await repo.values.untie(node.id, v.id);
+        // Usually one value at most: the + goes once one is set (✕ it to
+        // change it).
+        if (own.isEmpty)
+          MenuAnchor(
+            menuChildren: [
+              for (final v in all)
+                CheckboxMenuButton(
+                  value: own.contains(v.id),
+                  onChanged: (on) async {
+                    final repo = await ref.read(nodeRepositoryProvider.future);
+                    on == true
+                        ? await repo.values.tie(node.id, v.id)
+                        : await repo.values.untie(node.id, v.id);
+                  },
+                  child: Text(v.name),
+                ),
+              if (all.isNotEmpty) const Divider(height: 1),
+              MenuItemButton(
+                leadingIcon: const Icon(Icons.add),
+                onPressed: () async {
+                  final id = await editValue(context, ref, null);
+                  if (id != null) {
+                    await (await ref.read(nodeRepositoryProvider.future)).values
+                        .tie(node.id, id);
+                  }
                 },
-                child: Text(v.name),
+                child: Text(l10n.valueNew),
               ),
-            if (all.isNotEmpty) const Divider(height: 1),
-            MenuItemButton(
-              leadingIcon: const Icon(Icons.add),
-              onPressed: () async {
-                final id = await editValue(context, ref, null);
-                if (id != null) {
-                  await (await ref.read(nodeRepositoryProvider.future)).values
-                      .tie(node.id, id);
-                }
-              },
-              child: Text(l10n.valueNew),
+            ],
+            builder: (context, controller, _) => RowAddButton(
+              tooltip: l10n.valueAddTooltip,
+              onPressed: () =>
+                  controller.isOpen ? controller.close() : controller.open(),
             ),
-          ],
-          builder: (context, controller, _) => ActionChip(
-            visualDensity: VisualDensity.compact,
-            avatar: const Icon(Icons.add, size: 16),
-            label: Text(l10n.valueAdd),
-            onPressed: () =>
-                controller.isOpen ? controller.close() : controller.open(),
           ),
-        ),
       ],
     );
   }
