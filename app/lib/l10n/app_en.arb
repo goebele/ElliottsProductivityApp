@@ -1491,5 +1491,296 @@
   "todayNewTask": "New task for today",
   "@todayNewTask": {
     "description": "Tooltip of the + button on Today."
-  }
+  },
+  "devicesView": "Devices",
+  "@devicesView": {
+    "description": "Sidebar entry and page title for paired devices and pairing."
+  },
+  "devicesThisDevice": "This device",
+  "@devicesThisDevice": {
+    "description": "Section heading."
+  },
+  "devicesYours": "Your devices",
+  "@devicesYours": {
+    "description": "Section heading: paired devices."
+  },
+  "devicesNoneYet": "No other devices yet. Pair one below.",
+  "@devicesNoneYet": {
+    "description": "Shown when nothing is paired."
+  },
+  "devicesPair": "Pair a device",
+  "@devicesPair": {
+    "description": "Section heading."
+  },
+  "devicesPairHelp": "Pairing makes another device one of yours. The joining device keeps its items: both end up with everything.",
+  "@devicesPairHelp": {
+    "description": "Explains pairing and the merge."
+  },
+  "devicesLetJoin": "Let a device join this one",
+  "@devicesLetJoin": {
+    "description": "Button: host a pairing."
+  },
+  "devicesNearby": "Found nearby",
+  "@devicesNearby": {
+    "description": "Heading: unpaired devices on the network."
+  },
+  "devicesNearbyNone": "No other devices found. Open Devices on the other device, on the same Wi-Fi, or join by address.",
+  "@devicesNearbyNone": {
+    "description": "Nothing discovered."
+  },
+  "devicesJoin": "Join",
+  "@devicesJoin": {
+    "description": "Button: join a nearby device."
+  },
+  "devicesJoinByAddress": "Join by address…",
+  "@devicesJoinByAddress": {
+    "description": "Button: join by IP and port."
+  },
+  "devicesAddressPrompt": "The other device's address (shown on its Devices page)",
+  "@devicesAddressPrompt": {
+    "description": "Prompt for host:port."
+  },
+  "devicesAddressInvalid": "That isn't an address like 192.168.1.20:47913.",
+  "@devicesAddressInvalid": {
+    "description": "Bad address."
+  },
+  "devicesRename": "Rename this device",
+  "@devicesRename": {
+    "description": "Tooltip and dialog title."
+  },
+  "devicesSyncNow": "Sync now",
+  "@devicesSyncNow": {
+    "description": "Button."
+  },
+  "devicesReachableAt": "Reachable at {address}",
+  "@devicesReachableAt": {
+    "description": "This device's LAN address.",
+    "placeholders": {
+      "address": {
+        "type": "String"
+      }
+    }
+  },
+  "devicesLastSync": "Synced {when}",
+  "@devicesLastSync": {
+    "description": "Last sync time.",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "devicesNeverSynced": "Not synced yet",
+  "@devicesNeverSynced": {
+    "description": "Never synced."
+  },
+  "devicesNearbyNow": "Nearby",
+  "@devicesNearbyNow": {
+    "description": "Chip: a paired device seen on the network now."
+  },
+  "devicesUnnamed": "Device {code}",
+  "@devicesUnnamed": {
+    "description": "A device with no name yet.",
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "devicesPlatformCode": "{platform} · {code}",
+  "@devicesPlatformCode": {
+    "description": "A nearby device: platform and short code.",
+    "placeholders": {
+      "platform": {
+        "type": "String"
+      },
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "devicesPin": "Pairing PIN",
+  "@devicesPin": {
+    "description": "Setting."
+  },
+  "devicesPinHelp": "Optional. A joining device must enter it too.",
+  "@devicesPinHelp": {
+    "description": "PIN explanation."
+  },
+  "devicesPinSet": "Set PIN",
+  "@devicesPinSet": {
+    "description": "Button."
+  },
+  "devicesPinChange": "Change",
+  "@devicesPinChange": {
+    "description": "Button."
+  },
+  "devicesPinRemove": "Remove",
+  "@devicesPinRemove": {
+    "description": "Button."
+  },
+  "devicesPinOn": "A PIN is set",
+  "@devicesPinOn": {
+    "description": "PIN state."
+  },
+  "devicesPinPrompt": "Pairing PIN (4 or more digits)",
+  "@devicesPinPrompt": {
+    "description": "Set PIN dialog."
+  },
+  "devicesPinAsk": "Enter the other device's pairing PIN",
+  "@devicesPinAsk": {
+    "description": "Joining asks for the PIN."
+  },
+  "devicesSyncOff": "Sync is off on this device.",
+  "@devicesSyncOff": {
+    "description": "Service not running."
+  },
+  "pairWaitingTitle": "Waiting for a device to join",
+  "@pairWaitingTitle": {
+    "description": "Host dialog title."
+  },
+  "pairWaitingBody": "On the new device, open Devices and tap Join next to {name}, on the same Wi-Fi.",
+  "@pairWaitingBody": {
+    "description": "Host dialog help.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pairCompareTitle": "Check the code",
+  "@pairCompareTitle": {
+    "description": "Code dialog title."
+  },
+  "pairCompareBody": "Does the other device show this code?",
+  "@pairCompareBody": {
+    "description": "Code dialog body."
+  },
+  "pairCodesMatch": "Yes, it matches",
+  "@pairCodesMatch": {
+    "description": "Confirm button."
+  },
+  "pairCodesDiffer": "No",
+  "@pairCodesDiffer": {
+    "description": "Reject button."
+  },
+  "pairWorking": "Pairing and syncing…",
+  "@pairWorking": {
+    "description": "Progress text."
+  },
+  "pairJoined": "Paired. Everything is syncing.",
+  "@pairJoined": {
+    "description": "Snack bar after pairing."
+  },
+  "pairFailed": "Pairing stopped: {reason}",
+  "@pairFailed": {
+    "description": "Snack bar on failure.",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "pairJoinConfirmTitle": "Join this device?",
+  "@pairJoinConfirmTitle": {
+    "description": "Before joining."
+  },
+  "pairJoinConfirmBody": "This device becomes one of the other's devices. Its items are kept and added to the other's, so both have everything.",
+  "@pairJoinConfirmBody": {
+    "description": "Join warning."
+  },
+  "syncStatusSyncing": "Syncing…",
+  "@syncStatusSyncing": {
+    "description": "Tooltip."
+  },
+  "syncStatusSynced": "Synced {when}",
+  "@syncStatusSynced": {
+    "description": "Tooltip.",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "syncStatusNever": "Not synced yet: pair a device",
+  "@syncStatusNever": {
+    "description": "Tooltip."
+  },
+  "syncStatusProblem": "Sync problem: {message}",
+  "@syncStatusProblem": {
+    "description": "Tooltip.",
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "syncJustNow": "just now",
+  "@syncJustNow": {
+    "description": "Relative time."
+  },
+  "syncMinutesAgo": "{count, plural, =1{1 minute ago} other{{count} minutes ago}}",
+  "@syncMinutesAgo": {
+    "description": "Relative time.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncHoursAgo": "{count, plural, =1{1 hour ago} other{{count} hours ago}}",
+  "@syncHoursAgo": {
+    "description": "Relative time.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Cancel button."
+  },
+  "settingsView": "Settings",
+  "@settingsView": {
+    "description": "Gear tooltip and page title."
+  },
+  "settingsAppearance": "Appearance",
+  "@settingsAppearance": {
+    "description": "Settings section."
+  },
+  "settingsTheme": "Theme",
+  "@settingsTheme": {
+    "description": "Theme setting label."
+  },
+  "settingsThemeSystem": "System",
+  "@settingsThemeSystem": {
+    "description": "Theme follows the device setting."
+  },
+  "settingsThemeLight": "Light",
+  "@settingsThemeLight": {
+    "description": "Light theme."
+  },
+  "settingsThemeDark": "Dark",
+  "@settingsThemeDark": {
+    "description": "Dark theme."
+  },
+  "settingsThisDeviceOnly": "Just for this device: your other devices keep their own.",
+  "@settingsThisDeviceOnly": {
+    "description": "Theme is per device."
+  },
+  "settingsSync": "Sync",
+  "@settingsSync": {
+    "description": "Settings section."
+  },
+  "settingsDevicesHelp": "Pair devices and see when they last synced",
+  "@settingsDevicesHelp": {
+    "description": "Devices entry subtitle."
+  },
+  "settingsTroubleshooting": "Troubleshooting",
+  "settingsLog": "App log",
+  "settingsLogHelpDesktop": "Startup, errors and sync problems on this device. Opens the file.",
+  "settingsLogHelpPhone": "Startup, errors and sync problems on this device. Copies the latest lines.",
+  "settingsLogCopied": "Log copied",
+  "mdStrike": "Strikethrough"
 }

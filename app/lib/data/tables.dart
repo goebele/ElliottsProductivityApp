@@ -215,13 +215,12 @@ enum LinkKind { node, note, url, attachment }
 
 enum LinkOrigin { inline, attached }
 
-/// Shared (§5.2, §6.10): a link from a node to something. In v0.7 only
-/// `note` links with `origin = attached` exist: a child reusing one of its
-/// ancestors' notes. Nothing is copied; unlinking sets [deleted].
-@TableIndex.sql(
-  'CREATE UNIQUE INDEX links_unique ON links (from_node_id, target_kind, '
-  'target_id) WHERE deleted = 0',
-)
+/// Shared (§5.2, §6.10): a link from a node to something: an ancestor's
+/// note or file reused by a child, or a `[text](epa://node/<id>)` link in
+/// text. Nothing is copied; unlinking sets [deleted]. One row per (from,
+/// kind, target): its id is derived from them (§7.6), which replaced a
+/// unique index in v16.
+@TableIndex(name: 'links_from', columns: {#fromNodeId, #targetKind, #targetId})
 @TableIndex(name: 'links_target', columns: {#targetKind, #targetId})
 class Links extends Table with SyncColumns {
   TextColumn get fromNodeId => text()();
@@ -512,6 +511,19 @@ class Devices extends Table {
   /// True for exactly one row: the device this database lives on.
   BoolColumn get isThisDevice => boolean().withDefault(const Constant(false))();
 
+  /// When this device last finished a sync with it (v16).
+  DateTimeColumn get lastSyncAt => dateTime().nullable()();
+
   @override
   Set<Column<Object>> get primaryKey => {deviceId};
+}
+
+/// Local-only (§5.4, §7.5): ops received for tables or columns this app
+/// version doesn't know. The ops stay in `change_log` (so they're passed
+/// on); this marks them to apply after an upgrade.
+class PendingUnknownOps extends Table {
+  TextColumn get opId => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {opId};
 }

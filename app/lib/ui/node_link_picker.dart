@@ -40,7 +40,13 @@ class _PickerState extends ConsumerState<_Picker> {
     final repo = await ref.read(nodeRepositoryProvider.future);
     final List<Node> found;
     if (text.trim().isEmpty) {
-      found = await repo.recent();
+      // Checkbox lines aren't items to link to: their task instead.
+      final seen = <String>{};
+      found = [
+        for (final n in await repo.recent())
+          if (await repo.taskOf(n.id) case final id when seen.add(id))
+            ?(id == n.id ? n : await repo.get(id)),
+      ];
     } else {
       found = [
         for (final r in await repo.search.search(SearchQuery.parse(text)))

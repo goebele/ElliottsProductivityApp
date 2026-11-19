@@ -424,10 +424,10 @@ class ReminderRepository {
           );
         }
         for (final m in minutes.difference(have)) {
-          await _writer.insert(
+          await _writer.upsert(
             _db.reminders,
             RemindersCompanion(
-              id: Value(newId()),
+              id: Value(pairId('reminders', [nodeId, m])),
               spaceId: Value(spaceId),
               nodeId: Value(nodeId),
               minutesBefore: Value(m),
@@ -511,10 +511,10 @@ class PrefsRepository {
         NodeUserPrefsCompanion(icsExport: Value(on)),
       );
     } else {
-      await _writer.insert(
+      await _writer.upsert(
         _db.nodeUserPrefs,
         NodeUserPrefsCompanion(
-          id: Value(newId()),
+          id: Value(pairId('node_user_prefs', [nodeId])),
           spaceId: Value(spaceId),
           nodeId: Value(nodeId),
           icsExport: Value(on),

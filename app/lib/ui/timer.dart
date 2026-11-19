@@ -21,8 +21,15 @@ final runningEntryProvider = StreamProvider<TimeEntry?>((ref) async* {
   yield* repo.time.watchRunning();
 });
 
-/// What the bar shows besides a running timer: a paused one (this device
-/// only), or a break counting down after a focus session.
+/// The paused timer's item, synced (§7.6, L10).
+final pausedTimerProvider = StreamProvider<String?>((ref) async* {
+  final repo = await ref.watch(nodeRepositoryProvider.future);
+  yield* repo.time.watchPaused();
+});
+
+/// What the bar shows besides a running timer: a paused one (synced, so
+/// the same on every device), or a break counting down after a focus
+/// session (this device only).
 typedef TimerExtras = ({String? pausedNodeId, DateTime? breakUntil});
 
 final timerExtrasProvider = NotifierProvider<TimerController, TimerExtras>(
@@ -32,39 +39,50 @@ final timerExtrasProvider = NotifierProvider<TimerController, TimerExtras>(
 /// Starts, pauses, resumes and stops timers. A pause ends the time entry;
 /// resuming starts a new one on the same item.
 class TimerController extends Notifier<TimerExtras> {
+  DateTime? _breakUntil;
+
   @override
-  TimerExtras build() => (pausedNodeId: null, breakUntil: null);
+  TimerExtras build() => (
+    pausedNodeId: ref.watch(pausedTimerProvider).value,
+    breakUntil: _breakUntil,
+  );
 
   Future<TimeRepository> get _time async =>
       (await ref.read(nodeRepositoryProvider.future)).time;
 
+  void _setBreak(DateTime? until) {
+    _breakUntil = until;
+    state = (pausedNodeId: state.pausedNodeId, breakUntil: until);
+  }
+
   Future<void> start(String nodeId, {int? focusMinutes}) async {
-    state = (pausedNodeId: null, breakUntil: null);
+    _setBreak(null);
     await (await _time).start(nodeId, focusMinutes: focusMinutes);
   }
 
   Future<void> pause() async {
-    final stopped = await (await _time).stop();
-    state = (pausedNodeId: stopped?.nodeId, breakUntil: null);
+    _setBreak(null);
+    await (await _time).pause();
   }
 
-  Future<void> resume() async {
-    final id = state.pausedNodeId;
-    if (id != null) await start(id);
-  }
+  Future<void> resume() async => (await _time).resume();
 
   Future<void> stop() async {
-    await (await _time).stop();
-    state = (pausedNodeId: null, breakUntil: null);
+    final time = await _time;
+    await time.stop();
+    await time.clearPaused();
+    _setBreak(null);
   }
 
   /// Ends a focus session with a short break.
   Future<void> takeBreak({Duration length = const Duration(minutes: 5)}) async {
-    await (await _time).stop();
-    state = (pausedNodeId: null, breakUntil: DateTime.now().add(length));
+    final time = await _time;
+    await time.stop();
+    await time.clearPaused();
+    _setBreak(DateTime.now().add(length));
   }
 
-  void endBreak() => state = (pausedNodeId: null, breakUntil: null);
+  void endBreak() => _setBreak(null);
 }
 
 String formatClock(Duration d) {

@@ -11,12 +11,31 @@ import 'package:elliotts_productivity_app/sync/change_writer.dart';
 
 /// An in-memory database with a first-run identity, a writer and a repository.
 class TestEnv {
-  TestEnv._(this.db, this.identity, this.writer, this.nodes, this.blobDir);
+  TestEnv._(
+    this.db,
+    this.identity,
+    this.writer,
+    this.nodes,
+    this.blobDir, [
+    SecretStore? secrets,
+  ]) : secrets = secrets ?? InMemorySecretStore();
+
+  /// Wraps parts made elsewhere (a second device in sync tests).
+  factory TestEnv.wrap(
+    AppDatabase db,
+    LocalIdentity identity,
+    ChangeWriter writer,
+    NodeRepository nodes,
+    Directory blobDir,
+  ) => TestEnv._(db, identity, writer, nodes, blobDir);
 
   final AppDatabase db;
   final LocalIdentity identity;
   final ChangeWriter writer;
   final NodeRepository nodes;
+
+  /// Where the identity keys are (in memory).
+  final SecretStore secrets;
 
   /// A temporary blob store folder, deleted by [close].
   final Directory blobDir;
@@ -24,10 +43,8 @@ class TestEnv {
   static Future<TestEnv> create() async {
     driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
     final db = AppDatabase(NativeDatabase.memory());
-    final identity = await IdentityService(
-      db,
-      InMemorySecretStore(),
-    ).ensureIdentity();
+    final secrets = InMemorySecretStore();
+    final identity = await IdentityService(db, secrets).ensureIdentity();
     final writer = await ChangeWriter.open(
       db,
       userId: identity.userId,
@@ -41,7 +58,7 @@ class TestEnv {
       userId: identity.userId,
       blobStore: BlobStore(blobDir),
     );
-    return TestEnv._(db, identity, writer, nodes, blobDir);
+    return TestEnv._(db, identity, writer, nodes, blobDir, secrets);
   }
 
   Future<List<ChangeOp>> opsFor(String rowId) =>

@@ -1,6 +1,17 @@
 # Elliott's Productivity App — Design Doc
 
-**Status:** Draft v0.22 · **Last updated:** 2026-11-09 · **Owners:** Elliott, Claude
+**Status:** Draft v0.23 · **Last updated:** 2026-11-16 · **Owners:** Elliott, Claude
+
+> **v0.23 (M7 starts):** The lock-in review (§14.2) is decided as
+> proposed: rows that stand for a pair (tag on item, value on item, link,
+> Today row, prefs, settings, occurrence completion, reminder, shortcut)
+> get **ids derived from the pair**, same-named tags and values are one,
+> a move cycle undoes the older move, a second running timer ends at the
+> newer one's start. **Pausing a timer syncs** (L10). **Joining merges**:
+> a device that pairs keeps its items and moves them into your personal
+> space. The channel is an **authenticated encrypted connection built from
+> the pairing keys** rather than TLS (§7.2). M7 is broken into steps
+> (§7.6).
 
 > **v0.22 (review U3–U5):** The task page has **labelled rows** (Tags
 > with the value, When, Time, Description), each with its own +; the
@@ -494,10 +505,16 @@ change-log compaction and Trash purges.
   device (a version vector).
 - `change_log`: outgoing and applied changes (see §7).
 - `pending_unknown_ops`: ops this app version doesn't understand yet, kept and
-  passed along (see [§7.5](#75-versioning)).
+  passed along (see [§7.5](#75-versioning)). The ops themselves stay in
+  `change_log` (so they're forwarded); this table only marks them.
 - `node_search`: the FTS5 index over `nodes.title` and `body_md`
   (external content, kept in step by triggers; `lib/data/search.drift`).
-- `ui_prefs`: window layout, theme, last tab, language.
+- `ui_prefs`: window layout, theme, last tab, language. Built (v0.23) as a
+  small file next to the database (`ui_prefs.json`), loaded before the
+  first frame; holds the **theme** (System, the default / Light / Dark),
+  chosen in **Settings** (the gear in the top bar, on PC and phone, beside
+  the sync icon). Settings also links to Devices; other settings move
+  there over time.
 
 ## 6. Feature design
 
@@ -670,7 +687,8 @@ Example: working on *Test New Feature*, you can reach *Implement Feature*
 - Markdown subset: headings, bold and italic, lists, checkboxes, code and
   links. Links to items and notes are ordinary links (v0.19, below).
 - Editor: a plain-text editor with a toolbar and a live preview toggle.
-  **Built (v0.7):** toolbar for bold, italic, heading (`## `), bulleted and
+  **Built (v0.7):** toolbar for bold, italic, strikethrough (`~~`, U8),
+  heading (`## `), bulleted and
   numbered lists, link and code (inline, or fenced across lines); each
   toggles off again. **Preview** renders what is in the field. A closed
   description and the notes column render Markdown; card previews (panels,
@@ -688,7 +706,8 @@ Example: working on *Test New Feature*, you can reach *Implement Feature*
     the selected text, or uses the title. Cancelling a `[[` keeps the
     brackets. The ordinary **Link** button still inserts `[text](https://)`.
   - **Opening:** clicking one in a note, a description or a peek opens it
-    in the app, with Back returning to where the link was (the breadcrumb
+    in the app (a link to a checkbox line opens its task, U8; the picker's
+    recent list shows the task, not the line), with Back returning to where the link was (the breadcrumb
     shows "via"). http/https/mailto links open in the browser as before.
   - **Tracking:** every save re-reads the text: each linked item is one
     `links` row (`target_kind = node`, `origin = inline`) from the item or
@@ -1373,8 +1392,11 @@ Room-level "location" with no extra hardware: you just need paper.
   conflict.
 
 ### 7.2 Discovery and pairing (your own devices)
-- Each device advertises `_epa-sync._tcp` over mDNS with an opaque device ID
-  and port. Nothing personal is included.
+- Each device advertises `_epa-sync._tcp` over mDNS with an opaque device ID,
+  its port, an opaque **user tag** (part of a hash of the user key: equal
+  tags are your devices) and its platform ("windows", "android"). Nothing
+  personal is included: device names travel only inside the encrypted
+  connection.
 - **Pairing a new device:**
   1. On the new device, choose "Join my devices". It lists the devices it finds
      on the LAN.
@@ -1384,8 +1406,30 @@ Room-level "location" with no extra hardware: you just need paper.
      only as a local hash), the new device must enter it as well.
   5. The existing device sends the **user identity key** and space keys over
      the encrypted channel, then signs the new device's key.
-- **Transport:** TLS with **pinned keys** from pairing. Unpaired devices are
-  ignored.
+- **Transport (v0.23, handshake v2 after the security pass):** a TCP
+  connection secured from the pairing keys instead of TLS (Dart's TLS
+  needs X.509 certificates, awkward to make on a phone), in the style of
+  Noise XX:
+  1. The connecting side **commits** to a fresh X25519 key (its hash).
+  2. The listening side sends its fresh key; then the first reveals its
+     key, which must match. Neither picked its key after seeing the
+     other's, so the 6-digit code (from both keys) can't be steered by
+     someone in the middle trying keys until the codes agree.
+  3. Session keys from X25519 + HKDF-SHA256; every frame after that is
+     sealed with ChaCha20-Poly1305 (counting nonces).
+  4. Identities go **inside** the encryption: the connecting side proves
+     itself first (device key, your user key's signature over it, a
+     signature over the handshake); to sync it must be one of your
+     devices. Only then does the listening side reveal itself, so a
+     stranger who connects learns nothing about the device.
+  Unpaired devices are refused. Same guarantees as pinned TLS: mutual
+  authentication, secrecy, tamper detection.
+- **Joining merges (v0.23):** the joining device already has its own user
+  and personal space from first run. On joining it takes on the existing
+  user identity and **moves its own rows into that personal space**
+  (rewriting `space_id`, `created_by`, `updated_by`, and the same in its
+  change log), keeping its device id. Then a normal sync carries both
+  devices' items both ways. Same-named tags and values become one (§7.6).
 - **Recovery:** while any one of your devices survives, you can pair a
   replacement. An optional offline recovery phrase is open question Q-J.
 
@@ -1431,6 +1475,91 @@ Different devices and people **will** run different app versions.
 - Local Drift migrations run on upgrade, and each one is tested against a
   snapshot of the previous schema.
 
+### 7.6 M7: merge rules and steps (v0.23)
+
+**Merge rules** (settled in §14.2). Local sync is one person on a few
+devices, usually one at a time, so these are for the rare overlap:
+- **Paired rows have derived ids** (L1, L2, L6): a row that stands for a
+  pair gets an id hashed from the pair, so two devices adding the same
+  pair write the **same row** and merge field by field; removing and
+  re-adding flips `deleted`. Applies to `node_tags` (node, tag),
+  `node_values` (node, value), `links` (from, kind, target or url),
+  `placements` (node, parent), `reminders` (node, minutes),
+  `today_entries` (date, node), `node_user_prefs` (node),
+  `user_settings` (key) and `occurrence_completions` (node, date).
+  `links` loses its unique index (the id does that job).
+  `counter_ticks`, `time_entries`, `annotations` and `activity` stay
+  add-only with random ids.
+- **Same names are one** (L3): after applying a batch, two live tags (or
+  values) with one name (ignoring case) merge: uses move to the one with
+  the smaller id, colour and favourite carry over, the other is
+  tombstoned. Joining runs the same step. (Ids aren't hashed from names:
+  a renamed tag would keep its old name's id and clash with a new tag of
+  that name.)
+- **Move cycles** (L4): after applying a batch, a cycle is broken by
+  putting back the earlier parent of the node whose move has the older
+  HLC, written as a new op so every device ends the same.
+- **One running timer** (L5): after applying, if two entries run, the
+  older one ends at the newer one's start.
+- **Timer pause syncs** (L10): the paused timer (node, focus length) is a
+  `user_settings` row (`timer.paused`), so the bar shows the same on
+  every device and either can resume it. A break stays per device.
+- **Unknown data** (§7.5): ops for tables or columns this version doesn't
+  know are kept in the change log, passed on to peers, and applied after
+  an upgrade (`pending_unknown_ops` marks them).
+- **Schema** (L11): from M7 on, changes keep data where practical; during
+  UAT a reset is acceptable.
+
+**Steps**
+1. **Lock-ins** (schema v16): derived ids, de-duplicating existing pairs,
+   the `links` index, the synced pause, a change log rebuilt from the
+   rows (some earlier migrations changed rows without ops). ✅
+2. **Engine** (no network): version vectors from the change log, export
+   ops since a vector, apply ops field by field (highest HLC wins; a
+   missing row is created from its ops), the fix-ups above, unknown ops.
+   Tested with **two in-memory databases** syncing through a fake
+   connection: edits both ways, field merge, deletes, cycles, duplicate
+   tags, timers, unknown columns, version mismatch. ✅ (`lib/sync/`:
+   `sync_engine.dart`, `fixups.dart`, `sync_session.dart`)
+3. **Connection and pairing**: the secured TCP channel, mDNS
+   (`bonsoir`), the pairing flow (6-digit code on both, optional PIN),
+   handing over the user key, joining (merge). Channel, pairing, PIN and
+   joining ✅ (tested over loopback sockets: `secure_channel.dart`,
+   `pairing.dart`, `identity/join.dart`); mDNS ✅ (`discovery.dart`).
+4. **Files**: missing attachment blobs are listed and sent, resuming
+   where a transfer stopped. ✅ (`blob_sync.dart`: 256 KB chunks, a
+   partial file kept as `blobs/incoming/<hash>.part`, stored only once its
+   SHA-256 checks out.)
+5. **When and where**: sync on start, resume, every few minutes, shortly
+   after edits and when a peer appears; **Devices** in the sidebar (paired
+   devices, last sync, Sync now, Pair a device, forget) and a sync status
+   icon in the top bar; Windows firewall prompt; Android multicast lock.
+   ✅ except *forget* (below) (`sync_service.dart`, `ui/devices_page.dart`):
+   - The service listens on port 47913 (another if taken), announces
+     itself, and syncs with your devices when one appears, every 5
+     minutes, 15 s after this device's edits, and when the app comes back.
+     While the app runs only: no background sync on Android yet, and on
+     Windows only while the app is open.
+   - **Devices page:** this device (name, rename, last sync, its address,
+     Sync now); your devices (last sync, "Nearby" when seen now);
+     **Pair a device**: *Let a device join this one* (waits, then shows
+     the code to compare), devices found nearby with **Join**, *Join by
+     address…* (for networks that hide mDNS: type the address shown on
+     the other device), and the optional **pairing PIN**.
+   - Joining asks first ("Its items are kept and added to the other's"),
+     shows the code, asks for the PIN if one is set, then reloads this
+     device as one of the other's.
+   - **Status icon** in the top bar: devices (idle), a spinner (syncing),
+     a warning (a problem; the tooltip says what). Click: Devices.
+   - Android: network, Wi-Fi state and multicast permissions (release
+     builds had none: debug builds add network access themselves).
+   - **Not yet:** forgetting a device. Any device signed by your user key
+     can sync; removing one properly needs a revocation list that syncs.
+     Until then every paired device stays trusted. (M8.)
+6. **Verify**: the harness tests ✅ (sync engine, files, pairing over
+   loopback, the service with a pretend network), then phone ⇄ PC on
+   your network (Elliott, UAT).
+
 ## 8. Platform notes
 
 | Topic | Android | Windows |
@@ -1448,6 +1577,43 @@ Different devices and people **will** run different app versions.
 | iOS (later) | Planned for after the relay. Keep platform code behind `platform/` interfaces. | |
 
 ## 9. Security and privacy
+
+**LAN sync, reviewed (v0.23 security pass).** What a device on the same
+network can and can't do, and what protects a phone:
+- **Nothing goes to the internet.** The app listens on port 47913 on the
+  local network only (IPv4; no internet-facing IPv6 bind) and announces
+  itself over mDNS. On a phone it does neither while the app is in the
+  background.
+- **Strangers on the network** (e.g. café Wi-Fi) can see that the app is
+  running and the platform, and can connect, but: the handshake reveals
+  no identity before they prove they're yours; frames are limited to 4 KB
+  until then (no memory exhaustion); at most 4 handshakes run at once;
+  each times out after 10 s; failures aren't reported as sync problems.
+- **Announcements can't track you:** the device and user tags change
+  every day and are keyed from your private user key, so only your own
+  devices can link them.
+- **Pairing** only while "Let a device join" is open (closes by itself
+  after 5 minutes), with the code confirmed on both screens and an
+  optional PIN (3 tries a connection). It hands the joining device your
+  user key: confirm the code carefully.
+- **A paired device is fully trusted** (it can change anything, as you
+  can). There's no way to remove one yet (needs a synced revocation
+  list, M8).
+- **Memory and storage on a phone:** history is sent a page at a time
+  (≤ 500 changes or ~1 MB) and applied as it arrives; files go a 256 KB
+  chunk at a time, each waiting to be sent before the next is read; a
+  file can't grow past its attachment's size; frames are capped at 16 MB;
+  half-arrived files are cleaned up after a week. The change log isn't
+  compacted yet (§7.4, M8), so it grows with use.
+- **Battery:** no background sync on phones; discovery (and its Wi-Fi
+  multicast lock) stops in the background; scheduled syncs are started
+  by one side only; encryption uses Android's own code
+  (`cryptography_flutter`) or a background isolate.
+- **The phone's data:** joining keeps a copy of the database first
+  (`backups/epa-before-join-…`, newest three). Android Auto Backup is off:
+  the identity keys stay in the keystore and wouldn't come back with a
+  restored copy; your other devices are the backup.
+
 - **No accounts, emails, phone numbers or real names.** A user is an opaque
   ID plus a public key. Names are local labels, and a sender's alias is only a
   suggestion inside an encrypted payload.
@@ -1628,26 +1794,29 @@ navigation (bottom bar, pages, sheets).
 | U5 | Task page space | Controls in one long row; Requirement floating in the Items header; a view switch that only matters for checkboxes; notes toggle tucked top-right; empty breadcrumb gap; lots of Untitled items. | Labelled rows each with its +; value shares the Tags row; condition under the items; switch only for checkboxes; notes panel right, below the title; status chip; ✕ on hover; blank items to Trash on leaving. | Built as proposed (v0.22). | done |
 | U6 | Checkbox lines, phone rows | Lines could be opened, showed in the tree as tasks and take children (which Today never showed); the value squeezed onto the Tags row on phones; the phone app bar repeated the title. | Lines aren't tasks: no page, not in the tree, no children, menu to rename/delete; a condition and tasks are exclusive; Value gets its own row; app bar only has Back. | Built as proposed (v0.22). The Done button for a checkbox's page is gone with the page. | done |
 | U7 | Small fixes | Today had no way to make a task (phones have no tree beside it); the checkbox view switch offered cards; Undo messages stayed up forever (Flutter keeps a snack bar with an action open unless told not to). | Today gets a **+** button: a new task, added to Today, opened to be named. Checkbox views: checklist or steps. Every snack bar times out. | Built as proposed (v0.22). | done |
-| U8 | | | | | open |
+| U8 | Phone task page, notes | A title stopped halfway, at the status chip, with room to spare; a running timer was hidden on a task page (the page covers the home screen's bar); no strikethrough button; a link to a checkbox line opened the line as a page of its own. | The title takes all the room up to the chip; the timer bar on pushed task pages too; a strikethrough button; links to a line open its task. | Built as proposed (v0.23). | done |
+| U9 | | | | | open |
 
-### 14.2 Lock-in review (draft)
+### 14.2 Lock-in review
 What M7 makes hard to change, and what needs a decision before it.
+**Decided (v0.23):** as proposed, with pause syncing; see §7.6. Local
+sync is one person on a few devices, so these are rare edge cases.
 
 | ID | Area | Issue | Proposal | State |
 |----|------|-------|----------|-------|
-| L1 | Set-like rows | Two devices adding the same pair create two rows with different ids: `links` has a unique index among live rows, so applying the second would fail; `node_tags`, `node_values`, `placements`, `reminders` would hold duplicates. | Derive the row id from its pair (e.g. a hash of node + target), so both devices write the *same* row and merging is field-level as usual; re-adding after removal flips `deleted`. Drop the unique index. | open |
-| L2 | One-per-node rows | `node_user_prefs` (one row per node) and `user_settings` (one row per key) can likewise get two rows if two devices create them before syncing. | Same: id derived from node id / key. | open |
-| L3 | Tags by name | Two devices can each create `#work` before syncing: two tags with one name. | Derive a tag's id from its normalised name within the space (then they're the same row), or merge same-named tags on apply (move uses, tombstone one). | open |
-| L4 | Moves | Two moves on different devices can form a cycle (A under B, B under A). | On apply, if a cycle appears, the move with the older HLC is undone (§5.3 already says so); a test harness case for it. | open |
-| L5 | Running timer | "One running timer per user" can break when two devices start one before syncing. | On apply, keep the newest running entry; end the other at the newer one's start. | open |
-| L6 | Today rows | Two devices ordering or hiding the same item on the same day write separate rows. | Id from date + node (as L1). | open |
-| L7 | Enum values | Stored by name; renaming one later breaks other devices. Current names include `textLabel`, `timeLogged`, `dueToday`-style camelCase. | Freeze the names as they are (or rename now, while data can still be wiped), and list them in §5 as fixed. | open |
-| L8 | Shared vs personal | Check each table and column against §5.0 once more: e.g. `progress_override` and `estimate_minutes` are shared (on the node), `reminders`, `time_entries`, `today_entries`, `activity`, `user_settings` personal; tag favourites/colour live on personal tags. | Confirm or move before M7. | open |
-| L9 | Activity | Add-only rows grow forever and sync to every device. | Keep, but exclude from compaction (as §7.4 says) and consider a per-row size check (title snapshots only). | open |
-| L10 | Local-only state | Paused timer, notes-column open, filters, zoom, peek pin are per device and never sync. | Confirm that's wanted (pause especially: pausing on the PC isn't seen on the phone). | open |
+| L1 | Set-like rows | Two devices adding the same pair create two rows with different ids: `links` has a unique index among live rows, so applying the second would fail; `node_tags`, `node_values`, `placements`, `reminders` would hold duplicates. | Derive the row id from its pair (e.g. a hash of node + target), so both devices write the *same* row and merging is field-level as usual; re-adding after removal flips `deleted`. Drop the unique index. | decided (v0.23) |
+| L2 | One-per-node rows | `node_user_prefs` (one row per node) and `user_settings` (one row per key) can likewise get two rows if two devices create them before syncing. | Same: id derived from node id / key. | decided (v0.23) |
+| L3 | Tags by name | Two devices can each create `#work` before syncing: two tags with one name. | Derive a tag's id from its normalised name within the space (then they're the same row), or merge same-named tags on apply (move uses, tombstone one). | decided (v0.23) |
+| L4 | Moves | Two moves on different devices can form a cycle (A under B, B under A). | On apply, if a cycle appears, the move with the older HLC is undone (§5.3 already says so); a test harness case for it. | decided (v0.23) |
+| L5 | Running timer | "One running timer per user" can break when two devices start one before syncing. | On apply, keep the newest running entry; end the other at the newer one's start. | decided (v0.23) |
+| L6 | Today rows | Two devices ordering or hiding the same item on the same day write separate rows. | Id from date + node (as L1). | decided (v0.23) |
+| L7 | Enum values | Stored by name; renaming one later breaks other devices. Current names include `textLabel`, `timeLogged`, `dueToday`-style camelCase. | Freeze the names as they are (or rename now, while data can still be wiped), and list them in §5 as fixed. | decided (v0.23) |
+| L8 | Shared vs personal | Check each table and column against §5.0 once more: e.g. `progress_override` and `estimate_minutes` are shared (on the node), `reminders`, `time_entries`, `today_entries`, `activity`, `user_settings` personal; tag favourites/colour live on personal tags. | Confirm or move before M7. | decided (v0.23) |
+| L9 | Activity | Add-only rows grow forever and sync to every device. | Keep, but exclude from compaction (as §7.4 says) and consider a per-row size check (title snapshots only). | decided (v0.23) |
+| L10 | Local-only state | Paused timer, notes-column open, filters, zoom, peek pin are per device and never sync. | Confirm that's wanted (pause especially: pausing on the PC isn't seen on the phone). | decided (v0.23): **pause syncs** (a `user_settings` row); the rest stays per device |
 | L12 | Text links | `[text](epa://node/<id>)` links in notes create `links` rows (`origin = inline`); two devices editing the same note can each add a row for the same link. | Covered by L1 (id from the pair). The text is the source of truth: rows are re-derived on every save. | decided |
 | L13 | Counters | Counter progress must survive two devices counting at once. | Add-only `counter_ticks` rows summed (built v0.20); ticks are never edited, only added. | decided |
-| L11 | Migrations | Until now local data could be wiped; from the first real sync, every schema change needs a tested migration. | From M7 on, migrations are kept; the migration test already covers every version. | open |
+| L11 | Migrations | Until now local data could be wiped; from the first real sync, every schema change needs a tested migration. | From M7 on, migrations are kept; the migration test already covers every version. | decided (v0.23) |
 
 ### 14.3 Code health (draft)
 

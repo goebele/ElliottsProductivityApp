@@ -268,10 +268,12 @@ class AttachmentRepository {
     final child = (await (_db.select(
       _db.nodes,
     )..where((n) => n.id.equals(childId))).getSingle());
-    await _writer.insert(
+    await _writer.upsert(
       _db.links,
       LinksCompanion(
-        id: Value(newId()),
+        id: Value(
+          pairId('links', [childId, LinkKind.attachment.name, attachmentId]),
+        ),
         spaceId: Value(child.spaceId),
         fromNodeId: Value(childId),
         targetKind: const Value(LinkKind.attachment),
