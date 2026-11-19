@@ -1,24 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../domain/markdown_format.dart';
 import '../l10n/app_localizations.dart';
 import 'autosave_field.dart';
+import '../providers.dart';
 import 'node_link_picker.dart';
 
 /// Rendered Markdown (DESIGN.md §6.3), GitHub-flavoured: headings, bold and
-/// italic, lists, task-list checkboxes (read-only: lists you tick belong in
-/// items), code and links. Web links open in the browser; links to items
-/// (`epa://node/<id>`) open them in the app, through [onOpenNode].
-class MarkdownView extends StatelessWidget {
+/// italic, strikethrough, lists, task-list checkboxes (read-only: lists you
+/// tick belong in items), code and links. Web links open in the browser;
+/// links to items (`epa://node/<id>`) open them in the app, through
+/// [onOpenNode]; a link to a checkbox line opens its task.
+class MarkdownView extends ConsumerWidget {
   const MarkdownView(this.data, {super.key, this.onOpenNode});
 
   final String data;
   final void Function(String id)? onOpenNode;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     return MarkdownBody(
       data: data,
@@ -36,7 +39,10 @@ class MarkdownView extends StatelessWidget {
       ),
       onTapLink: (text, href, title) async {
         if (nodeIdFromUrl(href) case final id?) {
-          onOpenNode?.call(id);
+          final open = onOpenNode;
+          if (open == null) return;
+          final repo = await ref.read(nodeRepositoryProvider.future);
+          open(await repo.taskOf(id));
           return;
         }
         final uri = href == null ? null : Uri.tryParse(href);
@@ -171,6 +177,11 @@ class MarkdownEditorState extends State<MarkdownEditor> {
           children: [
             tool(Icons.format_bold, l10n.mdBold, (e) => toggleWrap(e, '**')),
             tool(Icons.format_italic, l10n.mdItalic, (e) => toggleWrap(e, '_')),
+            tool(
+              Icons.format_strikethrough,
+              l10n.mdStrike,
+              (e) => toggleWrap(e, '~~'),
+            ),
             tool(
               Icons.title,
               l10n.mdHeading,

@@ -2823,6 +2823,390 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'New task for today'**
   String get todayNewTask;
+
+  /// Sidebar entry and page title for paired devices and pairing.
+  ///
+  /// In en, this message translates to:
+  /// **'Devices'**
+  String get devicesView;
+
+  /// Section heading.
+  ///
+  /// In en, this message translates to:
+  /// **'This device'**
+  String get devicesThisDevice;
+
+  /// Section heading: paired devices.
+  ///
+  /// In en, this message translates to:
+  /// **'Your devices'**
+  String get devicesYours;
+
+  /// Shown when nothing is paired.
+  ///
+  /// In en, this message translates to:
+  /// **'No other devices yet. Pair one below.'**
+  String get devicesNoneYet;
+
+  /// Section heading.
+  ///
+  /// In en, this message translates to:
+  /// **'Pair a device'**
+  String get devicesPair;
+
+  /// Explains pairing and the merge.
+  ///
+  /// In en, this message translates to:
+  /// **'Pairing makes another device one of yours. The joining device keeps its items: both end up with everything.'**
+  String get devicesPairHelp;
+
+  /// Button: host a pairing.
+  ///
+  /// In en, this message translates to:
+  /// **'Let a device join this one'**
+  String get devicesLetJoin;
+
+  /// Heading: unpaired devices on the network.
+  ///
+  /// In en, this message translates to:
+  /// **'Found nearby'**
+  String get devicesNearby;
+
+  /// Nothing discovered.
+  ///
+  /// In en, this message translates to:
+  /// **'No other devices found. Open Devices on the other device, on the same Wi-Fi, or join by address.'**
+  String get devicesNearbyNone;
+
+  /// Button: join a nearby device.
+  ///
+  /// In en, this message translates to:
+  /// **'Join'**
+  String get devicesJoin;
+
+  /// Button: join by IP and port.
+  ///
+  /// In en, this message translates to:
+  /// **'Join by address…'**
+  String get devicesJoinByAddress;
+
+  /// Prompt for host:port.
+  ///
+  /// In en, this message translates to:
+  /// **'The other device\'s address (shown on its Devices page)'**
+  String get devicesAddressPrompt;
+
+  /// Bad address.
+  ///
+  /// In en, this message translates to:
+  /// **'That isn\'t an address like 192.168.1.20:47913.'**
+  String get devicesAddressInvalid;
+
+  /// Tooltip and dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename this device'**
+  String get devicesRename;
+
+  /// Button.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync now'**
+  String get devicesSyncNow;
+
+  /// This device's LAN address.
+  ///
+  /// In en, this message translates to:
+  /// **'Reachable at {address}'**
+  String devicesReachableAt(String address);
+
+  /// Last sync time.
+  ///
+  /// In en, this message translates to:
+  /// **'Synced {when}'**
+  String devicesLastSync(String when);
+
+  /// Never synced.
+  ///
+  /// In en, this message translates to:
+  /// **'Not synced yet'**
+  String get devicesNeverSynced;
+
+  /// Chip: a paired device seen on the network now.
+  ///
+  /// In en, this message translates to:
+  /// **'Nearby'**
+  String get devicesNearbyNow;
+
+  /// A device with no name yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Device {code}'**
+  String devicesUnnamed(String code);
+
+  /// A nearby device: platform and short code.
+  ///
+  /// In en, this message translates to:
+  /// **'{platform} · {code}'**
+  String devicesPlatformCode(String platform, String code);
+
+  /// Setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Pairing PIN'**
+  String get devicesPin;
+
+  /// PIN explanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. A joining device must enter it too.'**
+  String get devicesPinHelp;
+
+  /// Button.
+  ///
+  /// In en, this message translates to:
+  /// **'Set PIN'**
+  String get devicesPinSet;
+
+  /// Button.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get devicesPinChange;
+
+  /// Button.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get devicesPinRemove;
+
+  /// PIN state.
+  ///
+  /// In en, this message translates to:
+  /// **'A PIN is set'**
+  String get devicesPinOn;
+
+  /// Set PIN dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Pairing PIN (4 or more digits)'**
+  String get devicesPinPrompt;
+
+  /// Joining asks for the PIN.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the other device\'s pairing PIN'**
+  String get devicesPinAsk;
+
+  /// Service not running.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync is off on this device.'**
+  String get devicesSyncOff;
+
+  /// Host dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for a device to join'**
+  String get pairWaitingTitle;
+
+  /// Host dialog help.
+  ///
+  /// In en, this message translates to:
+  /// **'On the new device, open Devices and tap Join next to {name}, on the same Wi-Fi.'**
+  String pairWaitingBody(String name);
+
+  /// Code dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the code'**
+  String get pairCompareTitle;
+
+  /// Code dialog body.
+  ///
+  /// In en, this message translates to:
+  /// **'Does the other device show this code?'**
+  String get pairCompareBody;
+
+  /// Confirm button.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, it matches'**
+  String get pairCodesMatch;
+
+  /// Reject button.
+  ///
+  /// In en, this message translates to:
+  /// **'No'**
+  String get pairCodesDiffer;
+
+  /// Progress text.
+  ///
+  /// In en, this message translates to:
+  /// **'Pairing and syncing…'**
+  String get pairWorking;
+
+  /// Snack bar after pairing.
+  ///
+  /// In en, this message translates to:
+  /// **'Paired. Everything is syncing.'**
+  String get pairJoined;
+
+  /// Snack bar on failure.
+  ///
+  /// In en, this message translates to:
+  /// **'Pairing stopped: {reason}'**
+  String pairFailed(String reason);
+
+  /// Before joining.
+  ///
+  /// In en, this message translates to:
+  /// **'Join this device?'**
+  String get pairJoinConfirmTitle;
+
+  /// Join warning.
+  ///
+  /// In en, this message translates to:
+  /// **'This device becomes one of the other\'s devices. Its items are kept and added to the other\'s, so both have everything.'**
+  String get pairJoinConfirmBody;
+
+  /// Tooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Syncing…'**
+  String get syncStatusSyncing;
+
+  /// Tooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Synced {when}'**
+  String syncStatusSynced(String when);
+
+  /// Tooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Not synced yet: pair a device'**
+  String get syncStatusNever;
+
+  /// Tooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync problem: {message}'**
+  String syncStatusProblem(String message);
+
+  /// Relative time.
+  ///
+  /// In en, this message translates to:
+  /// **'just now'**
+  String get syncJustNow;
+
+  /// Relative time.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 minute ago} other{{count} minutes ago}}'**
+  String syncMinutesAgo(int count);
+
+  /// Relative time.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 hour ago} other{{count} hours ago}}'**
+  String syncHoursAgo(int count);
+
+  /// Cancel button.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// Gear tooltip and page title.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settingsView;
+
+  /// Settings section.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get settingsAppearance;
+
+  /// Theme setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme'**
+  String get settingsTheme;
+
+  /// Theme follows the device setting.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get settingsThemeSystem;
+
+  /// Light theme.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get settingsThemeLight;
+
+  /// Dark theme.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get settingsThemeDark;
+
+  /// Theme is per device.
+  ///
+  /// In en, this message translates to:
+  /// **'Just for this device: your other devices keep their own.'**
+  String get settingsThisDeviceOnly;
+
+  /// Settings section.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync'**
+  String get settingsSync;
+
+  /// Devices entry subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pair devices and see when they last synced'**
+  String get settingsDevicesHelp;
+
+  /// No description provided for @settingsTroubleshooting.
+  ///
+  /// In en, this message translates to:
+  /// **'Troubleshooting'**
+  String get settingsTroubleshooting;
+
+  /// No description provided for @settingsLog.
+  ///
+  /// In en, this message translates to:
+  /// **'App log'**
+  String get settingsLog;
+
+  /// No description provided for @settingsLogHelpDesktop.
+  ///
+  /// In en, this message translates to:
+  /// **'Startup, errors and sync problems on this device. Opens the file.'**
+  String get settingsLogHelpDesktop;
+
+  /// No description provided for @settingsLogHelpPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Startup, errors and sync problems on this device. Copies the latest lines.'**
+  String get settingsLogHelpPhone;
+
+  /// No description provided for @settingsLogCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Log copied'**
+  String get settingsLogCopied;
+
+  /// No description provided for @mdStrike.
+  ///
+  /// In en, this message translates to:
+  /// **'Strikethrough'**
+  String get mdStrike;
 }
 
 class _AppLocalizationsDelegate

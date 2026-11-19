@@ -16064,6 +16064,17 @@ class $DevicesTable extends Devices with TableInfo<$DevicesTable, Device> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _lastSyncAtMeta = const VerificationMeta(
+    'lastSyncAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastSyncAt = GeneratedColumn<DateTime>(
+    'last_sync_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     deviceId,
@@ -16072,6 +16083,7 @@ class $DevicesTable extends Devices with TableInfo<$DevicesTable, Device> {
     signedByUserKey,
     label,
     isThisDevice,
+    lastSyncAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -16138,6 +16150,15 @@ class $DevicesTable extends Devices with TableInfo<$DevicesTable, Device> {
         ),
       );
     }
+    if (data.containsKey('last_sync_at')) {
+      context.handle(
+        _lastSyncAtMeta,
+        lastSyncAt.isAcceptableOrUnknown(
+          data['last_sync_at']!,
+          _lastSyncAtMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -16171,6 +16192,10 @@ class $DevicesTable extends Devices with TableInfo<$DevicesTable, Device> {
         DriftSqlType.bool,
         data['${effectivePrefix}is_this_device'],
       )!,
+      lastSyncAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_sync_at'],
+      ),
     );
   }
 
@@ -16193,6 +16218,9 @@ class Device extends DataClass implements Insertable<Device> {
 
   /// True for exactly one row: the device this database lives on.
   final bool isThisDevice;
+
+  /// When this device last finished a sync with it (v16).
+  final DateTime? lastSyncAt;
   const Device({
     required this.deviceId,
     required this.userId,
@@ -16200,6 +16228,7 @@ class Device extends DataClass implements Insertable<Device> {
     required this.signedByUserKey,
     this.label,
     required this.isThisDevice,
+    this.lastSyncAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -16212,6 +16241,9 @@ class Device extends DataClass implements Insertable<Device> {
       map['label'] = Variable<String>(label);
     }
     map['is_this_device'] = Variable<bool>(isThisDevice);
+    if (!nullToAbsent || lastSyncAt != null) {
+      map['last_sync_at'] = Variable<DateTime>(lastSyncAt);
+    }
     return map;
   }
 
@@ -16225,6 +16257,9 @@ class Device extends DataClass implements Insertable<Device> {
           ? const Value.absent()
           : Value(label),
       isThisDevice: Value(isThisDevice),
+      lastSyncAt: lastSyncAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastSyncAt),
     );
   }
 
@@ -16240,6 +16275,7 @@ class Device extends DataClass implements Insertable<Device> {
       signedByUserKey: serializer.fromJson<String>(json['signedByUserKey']),
       label: serializer.fromJson<String?>(json['label']),
       isThisDevice: serializer.fromJson<bool>(json['isThisDevice']),
+      lastSyncAt: serializer.fromJson<DateTime?>(json['lastSyncAt']),
     );
   }
   @override
@@ -16252,6 +16288,7 @@ class Device extends DataClass implements Insertable<Device> {
       'signedByUserKey': serializer.toJson<String>(signedByUserKey),
       'label': serializer.toJson<String?>(label),
       'isThisDevice': serializer.toJson<bool>(isThisDevice),
+      'lastSyncAt': serializer.toJson<DateTime?>(lastSyncAt),
     };
   }
 
@@ -16262,6 +16299,7 @@ class Device extends DataClass implements Insertable<Device> {
     String? signedByUserKey,
     Value<String?> label = const Value.absent(),
     bool? isThisDevice,
+    Value<DateTime?> lastSyncAt = const Value.absent(),
   }) => Device(
     deviceId: deviceId ?? this.deviceId,
     userId: userId ?? this.userId,
@@ -16269,6 +16307,7 @@ class Device extends DataClass implements Insertable<Device> {
     signedByUserKey: signedByUserKey ?? this.signedByUserKey,
     label: label.present ? label.value : this.label,
     isThisDevice: isThisDevice ?? this.isThisDevice,
+    lastSyncAt: lastSyncAt.present ? lastSyncAt.value : this.lastSyncAt,
   );
   Device copyWithCompanion(DevicesCompanion data) {
     return Device(
@@ -16284,6 +16323,9 @@ class Device extends DataClass implements Insertable<Device> {
       isThisDevice: data.isThisDevice.present
           ? data.isThisDevice.value
           : this.isThisDevice,
+      lastSyncAt: data.lastSyncAt.present
+          ? data.lastSyncAt.value
+          : this.lastSyncAt,
     );
   }
 
@@ -16295,7 +16337,8 @@ class Device extends DataClass implements Insertable<Device> {
           ..write('devicePublicKey: $devicePublicKey, ')
           ..write('signedByUserKey: $signedByUserKey, ')
           ..write('label: $label, ')
-          ..write('isThisDevice: $isThisDevice')
+          ..write('isThisDevice: $isThisDevice, ')
+          ..write('lastSyncAt: $lastSyncAt')
           ..write(')'))
         .toString();
   }
@@ -16308,6 +16351,7 @@ class Device extends DataClass implements Insertable<Device> {
     signedByUserKey,
     label,
     isThisDevice,
+    lastSyncAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -16318,7 +16362,8 @@ class Device extends DataClass implements Insertable<Device> {
           other.devicePublicKey == this.devicePublicKey &&
           other.signedByUserKey == this.signedByUserKey &&
           other.label == this.label &&
-          other.isThisDevice == this.isThisDevice);
+          other.isThisDevice == this.isThisDevice &&
+          other.lastSyncAt == this.lastSyncAt);
 }
 
 class DevicesCompanion extends UpdateCompanion<Device> {
@@ -16328,6 +16373,7 @@ class DevicesCompanion extends UpdateCompanion<Device> {
   final Value<String> signedByUserKey;
   final Value<String?> label;
   final Value<bool> isThisDevice;
+  final Value<DateTime?> lastSyncAt;
   final Value<int> rowid;
   const DevicesCompanion({
     this.deviceId = const Value.absent(),
@@ -16336,6 +16382,7 @@ class DevicesCompanion extends UpdateCompanion<Device> {
     this.signedByUserKey = const Value.absent(),
     this.label = const Value.absent(),
     this.isThisDevice = const Value.absent(),
+    this.lastSyncAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   DevicesCompanion.insert({
@@ -16345,6 +16392,7 @@ class DevicesCompanion extends UpdateCompanion<Device> {
     required String signedByUserKey,
     this.label = const Value.absent(),
     this.isThisDevice = const Value.absent(),
+    this.lastSyncAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : deviceId = Value(deviceId),
        userId = Value(userId),
@@ -16357,6 +16405,7 @@ class DevicesCompanion extends UpdateCompanion<Device> {
     Expression<String>? signedByUserKey,
     Expression<String>? label,
     Expression<bool>? isThisDevice,
+    Expression<DateTime>? lastSyncAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -16366,6 +16415,7 @@ class DevicesCompanion extends UpdateCompanion<Device> {
       if (signedByUserKey != null) 'signed_by_user_key': signedByUserKey,
       if (label != null) 'label': label,
       if (isThisDevice != null) 'is_this_device': isThisDevice,
+      if (lastSyncAt != null) 'last_sync_at': lastSyncAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -16377,6 +16427,7 @@ class DevicesCompanion extends UpdateCompanion<Device> {
     Value<String>? signedByUserKey,
     Value<String?>? label,
     Value<bool>? isThisDevice,
+    Value<DateTime?>? lastSyncAt,
     Value<int>? rowid,
   }) {
     return DevicesCompanion(
@@ -16386,6 +16437,7 @@ class DevicesCompanion extends UpdateCompanion<Device> {
       signedByUserKey: signedByUserKey ?? this.signedByUserKey,
       label: label ?? this.label,
       isThisDevice: isThisDevice ?? this.isThisDevice,
+      lastSyncAt: lastSyncAt ?? this.lastSyncAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -16411,6 +16463,9 @@ class DevicesCompanion extends UpdateCompanion<Device> {
     if (isThisDevice.present) {
       map['is_this_device'] = Variable<bool>(isThisDevice.value);
     }
+    if (lastSyncAt.present) {
+      map['last_sync_at'] = Variable<DateTime>(lastSyncAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -16426,6 +16481,171 @@ class DevicesCompanion extends UpdateCompanion<Device> {
           ..write('signedByUserKey: $signedByUserKey, ')
           ..write('label: $label, ')
           ..write('isThisDevice: $isThisDevice, ')
+          ..write('lastSyncAt: $lastSyncAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PendingUnknownOpsTable extends PendingUnknownOps
+    with TableInfo<$PendingUnknownOpsTable, PendingUnknownOp> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PendingUnknownOpsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _opIdMeta = const VerificationMeta('opId');
+  @override
+  late final GeneratedColumn<String> opId = GeneratedColumn<String>(
+    'op_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [opId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'pending_unknown_ops';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PendingUnknownOp> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('op_id')) {
+      context.handle(
+        _opIdMeta,
+        opId.isAcceptableOrUnknown(data['op_id']!, _opIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_opIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {opId};
+  @override
+  PendingUnknownOp map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PendingUnknownOp(
+      opId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}op_id'],
+      )!,
+    );
+  }
+
+  @override
+  $PendingUnknownOpsTable createAlias(String alias) {
+    return $PendingUnknownOpsTable(attachedDatabase, alias);
+  }
+}
+
+class PendingUnknownOp extends DataClass
+    implements Insertable<PendingUnknownOp> {
+  final String opId;
+  const PendingUnknownOp({required this.opId});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['op_id'] = Variable<String>(opId);
+    return map;
+  }
+
+  PendingUnknownOpsCompanion toCompanion(bool nullToAbsent) {
+    return PendingUnknownOpsCompanion(opId: Value(opId));
+  }
+
+  factory PendingUnknownOp.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PendingUnknownOp(opId: serializer.fromJson<String>(json['opId']));
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{'opId': serializer.toJson<String>(opId)};
+  }
+
+  PendingUnknownOp copyWith({String? opId}) =>
+      PendingUnknownOp(opId: opId ?? this.opId);
+  PendingUnknownOp copyWithCompanion(PendingUnknownOpsCompanion data) {
+    return PendingUnknownOp(
+      opId: data.opId.present ? data.opId.value : this.opId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PendingUnknownOp(')
+          ..write('opId: $opId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => opId.hashCode;
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PendingUnknownOp && other.opId == this.opId);
+}
+
+class PendingUnknownOpsCompanion extends UpdateCompanion<PendingUnknownOp> {
+  final Value<String> opId;
+  final Value<int> rowid;
+  const PendingUnknownOpsCompanion({
+    this.opId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PendingUnknownOpsCompanion.insert({
+    required String opId,
+    this.rowid = const Value.absent(),
+  }) : opId = Value(opId);
+  static Insertable<PendingUnknownOp> custom({
+    Expression<String>? opId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (opId != null) 'op_id': opId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PendingUnknownOpsCompanion copyWith({
+    Value<String>? opId,
+    Value<int>? rowid,
+  }) {
+    return PendingUnknownOpsCompanion(
+      opId: opId ?? this.opId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (opId.present) {
+      map['op_id'] = Variable<String>(opId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PendingUnknownOpsCompanion(')
+          ..write('opId: $opId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -16472,6 +16692,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $CounterTicksTable counterTicks = $CounterTicksTable(this);
   late final $ChangeLogTable changeLog = $ChangeLogTable(this);
   late final $DevicesTable devices = $DevicesTable(this);
+  late final $PendingUnknownOpsTable pendingUnknownOps =
+      $PendingUnknownOpsTable(this);
   late final Index nodesParentSort = Index(
     'nodes_parent_sort',
     'CREATE INDEX nodes_parent_sort ON nodes (parent_id, sort_key)',
@@ -16484,9 +16706,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'placements_node',
     'CREATE INDEX placements_node ON placements (node_id)',
   );
-  late final Index linksUnique = Index(
-    'links_unique',
-    'CREATE UNIQUE INDEX links_unique ON links (from_node_id, target_kind, target_id) WHERE deleted = 0',
+  late final Index linksFrom = Index(
+    'links_from',
+    'CREATE INDEX links_from ON links (from_node_id, target_kind, target_id)',
   );
   late final Index linksTarget = Index(
     'links_target',
@@ -16592,10 +16814,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     counterTicks,
     changeLog,
     devices,
+    pendingUnknownOps,
     nodesParentSort,
     placementsParent,
     placementsNode,
-    linksUnique,
+    linksFrom,
     linksTarget,
     nodeValuesNode,
     nodeValuesValue,
@@ -24266,6 +24489,7 @@ typedef $$DevicesTableCreateCompanionBuilder = DevicesCompanion Function({
   required String signedByUserKey,
   Value<String?> label,
   Value<bool> isThisDevice,
+  Value<DateTime?> lastSyncAt,
   Value<int> rowid,
 });
 typedef $$DevicesTableUpdateCompanionBuilder = DevicesCompanion Function({
@@ -24275,6 +24499,7 @@ typedef $$DevicesTableUpdateCompanionBuilder = DevicesCompanion Function({
   Value<String> signedByUserKey,
   Value<String?> label,
   Value<bool> isThisDevice,
+  Value<DateTime?> lastSyncAt,
   Value<int> rowid,
 });
 
@@ -24314,6 +24539,11 @@ class $$DevicesTableFilterComposer
 
   ColumnFilters<bool> get isThisDevice => $composableBuilder(
     column: $table.isThisDevice,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastSyncAt => $composableBuilder(
+    column: $table.lastSyncAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -24356,6 +24586,11 @@ class $$DevicesTableOrderingComposer
     column: $table.isThisDevice,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<DateTime> get lastSyncAt => $composableBuilder(
+    column: $table.lastSyncAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$DevicesTableAnnotationComposer
@@ -24388,6 +24623,11 @@ class $$DevicesTableAnnotationComposer
 
   GeneratedColumn<bool> get isThisDevice => $composableBuilder(
     column: $table.isThisDevice,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get lastSyncAt => $composableBuilder(
+    column: $table.lastSyncAt,
     builder: (column) => column,
   );
 }
@@ -24426,6 +24666,7 @@ class $$DevicesTableTableManager
                 Value<String> signedByUserKey = const Value.absent(),
                 Value<String?> label = const Value.absent(),
                 Value<bool> isThisDevice = const Value.absent(),
+                Value<DateTime?> lastSyncAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DevicesCompanion(
                 deviceId: deviceId,
@@ -24434,6 +24675,7 @@ class $$DevicesTableTableManager
                 signedByUserKey: signedByUserKey,
                 label: label,
                 isThisDevice: isThisDevice,
+                lastSyncAt: lastSyncAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -24444,6 +24686,7 @@ class $$DevicesTableTableManager
                 required String signedByUserKey,
                 Value<String?> label = const Value.absent(),
                 Value<bool> isThisDevice = const Value.absent(),
+                Value<DateTime?> lastSyncAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DevicesCompanion.insert(
                 deviceId: deviceId,
@@ -24452,6 +24695,7 @@ class $$DevicesTableTableManager
                 signedByUserKey: signedByUserKey,
                 label: label,
                 isThisDevice: isThisDevice,
+                lastSyncAt: lastSyncAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -24483,6 +24727,141 @@ typedef $$DevicesTableProcessedTableManager =
       $$DevicesTableUpdateCompanionBuilder,
       (Device, BaseReferences<_$AppDatabase, $DevicesTable, Device>),
       Device,
+      PrefetchHooks Function()
+    >;
+typedef $$PendingUnknownOpsTableCreateCompanionBuilder =
+    PendingUnknownOpsCompanion Function({
+      required String opId,
+      Value<int> rowid,
+    });
+typedef $$PendingUnknownOpsTableUpdateCompanionBuilder =
+    PendingUnknownOpsCompanion Function({Value<String> opId, Value<int> rowid});
+
+class $$PendingUnknownOpsTableFilterComposer
+    extends Composer<_$AppDatabase, $PendingUnknownOpsTable> {
+  $$PendingUnknownOpsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get opId => $composableBuilder(
+    column: $table.opId,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$PendingUnknownOpsTableOrderingComposer
+    extends Composer<_$AppDatabase, $PendingUnknownOpsTable> {
+  $$PendingUnknownOpsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get opId => $composableBuilder(
+    column: $table.opId,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$PendingUnknownOpsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PendingUnknownOpsTable> {
+  $$PendingUnknownOpsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get opId =>
+      $composableBuilder(column: $table.opId, builder: (column) => column);
+}
+
+class $$PendingUnknownOpsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PendingUnknownOpsTable,
+          PendingUnknownOp,
+          $$PendingUnknownOpsTableFilterComposer,
+          $$PendingUnknownOpsTableOrderingComposer,
+          $$PendingUnknownOpsTableAnnotationComposer,
+          $$PendingUnknownOpsTableCreateCompanionBuilder,
+          $$PendingUnknownOpsTableUpdateCompanionBuilder,
+          (
+            PendingUnknownOp,
+            BaseReferences<
+              _$AppDatabase,
+              $PendingUnknownOpsTable,
+              PendingUnknownOp
+            >,
+          ),
+          PendingUnknownOp,
+          PrefetchHooks Function()
+        > {
+  $$PendingUnknownOpsTableTableManager(
+    _$AppDatabase db,
+    $PendingUnknownOpsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PendingUnknownOpsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PendingUnknownOpsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PendingUnknownOpsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback: ({
+            Value<String> opId = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) => PendingUnknownOpsCompanion(opId: opId, rowid: rowid),
+          createCompanionCallback: ({
+            required String opId,
+            Value<int> rowid = const Value.absent(),
+          }) => PendingUnknownOpsCompanion.insert(opId: opId, rowid: rowid),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$PendingUnknownOpsTable, PendingUnknownOp>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $PendingUnknownOpsTable,
+                    PendingUnknownOp
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$PendingUnknownOpsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PendingUnknownOpsTable,
+      PendingUnknownOp,
+      $$PendingUnknownOpsTableFilterComposer,
+      $$PendingUnknownOpsTableOrderingComposer,
+      $$PendingUnknownOpsTableAnnotationComposer,
+      $$PendingUnknownOpsTableCreateCompanionBuilder,
+      $$PendingUnknownOpsTableUpdateCompanionBuilder,
+      (
+        PendingUnknownOp,
+        BaseReferences<
+          _$AppDatabase,
+          $PendingUnknownOpsTable,
+          PendingUnknownOp
+        >,
+      ),
+      PendingUnknownOp,
       PrefetchHooks Function()
     >;
 
@@ -24536,4 +24915,6 @@ class $AppDatabaseManager {
       $$ChangeLogTableTableManager(_db, _db.changeLog);
   $$DevicesTableTableManager get devices =>
       $$DevicesTableTableManager(_db, _db.devices);
+  $$PendingUnknownOpsTableTableManager get pendingUnknownOps =>
+      $$PendingUnknownOpsTableTableManager(_db, _db.pendingUnknownOps);
 }

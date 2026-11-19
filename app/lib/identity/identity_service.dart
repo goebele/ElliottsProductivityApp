@@ -6,6 +6,7 @@ import 'package:drift/drift.dart';
 import '../data/database.dart';
 import '../domain/ids.dart';
 import '../sync/change_writer.dart';
+import '../sync/secure_channel.dart';
 import 'secret_store.dart';
 
 /// Who this install is: the user, this device, and the personal space.
@@ -55,6 +56,45 @@ class IdentityService {
     final existing = await _load();
     if (existing != null) return existing;
     return _create();
+  }
+
+  /// This device's keys, for connecting to another device (§7.2).
+  Future<DeviceCredentials> credentials() async {
+    final device = await (_db.select(
+      _db.devices,
+    )..where((d) => d.isThisDevice.equals(true))).getSingle();
+    final seed = await _secrets.read(deviceKeySecret);
+    if (seed == null) throw MissingIdentityKeysException();
+    final user = await (_db.select(
+      _db.users,
+    )..where((u) => u.id.equals(device.userId))).getSingle();
+    return DeviceCredentials(
+      deviceId: device.deviceId,
+      deviceKey: await _ed25519.newKeyPairFromSeed(base64Decode(seed)),
+      devicePublicKey: device.devicePublicKey,
+      userPublicKey: user.identityPublicKey,
+      deviceSignature: device.signedByUserKey,
+    );
+  }
+
+  /// Signs another device's public key with the user key (pairing: the new
+  /// device becomes one of yours).
+  Future<String> signDevice(String devicePublicKey) async {
+    final seed = await _secrets.read(userKeySecret);
+    if (seed == null) throw MissingIdentityKeysException();
+    final userKey = await _ed25519.newKeyPairFromSeed(base64Decode(seed));
+    final sig = await _ed25519.sign(
+      base64Decode(devicePublicKey),
+      keyPair: userKey,
+    );
+    return base64Encode(sig.bytes);
+  }
+
+  /// The user private key (seed, base64), handed to a joining device.
+  Future<String> userPrivateKey() async {
+    final seed = await _secrets.read(userKeySecret);
+    if (seed == null) throw MissingIdentityKeysException();
+    return seed;
   }
 
   Future<LocalIdentity?> _load() async {

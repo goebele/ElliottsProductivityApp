@@ -49,9 +49,19 @@ class ChangeWriter {
   final String deviceId;
   final HlcClock _clock;
 
+  /// Merges a stamp received from a peer, so this device's next changes
+  /// sort after everything it has seen (§7.1).
+  void observe(String hlc) {
+    try {
+      _clock.receive(Hlc.parse(hlc));
+    } on FormatException {
+      // Not a stamp: nothing to learn from it.
+    }
+  }
+
   /// Columns that describe the row itself rather than a field value; peers
   /// derive them from each op's own HLC and author.
-  static const _notOps = {'id', 'hlc', 'updated_by'};
+  static const notOps = {'id', 'hlc', 'updated_by'};
 
   /// Inserts a new row. [row] must set `id` and `spaceId`.
   Future<void> insert<T extends Table, D>(
@@ -81,6 +91,28 @@ class ChangeWriter {
         updates: {table},
       );
       await _recordOps(table, id, spaceId, values, hlc, userId);
+    });
+  }
+
+  /// Inserts [row], or, if a row with its id is already there (a paired
+  /// row with a derived id, §7.6), writes its fields onto that row instead:
+  /// re-adding a removed pair brings the same row back.
+  Future<void> upsert<T extends Table, D>(
+    TableInfo<T, D> table,
+    Insertable<D> row, {
+    DateTime? now,
+  }) {
+    return _db.transaction(() async {
+      final id = _sqlValues(row)['id'];
+      if (id is! String) throw ArgumentError('Upserted rows need an id.');
+      final exists = await _db
+          .customSelect(
+            'SELECT 1 FROM ${table.actualTableName} WHERE id = ?',
+            variables: [Variable.withString(id)],
+          )
+          .getSingleOrNull();
+      if (exists == null) return insert(table, row, now: now);
+      return update(table, id, row);
     });
   }
 
@@ -135,6 +167,39 @@ class ChangeWriter {
     );
   }
 
+  /// Records ops for a row read as raw SQL [values] (column → SQL value),
+  /// stamped with its own `hlc` and `updated_by` (rebuilding the log, v16).
+  static Future<void> recordRaw(
+    AppDatabase db, {
+    required String table,
+    required Map<String, Object?> values,
+    required String deviceId,
+  }) async {
+    final id = values['id'];
+    final spaceId = values['space_id'];
+    final hlc = values['hlc'];
+    final author = values['updated_by'];
+    if (id is! String || spaceId is! String || hlc is! String) return;
+    await db.batch((b) {
+      b.insertAll(db.changeLog, [
+        for (final MapEntry(:key, :value) in values.entries)
+          if (!notOps.contains(key))
+            ChangeLogCompanion.insert(
+              opId: newId(),
+              spaceId: spaceId,
+              rowTable: table,
+              rowId: id,
+              columnName: key,
+              value: jsonEncode(value),
+              hlc: hlc,
+              originDeviceId: deviceId,
+              authorUserId: author is String ? author : '',
+              schemaVersion: db.schemaVersion,
+            ),
+      ]);
+    });
+  }
+
   Future<void> _recordOps(
     TableInfo<Table, dynamic> table,
     String rowId,
@@ -146,7 +211,7 @@ class ChangeWriter {
     await _db.batch((b) {
       b.insertAll(_db.changeLog, [
         for (final MapEntry(:key, :value) in values.entries)
-          if (!_notOps.contains(key))
+          if (!notOps.contains(key))
             ChangeLogCompanion.insert(
               opId: newId(),
               spaceId: spaceId,

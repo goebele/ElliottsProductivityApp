@@ -86,6 +86,16 @@ class BlobStore {
         await e.delete();
         continue;
       }
+      // Half-arrived files from sync (§7.6): kept a week to resume, then
+      // freed.
+      if (p.basename(e.parent.path) == 'incoming') {
+        final stale =
+            DateTime.now().difference(await e.lastModified()) >
+            const Duration(days: 7);
+        final unwanted = !keep.contains(name.replaceAll('.part', ''));
+        if (stale || unwanted) await e.delete();
+        continue;
+      }
       if (name.length == 64 && !keep.contains(name)) {
         await e.delete();
         removed++;

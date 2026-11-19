@@ -18,6 +18,7 @@ import 'sort_keys.dart';
 import 'tag_repository.dart';
 import 'time_tracking.dart';
 import 'today.dart';
+import 'user_settings.dart';
 import 'value_repository.dart';
 
 export 'exclusive_picker.dart'
@@ -255,6 +256,13 @@ class NodeRepository {
     _db,
     _writer,
     calendar,
+    spaceId: personalSpaceId,
+  );
+
+  /// Personal settings that follow you between devices (§5.0).
+  late final settings = SettingsRepository(
+    _db,
+    _writer,
     spaceId: personalSpaceId,
   );
 
@@ -616,10 +624,10 @@ class NodeRepository {
         if (missing.isEmpty) return;
         final from = await _require(nodeId);
         for (final target in missing) {
-          await _writer.insert(
+          await _writer.upsert(
             _db.links,
             LinksCompanion(
-              id: Value(newId()),
+              id: Value(pairId('links', [nodeId, LinkKind.node.name, target])),
               spaceId: Value(from.spaceId),
               fromNodeId: Value(nodeId),
               targetKind: const Value(LinkKind.node),
@@ -655,6 +663,17 @@ class NodeRepository {
   }
 
   /// Live items and notes, most recently changed first (for pickers).
+  /// What to open for [id]: a checkbox line isn't a page of its own
+  /// (§6.7.1), so its task; anything else, itself.
+  Future<String> taskOf(String id) async {
+    final node = await get(id);
+    if (node == null || !node.type.isItem || node.parentId == null) return id;
+    final parent = await get(node.parentId!);
+    return parent != null && CompletionService.hasRequirements(parent)
+        ? parent.id
+        : id;
+  }
+
   Future<List<Node>> recent({int limit = 20}) =>
       (_db.select(_db.nodes)
             ..where(
@@ -1033,8 +1052,8 @@ class NodeRepository {
   }) async {
     final node = await _require(nodeId);
     await _checkPlacement(node, parentId);
-    final id = newId();
-    await _writer.insert(
+    final id = pairId('placements', [nodeId, parentId]);
+    await _writer.upsert(
       _db.placements,
       PlacementsCompanion(
         id: Value(id),
@@ -1286,10 +1305,10 @@ class NodeRepository {
       throw ArgumentError.value(noteId, 'noteId', 'is not a note');
     }
     if (await _noteLink(childId, noteId) != null) return;
-    await _writer.insert(
+    await _writer.upsert(
       _db.links,
       LinksCompanion(
-        id: Value(newId()),
+        id: Value(pairId('links', [childId, LinkKind.note.name, noteId])),
         spaceId: Value(child.spaceId),
         fromNodeId: Value(childId),
         targetKind: const Value(LinkKind.note),
@@ -1401,10 +1420,10 @@ class NodeRepository {
     final key = dateKey(occurrenceDate);
     if (await _completion(nodeId, key) != null) return;
     final at = (now ?? DateTime.now()).toUtc();
-    await _writer.insert(
+    await _writer.upsert(
       _db.occurrenceCompletions,
       OccurrenceCompletionsCompanion(
-        id: Value(newId()),
+        id: Value(pairId('occurrence_completions', [nodeId, key])),
         spaceId: Value(node.spaceId),
         nodeId: Value(nodeId),
         occurrenceDate: Value(key),

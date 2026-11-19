@@ -352,17 +352,24 @@ class _DetailState extends ConsumerState<_Detail> {
         children: [
           if (isNote)
             Expanded(child: title)
-          else ...[
-            Flexible(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(minWidth: 120),
-                child: IntrinsicWidth(child: title),
+          else
+            // The title is the only flexible thing in here, so it can use
+            // all the room up to the chip (a Spacer beside it would take
+            // half).
+            Expanded(
+              child: Row(
+                children: [
+                  Flexible(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minWidth: 120),
+                      child: IntrinsicWidth(child: title),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  StatusChip(node: node),
+                ],
               ),
             ),
-            const SizedBox(width: 8),
-            StatusChip(node: node),
-            const Spacer(),
-          ],
           NodeMenu(node: node, onLeave: widget.onLeave),
         ],
       ),

@@ -114,10 +114,10 @@ class ValueRepository {
   /// Ties [valueId] to [nodeId]. Already tied: no change.
   Future<void> tie(String nodeId, String valueId) => _db.transaction(() async {
     if ((await _ties(nodeId, valueId)).isNotEmpty) return;
-    await _writer.insert(
+    await _writer.upsert(
       _db.nodeValues,
       NodeValuesCompanion(
-        id: Value(newId()),
+        id: Value(pairId('node_values', [nodeId, valueId])),
         spaceId: Value(spaceId),
         nodeId: Value(nodeId),
         valueId: Value(valueId),

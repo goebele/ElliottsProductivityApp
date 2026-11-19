@@ -7,6 +7,7 @@ import 'package:elliotts_productivity_app/domain/repeat_rule.dart';
 import 'package:elliotts_productivity_app/platform/reminder_notifier.dart';
 import 'package:elliotts_productivity_app/platform/timer_platform.dart';
 import 'package:elliotts_productivity_app/providers.dart';
+import 'package:elliotts_productivity_app/sync/sync_service.dart';
 import 'package:elliotts_productivity_app/ui/done_button.dart' show StatusChip;
 import 'package:elliotts_productivity_app/ui/app.dart';
 import 'package:elliotts_productivity_app/ui/calendar_page.dart';
@@ -47,6 +48,7 @@ void main() {
     bool treeTab = true,
   }) async {
     ReminderNotifier.enabled = false;
+    SyncService.enabled = false;
     TimerPlatform.enabled = false;
     env = (await tester.runAsync(() async {
       final env = await TestEnv.create();
@@ -196,6 +198,85 @@ void main() {
     await settle(tester);
     expect(titleField('Garden'), findsOneWidget);
 
+    await stopApp(tester);
+  });
+
+  testWidgets('phone: a long title uses the room up to the status chip', (
+    tester,
+  ) async {
+    await startApp(
+      tester,
+      size: phone,
+      seed: (env) async {
+        await env.nodes.create(
+          title: 'Call the plumber about the kitchen sink',
+        );
+      },
+    );
+    await tester.tap(find.text('Call the plumber about the kitchen sink'));
+    await settle(tester);
+    final title = tester.getRect(
+      titleField('Call the plumber about the kitchen sink'),
+    );
+    final chip = tester.getRect(find.byType(StatusChip));
+    // Up against the chip (only the 8px gap between), not half the row.
+    expect(chip.left - title.right, lessThanOrEqualTo(8.5));
+    expect(title.width, greaterThan(150));
+    await stopApp(tester);
+  });
+
+  testWidgets('phone: a running timer shows on the task page too', (
+    tester,
+  ) async {
+    late String id;
+    await startApp(
+      tester,
+      size: phone,
+      seed: (env) async {
+        id = await env.nodes.create(title: 'Write report');
+        await env.nodes.create(title: 'Other');
+      },
+    );
+    await tester.runAsync(() => env.nodes.time.start(id));
+    await settle(tester);
+    await tester.tap(find.text('Other'));
+    await settle(tester);
+    expect(titleField('Other'), findsOneWidget);
+    final bars = find.byWidgetPredicate(
+      (w) => w.runtimeType.toString() == 'TimerBar',
+    );
+    expect(bars, findsOneWidget, reason: 'the page covers the home screen');
+    expect(
+      find.descendant(
+        of: bars,
+        matching: find.textContaining('Write report'),
+      ),
+      findsOneWidget,
+    );
+    await stopApp(tester);
+  });
+
+  testWidgets('note links to a checkbox line open its task', (tester) async {
+    late String shop;
+    await startApp(
+      tester,
+      size: wide,
+      seed: (env) async {
+        shop = await env.nodes.create(title: 'Shopping');
+        final milk = await env.nodes.completion.addCheckbox(shop, 'Milk');
+        await env.nodes.create(
+          title: 'Meal plan',
+          type: NodeType.note,
+          bodyMd: 'Buy [milk](epa://node/$milk)',
+        );
+      },
+    );
+    await tester.tap(inTree('Meal plan'));
+    await settle(tester);
+    await tester.tapOnText(find.textRange.ofSubstring('milk'));
+    await settle(tester);
+    expect(titleField('Shopping'), findsOneWidget);
+    expect(await tester.runAsync(() => env.nodes.taskOf(shop)), shop);
     await stopApp(tester);
   });
 
@@ -2750,6 +2831,37 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
     }
     expect(find.text('Removed an empty item'), findsNothing);
+    await stopApp(tester);
+  });
+
+  testWidgets('settings: the gear opens Settings; Dark switches the theme', (
+    tester,
+  ) async {
+    await startApp(tester, size: phone, treeTab: false);
+    Brightness brightness() =>
+        Theme.of(tester.element(find.byType(Scaffold).first)).brightness;
+    await tester.tap(find.byTooltip('Settings'));
+    await settle(tester);
+    expect(find.text('Appearance'), findsOneWidget);
+    await tester.tap(find.text('Dark'));
+    await settle(tester);
+    expect(brightness(), Brightness.dark);
+    await tester.tap(find.text('Light'));
+    await settle(tester);
+    expect(brightness(), Brightness.light);
+    // Back to the default for the other tests.
+    await tester.tap(find.text('System'));
+    await settle(tester);
+    await stopApp(tester);
+  });
+
+  testWidgets('devices: the sidebar entry opens the Devices page', (
+    tester,
+  ) async {
+    await startApp(tester, size: wide);
+    await tester.tap(find.text('Devices'));
+    await settle(tester);
+    expect(find.text('Sync is off on this device.'), findsOneWidget);
     await stopApp(tester);
   });
 

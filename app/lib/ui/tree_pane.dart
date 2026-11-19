@@ -133,6 +133,12 @@ class TreePane extends ConsumerWidget {
           title: Text(l10n.tagsView),
           onTap: () => onOpenPage(SidePage.tagsPage),
         ),
+        ListTile(
+          dense: true,
+          leading: const Icon(Icons.devices_outlined, size: 20),
+          title: Text(l10n.devicesView),
+          onTap: () => onOpenPage(SidePage.devicesPage),
+        ),
         RemovedEntries(onOpen: onOpenRemoved),
       ],
     );

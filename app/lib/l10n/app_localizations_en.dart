@@ -1792,4 +1792,237 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get todayNewTask => 'New task for today';
+
+  @override
+  String get devicesView => 'Devices';
+
+  @override
+  String get devicesThisDevice => 'This device';
+
+  @override
+  String get devicesYours => 'Your devices';
+
+  @override
+  String get devicesNoneYet => 'No other devices yet. Pair one below.';
+
+  @override
+  String get devicesPair => 'Pair a device';
+
+  @override
+  String get devicesPairHelp =>
+      'Pairing makes another device one of yours. The joining device keeps its items: both end up with everything.';
+
+  @override
+  String get devicesLetJoin => 'Let a device join this one';
+
+  @override
+  String get devicesNearby => 'Found nearby';
+
+  @override
+  String get devicesNearbyNone =>
+      'No other devices found. Open Devices on the other device, on the same Wi-Fi, or join by address.';
+
+  @override
+  String get devicesJoin => 'Join';
+
+  @override
+  String get devicesJoinByAddress => 'Join by address…';
+
+  @override
+  String get devicesAddressPrompt =>
+      'The other device\'s address (shown on its Devices page)';
+
+  @override
+  String get devicesAddressInvalid =>
+      'That isn\'t an address like 192.168.1.20:47913.';
+
+  @override
+  String get devicesRename => 'Rename this device';
+
+  @override
+  String get devicesSyncNow => 'Sync now';
+
+  @override
+  String devicesReachableAt(String address) {
+    return 'Reachable at $address';
+  }
+
+  @override
+  String devicesLastSync(String when) {
+    return 'Synced $when';
+  }
+
+  @override
+  String get devicesNeverSynced => 'Not synced yet';
+
+  @override
+  String get devicesNearbyNow => 'Nearby';
+
+  @override
+  String devicesUnnamed(String code) {
+    return 'Device $code';
+  }
+
+  @override
+  String devicesPlatformCode(String platform, String code) {
+    return '$platform · $code';
+  }
+
+  @override
+  String get devicesPin => 'Pairing PIN';
+
+  @override
+  String get devicesPinHelp => 'Optional. A joining device must enter it too.';
+
+  @override
+  String get devicesPinSet => 'Set PIN';
+
+  @override
+  String get devicesPinChange => 'Change';
+
+  @override
+  String get devicesPinRemove => 'Remove';
+
+  @override
+  String get devicesPinOn => 'A PIN is set';
+
+  @override
+  String get devicesPinPrompt => 'Pairing PIN (4 or more digits)';
+
+  @override
+  String get devicesPinAsk => 'Enter the other device\'s pairing PIN';
+
+  @override
+  String get devicesSyncOff => 'Sync is off on this device.';
+
+  @override
+  String get pairWaitingTitle => 'Waiting for a device to join';
+
+  @override
+  String pairWaitingBody(String name) {
+    return 'On the new device, open Devices and tap Join next to $name, on the same Wi-Fi.';
+  }
+
+  @override
+  String get pairCompareTitle => 'Check the code';
+
+  @override
+  String get pairCompareBody => 'Does the other device show this code?';
+
+  @override
+  String get pairCodesMatch => 'Yes, it matches';
+
+  @override
+  String get pairCodesDiffer => 'No';
+
+  @override
+  String get pairWorking => 'Pairing and syncing…';
+
+  @override
+  String get pairJoined => 'Paired. Everything is syncing.';
+
+  @override
+  String pairFailed(String reason) {
+    return 'Pairing stopped: $reason';
+  }
+
+  @override
+  String get pairJoinConfirmTitle => 'Join this device?';
+
+  @override
+  String get pairJoinConfirmBody =>
+      'This device becomes one of the other\'s devices. Its items are kept and added to the other\'s, so both have everything.';
+
+  @override
+  String get syncStatusSyncing => 'Syncing…';
+
+  @override
+  String syncStatusSynced(String when) {
+    return 'Synced $when';
+  }
+
+  @override
+  String get syncStatusNever => 'Not synced yet: pair a device';
+
+  @override
+  String syncStatusProblem(String message) {
+    return 'Sync problem: $message';
+  }
+
+  @override
+  String get syncJustNow => 'just now';
+
+  @override
+  String syncMinutesAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count minutes ago',
+      one: '1 minute ago',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String syncHoursAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count hours ago',
+      one: '1 hour ago',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get settingsView => 'Settings';
+
+  @override
+  String get settingsAppearance => 'Appearance';
+
+  @override
+  String get settingsTheme => 'Theme';
+
+  @override
+  String get settingsThemeSystem => 'System';
+
+  @override
+  String get settingsThemeLight => 'Light';
+
+  @override
+  String get settingsThemeDark => 'Dark';
+
+  @override
+  String get settingsThisDeviceOnly =>
+      'Just for this device: your other devices keep their own.';
+
+  @override
+  String get settingsSync => 'Sync';
+
+  @override
+  String get settingsDevicesHelp =>
+      'Pair devices and see when they last synced';
+
+  @override
+  String get settingsTroubleshooting => 'Troubleshooting';
+
+  @override
+  String get settingsLog => 'App log';
+
+  @override
+  String get settingsLogHelpDesktop =>
+      'Startup, errors and sync problems on this device. Opens the file.';
+
+  @override
+  String get settingsLogHelpPhone =>
+      'Startup, errors and sync problems on this device. Copies the latest lines.';
+
+  @override
+  String get settingsLogCopied => 'Log copied';
+
+  @override
+  String get mdStrike => 'Strikethrough';
 }

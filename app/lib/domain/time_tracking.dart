@@ -137,6 +137,45 @@ class TimeRepository {
         ..where((e) => e.endedAt.isNull() & e.deleted.equals(false))
         ..orderBy([(e) => OrderingTerm.desc(e.startedAt)]);
 
+  /// The paused timer, as a synced setting (§7.6, L10): pausing on one
+  /// device shows as paused on the others, and either can resume it.
+  static const pausedKey = 'timer.paused';
+
+  Stream<String?> watchPaused() => _nodes.settings
+      .watch(pausedKey)
+      .map((json) => json == null ? null : _pausedNode(json));
+
+  Future<String?> pausedNodeId() async {
+    final json = await _nodes.settings.get(pausedKey);
+    return json == null ? null : _pausedNode(json);
+  }
+
+  static String? _pausedNode(String json) {
+    try {
+      return (jsonDecode(json) as Map<String, dynamic>)['nodeId'] as String?;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Stops the running timer and remembers it as paused.
+  Future<TimeEntry?> pause({DateTime? now}) async {
+    final e = await stop(now: now);
+    if (e != null) {
+      await _nodes.settings.set(pausedKey, jsonEncode({'nodeId': e.nodeId}));
+    }
+    return e;
+  }
+
+  /// Starts the paused timer again, if there is one.
+  Future<void> resume() async {
+    final id = await pausedNodeId();
+    if (id != null) await start(id);
+  }
+
+  /// Forgets the paused timer (stop, or a break).
+  Future<void> clearPaused() => _nodes.settings.set(pausedKey, null);
+
   Future<TimeEntry?> running() async =>
       (await _runningQuery().get()).firstOrNull;
 
@@ -152,6 +191,8 @@ class TimeRepository {
   }) async {
     final at = (now ?? DateTime.now()).toUtc();
     await stop(now: at);
+    // A new timer replaces any paused one.
+    if (await pausedNodeId() != null) await clearPaused();
     final id = newId();
     await _writer.insert(
       _db.timeEntries,

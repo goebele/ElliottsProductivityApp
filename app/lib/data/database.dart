@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../domain/ids.dart';
 import '../sync/change_writer.dart';
 import 'tables.dart';
 
@@ -33,6 +34,7 @@ part 'database.g.dart';
     CounterTicks,
     ChangeLog,
     Devices,
+    PendingUnknownOps,
   ],
   include: {'search.drift'},
 )
@@ -54,7 +56,7 @@ class AppDatabase extends _$AppDatabase {
   /// `dart run drift_dev schema dump lib/data/database.dart drift_schemas/`
   /// and `dart run drift_dev schema generate drift_schemas/ test/generated_migrations/`.
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -104,7 +106,6 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 6) {
         await m.createTable(links);
-        await m.createIndex(linksUnique);
         await m.createIndex(linksTarget);
       }
       // Before v2 the nodes table is created whole, with this column.
@@ -175,6 +176,14 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(nodes, nodes.counterTarget);
         await m.addColumn(nodes, nodes.timerMinutes);
       }
+      if (from < 16) {
+        // v0.23 (M7): paired rows get derived ids instead of a unique
+        // index; the change log is rebuilt from the rows as they are.
+        await customStatement('DROP INDEX IF EXISTS links_unique');
+        await m.createIndex(linksFrom);
+        await m.createTable(pendingUnknownOps);
+        await m.addColumn(devices, devices.lastSyncAt);
+      }
       if (from == 14) {
         // v0.21: requirements instead of one condition. A counter or timer
         // keeps its target; "mark done" is gone (one checkbox does it).
@@ -189,8 +198,93 @@ class AppDatabase extends _$AppDatabase {
           "WHERE completion IN ('counter', 'timer', 'markDone')",
         );
       }
+      if (from >= 2 && from < 16) {
+        await _rekeyPairsV16();
+        await _rebuildChangeLogV16();
+      }
     },
   );
+
+  /// Rows that stand for a pair, and the columns that make up the pair
+  /// (§7.6, L1). Their ids are `pairId(table, [those columns])`.
+  static const pairColumns = {
+    'node_tags': ['node_id', 'tag_id'],
+    'node_values': ['node_id', 'value_id'],
+    'links': ['from_node_id', 'target_kind', 'target_id'],
+    'placements': ['node_id', 'parent_node_id'],
+    'reminders': ['node_id', 'minutes_before'],
+    'today_entries': ['date', 'node_id'],
+    'node_user_prefs': ['node_id'],
+    'user_settings': ['key'],
+    'occurrence_completions': ['node_id', 'occurrence_date'],
+  };
+
+  /// v16: gives every paired row its derived id. Where one pair has several
+  /// rows (made before ids were derived), the live one with the newest
+  /// change is kept and the others are removed: nothing has synced yet.
+  Future<void> _rekeyPairsV16() async {
+    for (final MapEntry(key: table, value: cols) in pairColumns.entries) {
+      final rows = await customSelect(
+        'SELECT id, deleted, hlc, ${cols.join(', ')} FROM $table',
+      ).get();
+      final groups = <String, List<QueryRow>>{};
+      for (final r in rows) {
+        final id = pairId(table, [for (final c in cols) r.data[c]]);
+        (groups[id] ??= []).add(r);
+      }
+      for (final MapEntry(key: id, value: group) in groups.entries) {
+        group.sort((a, b) {
+          final live = a.read<bool>('deleted') == b.read<bool>('deleted')
+              ? 0
+              : (a.read<bool>('deleted') ? 1 : -1);
+          if (live != 0) return live;
+          return b.read<String>('hlc').compareTo(a.read<String>('hlc'));
+        });
+        final keep = group.first.read<String>('id');
+        for (final r in group.skip(1)) {
+          await customStatement('DELETE FROM $table WHERE id = ?', [
+            r.read<String>('id'),
+          ]);
+        }
+        if (keep != id) {
+          await customStatement('UPDATE $table SET id = ? WHERE id = ?', [
+            id,
+            keep,
+          ]);
+        }
+      }
+    }
+  }
+
+  /// v16: nothing has synced yet, and some earlier migrations changed rows
+  /// without recording ops; so the change log is rebuilt from the rows: one
+  /// op per field, stamped with the row's own HLC and author.
+  Future<void> _rebuildChangeLogV16() async {
+    final device = await (select(
+      devices,
+    )..where((d) => d.isThisDevice.equals(true))).getSingleOrNull();
+    if (device == null) return;
+    await customStatement('DELETE FROM change_log');
+    for (final t in syncedTables) {
+      for (final r in await customSelect(
+        'SELECT * FROM ${t.actualTableName}',
+      ).get()) {
+        await ChangeWriter.recordRaw(
+          this,
+          table: t.actualTableName,
+          values: r.data,
+          deviceId: device.deviceId,
+        );
+      }
+    }
+  }
+
+  /// Every table that syncs: the ones with the sync columns (§5; not the
+  /// change log, which has an `hlc` too).
+  Iterable<TableInfo<Table, dynamic>> get syncedTables => allTables.where((t) {
+    final cols = {for (final c in t.$columns) c.name};
+    return cols.containsAll(const ['hlc', 'deleted', 'space_id', 'id']);
+  });
 
   Future<ChangeWriter?> _thisDeviceWriter() async {
     final device = await (select(

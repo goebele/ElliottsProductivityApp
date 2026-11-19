@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:drift_dev/api/migrations_native.dart';
 import 'package:elliotts_productivity_app/data/database.dart';
+import 'package:elliotts_productivity_app/domain/ids.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../generated_migrations/schema.dart';
@@ -13,7 +14,7 @@ void main() {
 
   setUpAll(() => verifier = SchemaVerifier(GeneratedHelper()));
 
-  for (final from in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]) {
+  for (final from in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]) {
     test(
       'upgrading v$from to the current version gives exactly its schema',
       () async {
@@ -72,18 +73,15 @@ void main() {
       'someday': ('idea', null),
     });
 
-    // The conversions are ordinary edits, so they will sync.
+    // v16 rebuilt the change log from the rows: every row's current
+    // fields, so the conversions sync like everything else.
     final ops = await (db.select(
       db.changeLog,
     )..where((o) => o.columnName.equals('type'))).get();
-    expect(ops.map((o) => o.rowId).toSet(), {
-      'shopping',
-      'packing',
-      'gym',
-      'dentist',
-      'capture',
-    });
-    expect(ops.map((o) => jsonDecode(o.value)).toSet(), {'task'});
+    expect(
+      {for (final o in ops) o.rowId: jsonDecode(o.value)},
+      {for (final MapEntry(:key, :value) in byId.entries) key: value.$1},
+    );
     await db.close();
   });
 
@@ -130,6 +128,55 @@ void main() {
     final user = await db.select(db.users).getSingle();
     expect(user.hlc, hlc);
     expect(user.createdAt, DateTime.parse(created));
+    await db.close();
+  });
+
+  test('v15 → v16: paired rows get derived ids, duplicates merge', () async {
+    final schema = await verifier.schemaAt(15);
+    const now = '2026-11-06T23:05:52.332Z';
+    String row(String id, String deleted, String hlc) =>
+        "'$id', 'space-1', '$now', 'user-1', 'user-1', '$hlc', $deleted";
+    schema.rawDatabase.execute("""
+      INSERT INTO devices (device_id, user_id, device_public_key,
+        signed_by_user_key, label, is_this_device)
+      VALUES ('device-1', 'user-1', 'ZGV2aWNl', 'c2ln', NULL, 1);
+      INSERT INTO node_tags (id, space_id, created_at, created_by, updated_by,
+        hlc, deleted, node_id, tag_id, origin)
+      VALUES (${row('old-dead', '1', '001794006352333-0000-device-1')},
+          'n1', 't1', 'attached'),
+        (${row('old-live', '0', '001794006352300-0000-device-1')},
+          'n1', 't1', 'attached'),
+        (${row('other', '0', '001794006352333-0000-device-1')},
+          'n2', 't1', 'inline');
+      INSERT INTO links (id, space_id, created_at, created_by, updated_by,
+        hlc, deleted, from_node_id, target_kind, target_id, origin)
+      VALUES (${row('link-1', '0', '001794006352333-0000-device-1')},
+        'n1', 'node', 'n2', 'inline');
+    """);
+
+    final db = AppDatabase(schema.newConnection());
+    final tags = await db.select(db.nodeTags).get();
+    expect(tags.map((t) => t.id).toSet(), {
+      pairId('node_tags', ['n1', 't1']),
+      pairId('node_tags', ['n2', 't1']),
+    });
+    // The live row was kept for n1.
+    expect(tags.singleWhere((t) => t.nodeId == 'n1').deleted, isFalse);
+    final link = await db.select(db.links).getSingle();
+    expect(link.id, pairId('links', ['n1', 'node', 'n2']));
+
+    // The unique index is gone; the log holds the new ids only.
+    final indexes = await db
+        .customSelect("SELECT name FROM sqlite_master WHERE type = 'index'")
+        .get();
+    final names = indexes.map((r) => r.read<String>('name')).toSet();
+    expect(names, contains('links_from'));
+    expect(names, isNot(contains('links_unique')));
+    final opRows = (await db.select(db.changeLog).get())
+        .where((o) => o.rowTable == 'node_tags')
+        .map((o) => o.rowId)
+        .toSet();
+    expect(opRows, tags.map((t) => t.id).toSet());
     await db.close();
   });
 }

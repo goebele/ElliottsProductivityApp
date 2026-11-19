@@ -179,7 +179,15 @@ class TreeZoom extends Notifier<String?> {
 }
 
 /// Pages opened from the entries under the tree.
-enum SidePage { todayPage, calendarPage, reviewPage, valuesPage, tagsPage }
+enum SidePage {
+  todayPage,
+  calendarPage,
+  reviewPage,
+  valuesPage,
+  tagsPage,
+  devicesPage,
+  settingsPage,
+}
 
 /// The page filling the detail pane instead of an item (wide layout).
 final sidePageProvider = NotifierProvider<SidePageState, SidePage?>(

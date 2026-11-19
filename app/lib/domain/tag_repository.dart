@@ -344,10 +344,10 @@ class TagRepository {
           .get();
 
   Future<void> _insert(String nodeId, String tagId, LinkOrigin origin) =>
-      _writer.insert(
+      _writer.upsert(
         _db.nodeTags,
         NodeTagsCompanion(
-          id: Value(newId()),
+          id: Value(pairId('node_tags', [nodeId, tagId])),
           spaceId: Value(spaceId),
           nodeId: Value(nodeId),
           tagId: Value(tagId),

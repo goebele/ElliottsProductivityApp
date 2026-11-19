@@ -180,10 +180,10 @@ class TodayService {
         UserSettingsCompanion(value: Value(json)),
       );
     } else {
-      await _writer.insert(
+      await _writer.upsert(
         _db.userSettings,
         UserSettingsCompanion(
-          id: Value(newId()),
+          id: Value(pairId('user_settings', [_settingsKey])),
           spaceId: Value(spaceId),
           key: const Value(_settingsKey),
           value: Value(json),
@@ -286,10 +286,10 @@ class TodayService {
     String nodeId,
     String sortKey, {
     bool hidden = false,
-  }) => _writer.insert(
+  }) => _writer.upsert(
     _db.todayEntries,
     TodayEntriesCompanion(
-      id: Value(newId()),
+      id: Value(pairId('today_entries', [date, nodeId])),
       spaceId: Value(spaceId),
       date: Value(date),
       nodeId: Value(nodeId),

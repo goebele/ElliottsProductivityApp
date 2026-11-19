@@ -7,6 +7,8 @@ import '../platform/reminder_notifier.dart';
 import '../providers.dart';
 import 'attachment_page.dart';
 import 'calendar_page.dart';
+import 'devices_page.dart';
+import 'settings.dart';
 import 'review_page.dart';
 import 'timer.dart';
 import 'today_page.dart';
@@ -38,6 +40,31 @@ class HomeScreen extends ConsumerWidget {
     } else {
       openNodePage(context, id);
     }
+  }
+
+  /// Opens Devices or Settings: in the detail pane, or as a page on
+  /// phones.
+  static void _openPage(BuildContext context, WidgetRef ref, SidePage page) {
+    if (MediaQuery.sizeOf(context).width >= wideBreakpoint) {
+      ref.read(selectedNodeProvider.notifier).select(null);
+      ref.read(removedViewProvider.notifier).show(null);
+      ref.read(openAttachmentProvider.notifier).open(null);
+      ref.read(sidePageProvider.notifier).show(page);
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => Scaffold(
+          appBar: AppBar(),
+          body: page == SidePage.settingsPage
+              ? SettingsPage(
+                  onOpenDevices: () =>
+                      _openPage(context, ref, SidePage.devicesPage),
+                )
+              : const DevicesPage(),
+        ),
+      ),
+    );
   }
 
   @override
@@ -95,7 +122,18 @@ class HomeScreen extends ConsumerWidget {
             ref.read(searchFocusProvider).requestFocus(),
       },
       child: Scaffold(
-        appBar: AppBar(title: Text(l10n.appTitle)),
+        appBar: AppBar(
+          title: Text(l10n.appTitle),
+          actions: [
+            SyncStatusButton(
+              onOpen: () => _openPage(context, ref, SidePage.devicesPage),
+            ),
+            SettingsButton(
+              onOpen: () => _openPage(context, ref, SidePage.settingsPage),
+            ),
+            const SizedBox(width: 4),
+          ],
+        ),
         body: switch (ready) {
           AsyncData() => Column(
             children: [
@@ -232,6 +270,14 @@ class _WideLayout extends ConsumerWidget {
                         ? ValuesPage(onOpen: open)
                         : sidePage == SidePage.tagsPage
                         ? const TagsPage()
+                        : sidePage == SidePage.devicesPage
+                        ? const DevicesPage()
+                        : sidePage == SidePage.settingsPage
+                        ? SettingsPage(
+                            onOpenDevices: () => ref
+                                .read(sidePageProvider.notifier)
+                                .show(SidePage.devicesPage),
+                          )
                         : removedView != null
                         ? RemovedList(which: removedView, onOpen: open)
                         : selected == null
@@ -355,6 +401,17 @@ class _NarrowLayoutState extends State<_NarrowLayout> {
                 body: switch (page) {
                   SidePage.reviewPage => ReviewPage(onOpen: open),
                   SidePage.valuesPage => ValuesPage(onOpen: open),
+                  SidePage.devicesPage => const DevicesPage(),
+                  SidePage.settingsPage => SettingsPage(
+                    onOpenDevices: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => Scaffold(
+                          appBar: AppBar(),
+                          body: const DevicesPage(),
+                        ),
+                      ),
+                    ),
+                  ),
                   // Searching shows results in the tree pane, under this page.
                   SidePage.tagsPage => TagsPage(
                     onSearched: () => Navigator.of(context).maybePop(),
@@ -460,15 +517,29 @@ class _NodePage extends ConsumerWidget {
     // needs Back.
     return Scaffold(
       appBar: AppBar(toolbarHeight: 48),
-      body: CalendarOpener(
-        open: () => openCalendarPage(context),
-        child: AttachmentOpener(
-          open: (id, {via}) => openAttachmentPage(context, id, via: via),
-          child: NodeDetail(
-            nodeId: nodeId,
-            onOpen: (id) => openNodePage(context, id),
-            onLeave: (_) => Navigator.of(context).maybePop(),
+      body: Column(
+        children: [
+          // The running timer, as on the home screen (which this covers).
+          TimerBar(
+            onOpen: (id) {
+              if (id != nodeId) openNodePage(context, id);
+            },
           ),
+          Expanded(child: _body(context)),
+        ],
+      ),
+    );
+  }
+
+  Widget _body(BuildContext context) {
+    return CalendarOpener(
+      open: () => openCalendarPage(context),
+      child: AttachmentOpener(
+        open: (id, {via}) => openAttachmentPage(context, id, via: via),
+        child: NodeDetail(
+          nodeId: nodeId,
+          onOpen: (id) => openNodePage(context, id),
+          onLeave: (_) => Navigator.of(context).maybePop(),
         ),
       ),
     );
